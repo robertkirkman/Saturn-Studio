@@ -4,6 +4,8 @@
 #include <SDL2/SDL.h>
 #include <PR/ultratypes.h>
 
+extern bool showMenu;
+
 #ifdef __cplusplus
 
 #include <string>
@@ -39,7 +41,6 @@ extern void saturn_keyframe_show_kf_content(Keyframe keyframe);
 
 extern void saturn_keyframe_sort(std::vector<Keyframe>* keyframes);
 
-extern bool showMenu;
 extern int currentMenu;
 
 extern bool windowCcEditor;
@@ -50,7 +51,7 @@ extern bool chromaRequireReload;
 
 extern SDL_Window* window;
 
-extern uint32_t endFrame;
+extern int endFrame;
 extern int endFrameText;
 
 extern bool splash_finished;
@@ -60,8 +61,13 @@ extern std::vector<std::pair<std::string, std::string>> theme_list;
 
 extern bool k_context_popout_open;
 
+extern int viewport_width;
+extern int viewport_height;
+
 extern "C" {
 #endif
+    bool saturn_imgui_get_viewport(int*, int*);
+    void saturn_imgui_set_frame_buffer(void* fb);
     void saturn_imgui_init_backend(SDL_Window *, SDL_GLContext);
     void saturn_imgui_init();
     void saturn_imgui_handle_events(SDL_Event *);
