@@ -540,7 +540,7 @@ void saturn_keyframe_window() {
     ImGui::PopItemWidth();
             
     // Scrolling
-    int scroll = keyframe_playing ? (k_current_frame - startFrame) == 30 ? 1 : 0 : (ImGui::IsWindowHovered() ? (int)(ImGui::GetMouseScrollY() * -2) : 0);
+    int scroll = keyframe_playing ? (k_current_frame - startFrame) == 30 ? 1 : 0 : (ImGui::IsWindowHovered() ? (int)(ImGui::GetScrollY() * -2) : 0);
     if (scroll >= 60) scroll = 59;
     startFrame += scroll;
     if (startFrame + 60 > endFrame) startFrame = endFrame - 60;
