@@ -180,11 +180,11 @@ extern "C" {
     void saturn_play_keyframe();
     void saturn_print(const char*);
     const char* saturn_get_stage_name(int);
-    void saturn_do_load();
+    bool saturn_do_load();
     void saturn_on_splash_finish();
     bool saturn_timeline_exists(const char*);
-    s32 saturn_should_show_splash();
-    s32 saturn_begin_extract_rom_thread();
+    bool saturn_begin_extract_rom_thread();
+    int saturn_splash_screen_open();
 #ifdef __cplusplus
 }
 #endif

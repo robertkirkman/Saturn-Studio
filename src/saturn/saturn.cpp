@@ -170,7 +170,8 @@ u8 godmode_temp_off = false;
 
 bool extract_thread_began = false;
 bool extraction_finished = false;
-float extraction_progress = 1;
+float extraction_progress = -1;
+int extract_return_code = 0;
 
 extern void saturn_run_chainer();
 
@@ -306,7 +307,6 @@ void saturn_update() {
     }
 
     if (splash_finished) saturn_launch_timer++;
-    //std::cout << saturn_launch_timer << std::endl;
     if (gCurrLevelNum == LEVEL_SA && saturn_launch_timer <= 1 && splash_finished) {
         gMarioState->faceAngle[1] = 0;
         if (gCamera) { // i hate the sm64 camera system aaaaaaaaaaaaaaaaaa
@@ -719,37 +719,153 @@ const char* saturn_get_stage_name(int courseNum) {
 }
 
 std::thread extract_thread;
+std::thread load_thread;
 
-s32 saturn_begin_extract_rom_thread() {
+bool load_thread_began = false;
+bool loading_finished = false;
+
+bool saturn_begin_extract_rom_thread() {
     if (extract_thread_began) return extraction_finished;
     extract_thread_began = true;
     extraction_finished = false;
     extract_thread = std::thread([]() {
-        saturn_extract_rom(EXTRACT_TYPE_ALL);
+        extract_return_code = saturn_extract_rom(EXTRACT_TYPE_ALL);
         extraction_finished = true;
     });
     return false;
 }
 
-void saturn_do_load() {
-    if (!(save_file_get_flags() & SAVE_FLAG_TALKED_TO_ALL_TOADS)) DynOS_Gfx_GetPacks().Clear();
-    DynOS_Opt_Init();
-    //model_details = "" + std::to_string(DynOS_Gfx_GetPacks().Count()) + " model pack";
-    //if (DynOS_Gfx_GetPacks().Count() != 1) model_details += "s";
-    saturn_imgui_init();
-    saturn_load_locations();
-    saturn_launch_timer = 0;
-    saturn_cmd_registers_load();
-    saturn_load_favorite_anims();
-    saturn_fill_data_table();
+bool saturn_do_load() {
+    if (load_thread_began) return loading_finished;
+    load_thread_began = true;
+    loading_finished = false;
+    load_thread = std::thread([]() {
+        if (!(save_file_get_flags() & SAVE_FLAG_TALKED_TO_ALL_TOADS)) DynOS_Gfx_GetPacks().Clear();
+        DynOS_Opt_Init();
+        //model_details = "" + std::to_string(DynOS_Gfx_GetPacks().Count()) + " model pack";
+        //if (DynOS_Gfx_GetPacks().Count() != 1) model_details += "s";
+        saturn_imgui_init();
+        saturn_load_locations();
+        saturn_cmd_registers_load();
+        saturn_load_favorite_anims();
+        saturn_fill_data_table();
+        saturn_launch_timer = 0;
+        loading_finished = true;
+    });
+    return false;
 }
+
 void saturn_on_splash_finish() {
     splash_finished = true;
-}
-s32 saturn_should_show_splash() {
-    return configSaturnSplash;
 }
 
 bool saturn_timeline_exists(const char* name) {
     return k_frame_keys.find(name) != k_frame_keys.end();
+}
+
+// vvv    i would put this in a separate file but for SOME REASON the linker defines these but still throws "function undefined" smh
+
+#define NUM_STARS 2048
+#define STAR_WIDTH 16000
+#define STAR_HEIGHT 9000
+#define STAR_SPAWN_DISTANCE 1
+#define STAR_SPEED 2
+
+SDL_Texture* saturn_splash_screen_banner = nullptr;
+int saturn_splash_screen_banner_width = 0;
+int saturn_splash_screen_banner_height = 0;
+unsigned char saturn_splash_screen_banner_data[] = {
+#include "saturn_splash_screen_banner.h"
+};
+
+int load_delay = 2;
+
+struct Star {
+    float x, y, z;
+};
+
+Star stars[NUM_STARS];
+
+void saturn_splash_screen_init(SDL_Renderer* renderer) {
+    if (saturn_splash_screen_banner == nullptr) {
+        int width, height;
+        unsigned char* image_data = stbi_load_from_memory(saturn_splash_screen_banner_data, 82675, &width, &height, nullptr, STBI_rgb_alpha);
+        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(image_data, width, height, 32, width * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+        saturn_splash_screen_banner = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        saturn_splash_screen_banner_width = width;
+        saturn_splash_screen_banner_height = height;
+    }
+    memset(stars, 0, sizeof(Star) * NUM_STARS);
+    for (int i = 0; i < NUM_STARS; i++) {
+        stars[i] = (Star){ .x = rand() % STAR_WIDTH - STAR_WIDTH / 2, .y = rand() % STAR_HEIGHT - STAR_HEIGHT / 2, .z = (i + 1) * STAR_SPAWN_DISTANCE };
+    }
+}
+
+void saturn_splash_screen_update_stars() {
+    for (int i = 0; i < NUM_STARS; i++) {
+        stars[i].z -= STAR_SPEED;
+        if (stars[i].z <= 0) stars[i] = (Star){ .x = rand() % STAR_WIDTH - STAR_WIDTH / 2, .y = rand() % STAR_HEIGHT - STAR_HEIGHT / 2, .z = NUM_STARS * STAR_SPAWN_DISTANCE };
+    }
+}
+
+bool saturn_splash_screen_update(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 64, 0, 64, 255);
+    SDL_Rect bg = (SDL_Rect){ .x = 0, .y = 0, .w = 640, .h = 360 };
+    SDL_RenderFillRect(renderer, &bg);
+    saturn_splash_screen_update_stars();
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    for (int i = 0; i < NUM_STARS; i++) {
+        float x = stars[i].x / (stars[i].z / 16) + 640 / 2.f;
+        float y = stars[i].y / (stars[i].z / 16) + 360 / 2.f;
+        SDL_Rect rect = (SDL_Rect){ .x = x, .y = y, .w = 1, .h = 1 };
+        SDL_RenderFillRect(renderer, &rect);
+    }
+    SDL_Rect src = (SDL_Rect){
+        .x = 0,
+        .y = 0,
+        .w = saturn_splash_screen_banner_width,
+        .h = saturn_splash_screen_banner_height
+    };
+    SDL_Rect dst = (SDL_Rect){
+        .x = 640 / 2 - saturn_splash_screen_banner_width / 2,
+        .y = 360 / 2 - saturn_splash_screen_banner_height / 2,
+        .w = saturn_splash_screen_banner_width,
+        .h = saturn_splash_screen_banner_height
+    };
+    SDL_RenderCopy(renderer, saturn_splash_screen_banner, &src, &dst);
+    if (!saturn_begin_extract_rom_thread()) {
+        if (extraction_progress >= 0) {
+            SDL_Rect rect1 = (SDL_Rect){ .x = 16, .y = 360 - 32, .w = 640 - 32, .h = 16 };
+            SDL_Rect rect2 = (SDL_Rect){ .x = 16, .y = 360 - 32, .w = (640 - 32) * extraction_progress, .h = 16 };
+            SDL_SetRenderDrawColor(renderer, 127, 127, 127, 255);
+            SDL_RenderFillRect(renderer, &rect1);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderFillRect(renderer, &rect2);
+        }
+        return false;
+    }
+    if (load_delay-- > 0) return false;
+    if (!saturn_do_load()) return false;
+    return true;
+}
+
+int saturn_splash_screen_open() {
+    SDL_Window* window = SDL_CreateWindow("Saturn Studio", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 360, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetWindowBordered(window, SDL_FALSE);
+    saturn_splash_screen_init(renderer);
+    bool extracting_assets = true;
+    while (true) {
+        clock_t before = clock();
+        if (saturn_splash_screen_update(renderer)) break;
+        SDL_RenderPresent(renderer);
+        clock_t after = clock();
+        if (after - before < CLOCKS_PER_SEC / 60) std::this_thread::sleep_for(std::chrono::microseconds((int)(1000000 / 60.0f - (float)(after - before) / CLOCKS_PER_SEC * 1000000)));
+    }
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return extract_return_code;
 }

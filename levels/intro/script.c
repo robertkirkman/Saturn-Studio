@@ -20,42 +20,9 @@
 
 #include "saturn/saturn.h"
 
-static const LevelScript level_intro_load_saturn[] = {
-    CALL(/*arg*/ 0, /*func*/ saturn_do_load),
-    CALL_LOOP(/*arg*/ 0, /*func*/ saturn_begin_extract_rom_thread),
-    CALL(/*arg*/ 0, /*func*/ saturn_on_splash_finish),
-    EXIT_AND_EXECUTE(/*seg*/ 0x14, _menuSegmentRomStart, _menuSegmentRomEnd, level_main_menu_entry_1),
-};
-static const LevelScript level_intro_splash[] = {
-    INIT_LEVEL(),
-    FIXED_LOAD(/*loadAddr*/ _goddardSegmentStart, /*romStart*/ _goddardSegmentRomStart, /*romEnd*/ _goddardSegmentRomEnd),
-    LOAD_RAW(/*seg*/ 0x13, _behaviorSegmentRomStart, _behaviorSegmentRomEnd),
-    LOAD_MIO0(/*seg*/ 0x07, _intro_segment_7SegmentRomStart, _intro_segment_7SegmentRomEnd),
-    ALLOC_LEVEL_POOL(),
-
-    AREA(/*index*/ 1, intro_geo_0002D0),
-    END_AREA(),
-
-    FREE_LEVEL_POOL(),
-    LOAD_AREA(/*area*/ 1),
-    CALL(/*arg*/ 0, /*func*/ lvl_intro_update),
-    TRANSITION(/*transType*/ WARP_TRANSITION_FADE_FROM_STAR, /*time*/ 15, /*color*/ 0x00, 0x00, 0x00),
-    SLEEP(/*frames*/ 15),
-    CALL(/*arg*/ 0, /*func*/ saturn_do_load),
-    CALL_LOOP(/*arg*/ 0, /*func*/ saturn_begin_extract_rom_thread),
-    TRANSITION(/*transType*/ WARP_TRANSITION_FADE_INTO_COLOR, /*time*/ 10, /*color*/ 0x00, 0x00, 0x00),
-    SLEEP(/*frames*/ 15),
-    CMD2A(/*unk2*/ 1),
-    CLEAR_LEVEL(),
-    CALL(/*arg*/ 0, /*func*/ saturn_on_splash_finish),
-    EXIT_AND_EXECUTE(/*seg*/ 0x14, _menuSegmentRomStart, _menuSegmentRomEnd, level_main_menu_entry_1),
-};
-
 const LevelScript level_intro_entry_1[] = {
-    CALL(/*arg*/ 0, saturn_should_show_splash),
-    JUMP_IF(/*op*/ OP_EQ, 1, level_intro_splash),
-    JUMP_IF(/*op*/ OP_EQ, 0, level_intro_load_saturn),
-    EXIT(),
+    CALL(/*arg*/ 0, /*func*/ saturn_on_splash_finish),
+    EXIT_AND_EXECUTE(/*seg*/ 0x14, _menuSegmentRomStart, _menuSegmentRomEnd, level_main_menu_entry_1),
 };
 
 const LevelScript level_intro_entry_2[] = {

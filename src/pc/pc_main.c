@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
         saturn_extract_rom(EXTRACT_TYPE_ALL);
         return 0;
     } else {
-        int result = saturn_extract_rom(~EXTRACT_TYPE_TEXTURES);
+        int result = saturn_splash_screen_open();
         // Start game
         if (result == 0)
             main_func();
