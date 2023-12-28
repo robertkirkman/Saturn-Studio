@@ -545,6 +545,7 @@ s32 act_reading_sign(struct MarioState *m) {
 
 // debug free move action
 s32 act_debug_free_move(struct MarioState *m) {
+    return;
     struct Surface *surf;
     f32 floorHeight;
     Vec3f pos;

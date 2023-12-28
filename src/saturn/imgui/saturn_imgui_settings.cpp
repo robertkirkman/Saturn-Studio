@@ -279,17 +279,6 @@ void ssettings_imgui_update() {
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Editor")) {
-                ImGui::Text("Machinima Camera");
-                SaturnKeyBind("Freeze", configKeyFreeze, "bFreeze", 3*14);
-                const char* mCameraSettings[] = { "Keyboard", "Keyboard/Gamepad (Old)", "Mouse (Experimental)" };
-                ImGui::Combo("Mode###machinima_camera_mode", (int*)&configMCameraMode, mCameraSettings, IM_ARRAYSIZE(mCameraSettings));
-                if (configMCameraMode == 2) {
-                    ImGui::SameLine(); imgui_bundled_help_marker("Move Camera -> LShift + Mouse Buttons");
-                } else if (configMCameraMode == 1) {
-                    ImGui::SameLine(); imgui_bundled_help_marker("Pan Camera -> R + C-Buttons\nRaise/Lower Camera -> L + C-Buttons\nRotate Camera -> L + Crouch + C-Buttons");
-                } else if (configMCameraMode == 0) {
-                    ImGui::SameLine(); imgui_bundled_help_marker("Move Camera -> Y/G/H/J\nRaise/Lower Camera -> T/U\nRotate Camera -> R + Y/G/H/J");
-                }
                 ImGui::Text("Animation");
                 SaturnKeyBind("Play", configKeyPlayAnim, "bPlayA", 3*24);
                 ImGui::SameLine(); imgui_bundled_help_marker("Press again to pause the playing animation.");

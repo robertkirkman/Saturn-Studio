@@ -61,8 +61,7 @@ extern std::vector<std::pair<std::string, std::string>> theme_list;
 
 extern bool k_context_popout_open;
 
-extern int viewport_width;
-extern int viewport_height;
+extern float game_viewport[4];
 
 extern "C" {
 #endif

@@ -54,7 +54,6 @@ extern unsigned int configKeyShowMenu[];
 extern bool         configPrecacheRes;
 #endif
 extern unsigned int configEditorTheme;
-extern unsigned int configMCameraMode;
 extern bool         configEditorFastApply;
 extern bool         configEditorAutoModelCc;
 extern bool         configEditorAutoSpark;

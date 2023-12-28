@@ -43,6 +43,9 @@ bool camera_view_rotating;
 int camera_view_move_x;
 int camera_view_move_y;
 
+struct MouseState mouse_state;
+struct MouseState prev_mouse_state;
+
 bool enable_head_rotations = false;
 bool enable_shadows = false;
 bool enable_dust_particles = false;
@@ -216,7 +219,6 @@ void saturn_update() {
             }
         }
         if (!saturn_disable_sm64_input()) {
-            if (gPlayer1Controller->buttonPressed & U_JPAD) camera_frozen = !camera_frozen;
             if (gPlayer1Controller->buttonPressed & L_JPAD) {
                 if (!is_anim_playing) {
                     anim_play_button();
@@ -230,6 +232,20 @@ void saturn_update() {
         }
     }
 
+    bool mouse_l, mouse_r;
+    prev_mouse_state = mouse_state;
+    ImGuiIO& io = ImGui::GetIO();
+    mouse_state.x = io.MousePos.x;
+    mouse_state.y = io.MousePos.y;
+    mouse_state.held = 0;
+    mouse_state.scrollwheel = 0;
+    for (int i = 0; i < 5; i++) {
+        mouse_state.held |= io.MouseDown[i] << i;
+    }
+    mouse_state.pressed = mouse_state.held & ~prev_mouse_state.held;
+    mouse_state.x_diff = mouse_state.x - prev_mouse_state.x;
+    mouse_state.y_diff = mouse_state.y - prev_mouse_state.y;
+
     if (keyResetter < 6)
         keyResetter += 1;
 
@@ -238,40 +254,20 @@ void saturn_update() {
     machinimaMode = (camera_frozen) ? 1 : 0;
     machinimaKeyframing = (keyframe_playing && active_data_type == KEY_CAMERA);
 
-    if (camera_frozen && !saturn_disable_sm64_input()) {
-        if (configMCameraMode == 2) {
-            camera_view_enabled = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LSHIFT];
-            camera_view_moving = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_RMASK;
-            camera_view_zooming = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_MMASK;
-            camera_view_rotating = SDL_GetMouseState(NULL, NULL) & SDL_BUTTON_LMASK;
-        } else if (configMCameraMode == 0) {
-            if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_R]) {
-                cameraRotateUp = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_Y] & !saturn_disable_sm64_input();
-                cameraRotateDown = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_H] & !saturn_disable_sm64_input();
-                cameraRotateLeft = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_G] & !saturn_disable_sm64_input();
-                cameraRotateRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_J] & !saturn_disable_sm64_input();
-                // Stop from moving
-                cameraMoveForward = 0;
-                cameraMoveBackward = 0;
-                cameraMoveLeft = 0;
-                cameraMoveRight = 0;
-            } else {
-                cameraMoveForward = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_Y] & !saturn_disable_sm64_input();
-                cameraMoveBackward = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_H] & !saturn_disable_sm64_input();
-                cameraMoveLeft = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_G] & !saturn_disable_sm64_input();
-                cameraMoveRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_J] & !saturn_disable_sm64_input();
-                // Stop from rotating
-                cameraRotateUp = 0;
-                cameraRotateDown = 0;
-                cameraRotateLeft = 0;
-                cameraRotateRight = 0;
-            }
-            cameraMoveUp = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_T] & !saturn_disable_sm64_input();
-            cameraMoveDown = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_U] & !saturn_disable_sm64_input();
-        }
-        cameraRollLeft = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
-        cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
+    if (mouse_state.pressed & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R)) {
+        mouse_state.x_orig = mouse_state.x;
+        mouse_state.y_orig = mouse_state.y;
+        if (mouse_state.x >= game_viewport[0] &&
+            mouse_state.y >= game_viewport[1] &&
+            mouse_state.x <  game_viewport[0] + game_viewport[2] &&
+            mouse_state.y <  game_viewport[1] + game_viewport[3]) mouse_state.update_camera = true;
     }
+    if (mouse_state.held & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R))
+        mouse_state.dist_travelled = sqrt(
+            (mouse_state.x - mouse_state.x_orig) * (mouse_state.x - mouse_state.x_orig) +
+            (mouse_state.y - mouse_state.y_orig) * (mouse_state.y - mouse_state.y_orig)
+        );
+    else mouse_state.update_camera = false;
 
     if (!keyframe_playing && !camera_frozen) {
         gLakituState.focHSpeed = camera_focus * camera_savestate_mult * 0.8f;

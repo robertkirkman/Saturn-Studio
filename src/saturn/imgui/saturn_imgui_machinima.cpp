@@ -285,6 +285,8 @@ void smachinima_imgui_init() {
     saturn_load_anim_folder("", &custom_anim_index);
 }
 
+bool enabled_acts[6];
+
 void imgui_machinima_quick_options() {
     if (ImGui::MenuItem(ICON_FK_CLOCK_O " Limit FPS",      "F4", limit_fps)) {
         limit_fps = !limit_fps;
@@ -317,11 +319,17 @@ void imgui_machinima_quick_options() {
 
         if (ImGui::Button("Warp to Level")) {
             autoChroma = false;
-            camera_frozen = false;
 
-            warp_to_level(current_slevel_index, (s32)currentChromaArea, -1);
+            warp_to_level(current_slevel_index, (s32)currentChromaArea, 1);
             // Erase existing timelines
             k_frame_keys.clear();
+        }
+        for (int i = 0; i < 6; i++) {
+            ImGui::SameLine();
+            if (ImGui::Button((std::string(enabled_acts[i] ? ICON_FK_STAR : ICON_FK_STAR_O) + "###act_select_" + std::to_string(i)).c_str())) {
+                enabled_acts[i] = !enabled_acts[i];
+            }
+            imgui_bundled_tooltip((std::string(enabled_acts[i] ? "Disable" : "Enable") + " act " + std::to_string(i + 1) + " objects").c_str());
         }
 
         auto locations = saturn_get_locations();

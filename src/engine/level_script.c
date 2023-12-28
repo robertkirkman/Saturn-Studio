@@ -23,6 +23,7 @@
 #include "surface_collision.h"
 #include "surface_load.h"
 #include "level_table.h"
+#include "saturn/imgui/saturn_imgui_machinima.h"
 
 #define CMD_GET(type, offset) (*(type *) (CMD_PROCESS_OFFSET(offset) + (u8 *) sCurrentCmd))
 
@@ -443,7 +444,10 @@ static void level_cmd_init_mario(void) {
 }
 
 static void level_cmd_place_object(void) {
-    u8 val7 = 1 << (gCurrActNum - 1);
+    u8 val7 = 0;
+    for (int i = 0; i < 6; i++) {
+        val7 |= enabled_acts[i] << i;
+    }
     u16 model;
     struct SpawnInfo *spawnInfo;
 

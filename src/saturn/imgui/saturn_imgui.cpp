@@ -122,8 +122,7 @@ int current_macro_id = -1;
 int current_macro_dir_count = 0;
 char cli_input[CLI_MAX_INPUT_SIZE];
 
-int viewport_width = -1;
-int viewport_height = -1;
+float game_viewport[4] = { 0, 0, -1, -1 };
 
 #include "saturn/saturn_timelines.h"
 
@@ -406,9 +405,9 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
     if (width == nullptr) width = &w;
     if (height == nullptr) height = &h;
-    if (showMenu && (viewport_width != -1 && viewport_height != -1)) {
-        *width = viewport_width;
-        *height = viewport_height;
+    if (showMenu && (game_viewport[2] != -1 && game_viewport[3] != -1)) {
+        *width = game_viewport[2];
+        *height = game_viewport[3];
         return true;
     }
     else SDL_GetWindowSize(window, width, height);
@@ -800,10 +799,8 @@ void saturn_imgui_update() {
             if (ImGui::CollapsingHeader("Camera")) {
                 windowCcEditor = false;
 
-                ImGui::Checkbox("Freeze", &camera_frozen);
                 if (camera_frozen) {
-                    saturn_keyframe_popout({ "k_c_camera_pos0", "k_c_camera_pos1", "k_c_camera_pos2", "k_c_camera_yaw", "k_c_camera_pitch", "k_c_camera_roll" });
-                    ImGui::SameLine(200); ImGui::TextDisabled(translate_bind_to_name(configKeyFreeze[0]));
+                    saturn_keyframe_popout_next_line({ "k_c_camera_pos0", "k_c_camera_pos1", "k_c_camera_pos2", "k_c_camera_yaw", "k_c_camera_pitch", "k_c_camera_roll" });
 
                     if (ImGui::BeginMenu("Options###camera_options")) {
                         camera_savestate_mult = 0.f;
@@ -837,18 +834,6 @@ void saturn_imgui_update() {
                         ImGui::SliderFloat("Rotate", &camVelRSpeed, 0.0f, 2.0f);
                         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camVelRSpeed = 1.f; }
                         ImGui::PopItemWidth();
-                        ImGui::Text(ICON_FK_KEYBOARD_O " Control Mode");
-                        const char* mCameraSettings[] = { "Keyboard", "Keyboard/Gamepad (Old)", "Mouse (Experimental)" };
-                        ImGui::PushItemWidth(200);
-                        ImGui::Combo("###camera_mode", (int*)&configMCameraMode, mCameraSettings, IM_ARRAYSIZE(mCameraSettings));
-                        ImGui::PopItemWidth();
-                        if (configMCameraMode == 2) {
-                            imgui_bundled_tooltip("Move Camera -> LShift + Mouse Buttons");
-                        } else if (configMCameraMode == 1) {
-                            imgui_bundled_tooltip("Pan Camera -> R + C-Buttons\nRaise/Lower Camera -> L + C-Buttons\nRotate Camera -> L + Crouch + C-Buttons");
-                        } else if (configMCameraMode == 0) {
-                            imgui_bundled_tooltip("Move Camera -> Y/G/H/J\nRaise/Lower Camera -> T/U\nRotate Camera -> R + Y/G/H/J");
-                        }
                         ImGui::EndMenu();
                     }
                 }
@@ -900,10 +885,15 @@ void saturn_imgui_update() {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         if (ImGui::Begin("Game")) {
+            ImVec2 window_pos = ImGui::GetWindowPos();
             ImVec2 window_size = ImGui::GetWindowSize();
+            window_pos.y += 20;
             window_size.y -= 20;
-            viewport_width = window_size.x;
-            viewport_height = window_size.y;
+            game_viewport[0] = window_pos.x;
+            game_viewport[1] = window_pos.y;
+            game_viewport[2] = window_size.x;
+            game_viewport[3] = window_size.y;
+            if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
             ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
         } ImGui::End();
         ImGui::PopStyleVar();

@@ -87,7 +87,6 @@ unsigned int configKeyShowMenu[MAX_BINDS]   = { 0x003b,   0x1004,     VK_INVALID
 bool configPrecacheRes = true;
 #endif
 unsigned int configEditorTheme   = -1;
-unsigned int configMCameraMode   = 0; // keyboard is better
 bool         configEditorFastApply = true;
 bool         configEditorAutoModelCc = false;
 bool         configEditorAutoSpark = true;
@@ -171,7 +170,6 @@ static const struct ConfigOption options[] = {
     {.name = "key_anim_pause",       .type = CONFIG_TYPE_BIND, .uintValue = configKeyLoopAnim},
     {.name = "key_show_menu",        .type = CONFIG_TYPE_BIND, .uintValue = configKeyShowMenu},
     {.name = "editor_theme",         .type = CONFIG_TYPE_UINT, .uintValue = &configEditorTheme},
-    {.name = "mcamera_mode",         .type = CONFIG_TYPE_UINT, .uintValue = &configMCameraMode},
     {.name = "editor_fast_apply",    .type = CONFIG_TYPE_BOOL, .uintValue = &configEditorFastApply},
     {.name = "editor_auto_model_cc", .type = CONFIG_TYPE_BOOL, .uintValue = &configEditorAutoModelCc},
     {.name = "editor_auto_spark",    .type = CONFIG_TYPE_BOOL, .uintValue = &configEditorAutoSpark},

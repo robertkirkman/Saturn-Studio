@@ -9,6 +9,10 @@
 #include "types.h"
 #include "saturn/saturn_animations.h"
 
+#define MOUSEBTN_MASK_L (1 << 0)
+#define MOUSEBTN_MASK_R (1 << 1)
+#define MOUSEBTN_MASK_M (1 << 2)
+
 extern bool mario_exists;
 
 extern bool camera_frozen;
@@ -44,6 +48,20 @@ struct AnimationState {
     bool loop;
     float speed;
     int id;
+};
+
+struct MouseState {
+    int x;
+    int y;
+    int x_diff;
+    int y_diff;
+    int x_orig;
+    int y_orig;
+    int held;
+    int pressed;
+    float scrollwheel;
+    float dist_travelled;
+    bool update_camera;
 };
 
 extern bool using_chainer;
@@ -92,6 +110,8 @@ extern int k_previous_frame;
 extern bool extract_thread_began;
 extern bool extraction_finished;
 extern float extraction_progress;
+
+extern struct MouseState mouse_state;
 
 #ifdef __cplusplus
 #include <string>
