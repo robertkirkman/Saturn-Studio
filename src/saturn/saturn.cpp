@@ -167,8 +167,6 @@ int autosaveDelay = -1;
 u16 gChromaKeyColor = 0x07C1;
 u16 gChromaKeyBackground = 0;
 
-int keyResetter;
-
 u8 godmode_temp_off = false;
 
 bool extract_thread_began = false;
@@ -208,16 +206,6 @@ void saturn_update() {
         if (gPlayer1Controller->buttonPressed & D_JPAD) {
             showMenu = !showMenu;
         }
-        if (keyResetter == 6) {
-            if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_F2]) {
-                if (gMarioState->action == ACT_DEBUG_FREE_MOVE) {
-                    reset_camera(gCamera);
-                    set_mario_action(gMarioState, ACT_IDLE, 0);
-                }
-                else set_mario_action(gMarioState, ACT_DEBUG_FREE_MOVE, 0);
-                keyResetter = 0;
-            }
-        }
         if (!saturn_disable_sm64_input()) {
             if (gPlayer1Controller->buttonPressed & L_JPAD) {
                 if (!is_anim_playing) {
@@ -245,9 +233,6 @@ void saturn_update() {
     mouse_state.pressed = mouse_state.held & ~prev_mouse_state.held;
     mouse_state.x_diff = mouse_state.x - prev_mouse_state.x;
     mouse_state.y_diff = mouse_state.y - prev_mouse_state.y;
-
-    if (keyResetter < 6)
-        keyResetter += 1;
 
     // Machinima
 
