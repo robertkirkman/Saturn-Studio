@@ -548,6 +548,68 @@ int endFrameText = 0;
 void saturn_keyframe_window() {
     std::string windowLabel = "Timeline###kf_timeline";
     ImGui::Begin(windowLabel.c_str());
+    if (ImGui::BeginPopupContextItem("Keyframe Menu Popup")) {
+        k_context_popout_open = false;
+        vector<Keyframe>* keyframes = &k_frame_keys[k_context_popout_keyframe.timelineID].second;
+        int curve = -1;
+        int index = -1;
+        for (int i = 0; i < keyframes->size(); i++) {
+            if ((*keyframes)[i].position == k_context_popout_keyframe.position) index = i;
+        }
+        bool isFirst = k_context_popout_keyframe.position == 0 && k_frame_keys[k_context_popout_keyframe.timelineID].first.behavior != KFBEH_EVENT;
+        if (isFirst) ImGui::BeginDisabled();
+        bool doDelete = false;
+        bool doCopy = false;
+        if (ImGui::MenuItem("Delete")) {
+            doDelete = true;
+        }
+        if (ImGui::MenuItem("Move to Pointer")) {
+            doDelete = true;
+            doCopy = true;
+        }
+        if (isFirst) ImGui::EndDisabled();
+        if (ImGui::MenuItem("Copy to Pointer")) {
+            doCopy = true;
+        }
+        ImGui::Separator();
+        bool forceWait = k_frame_keys[k_context_popout_keyframe.timelineID].first.behavior != KFBEH_DEFAULT;
+        if (forceWait) ImGui::BeginDisabled();
+        for (int i = 0; i < IM_ARRAYSIZE(curveNames); i++) {
+            if (ImGui::MenuItem(curveNames[i].c_str(), NULL, k_context_popout_keyframe.curve == InterpolationCurve(i))) {
+                curve = i;
+            }
+        }
+        if (forceWait) ImGui::EndDisabled();
+        std::string timeline = k_context_popout_keyframe.timelineID;
+        keyframes = &k_frame_keys[timeline].second;
+        if (curve != -1) {
+            (*keyframes)[index].curve = InterpolationCurve(curve);
+            k_context_popout_open = false;
+            k_previous_frame = -1;
+        }
+        if (doCopy) {
+            int hoverKeyframeIndex = -1;
+            for (int i = 0; i < keyframes->size(); i++) {
+                if ((*keyframes)[i].position == k_current_frame) hoverKeyframeIndex = i;
+            }
+            Keyframe copy = Keyframe();
+            copy.position = k_current_frame;
+            copy.curve = (*keyframes)[index].curve;
+            copy.value = (*keyframes)[index].value;
+            copy.timelineID = (*keyframes)[index].timelineID;
+            if (hoverKeyframeIndex == -1) keyframes->push_back(copy);
+            else (*keyframes)[hoverKeyframeIndex] = copy;
+            k_context_popout_open = false;
+            k_previous_frame = -1;
+        }
+        if (doDelete) {
+            keyframes->erase(keyframes->begin() + index);
+            k_context_popout_open = false;
+            k_previous_frame = -1;
+        }
+        saturn_keyframe_sort(keyframes);
+        ImGui::EndPopup();
+    }
     if (keyframe_playing) { if (ImGui::Button(ICON_FK_STOP))          keyframe_playing = false; }
     else                  { if (ImGui::Button(ICON_FK_PLAY))          keyframe_playing = true;  }
                                 ImGui::SameLine();
@@ -630,6 +692,9 @@ void saturn_keyframe_window() {
             else saturn_keyframe_apply(entry.first, k_current_frame);
         }
     }
+
+    if (k_context_popout_open) ImGui::OpenPopup("Keyframe Menu Popup");
+
     ImGui::End();
 
     // Auto focus (use controls without clicking window first)
@@ -990,77 +1055,6 @@ void saturn_imgui_update() {
             ImGui::End();
             ImGui::PopStyleColor();
         }*/
-        if (k_context_popout_open) {
-            if (ImGui::Begin("###kf_menu", &k_context_popout_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove)) {
-                vector<Keyframe>* keyframes = &k_frame_keys[k_context_popout_keyframe.timelineID].second;
-                int curve = -1;
-                int index = -1;
-                for (int i = 0; i < keyframes->size(); i++) {
-                    if ((*keyframes)[i].position == k_context_popout_keyframe.position) index = i;
-                }
-                bool isFirst = k_context_popout_keyframe.position == 0 && k_frame_keys[k_context_popout_keyframe.timelineID].first.behavior != KFBEH_EVENT;
-                if (isFirst) ImGui::BeginDisabled();
-                bool doDelete = false;
-                bool doCopy = false;
-                if (ImGui::MenuItem("Delete")) {
-                    doDelete = true;
-                }
-                if (ImGui::MenuItem("Move to Pointer")) {
-                    doDelete = true;
-                    doCopy = true;
-                }
-                if (isFirst) ImGui::EndDisabled();
-                if (ImGui::MenuItem("Copy to Pointer")) {
-                    doCopy = true;
-                }
-                ImGui::Separator();
-                bool forceWait = k_frame_keys[k_context_popout_keyframe.timelineID].first.behavior != KFBEH_DEFAULT;
-                if (forceWait) ImGui::BeginDisabled();
-                for (int i = 0; i < IM_ARRAYSIZE(curveNames); i++) {
-                    if (ImGui::MenuItem(curveNames[i].c_str(), NULL, k_context_popout_keyframe.curve == InterpolationCurve(i))) {
-                        curve = i;
-                    }
-                }
-                if (forceWait) ImGui::EndDisabled();
-                ImVec2 pos = ImGui::GetWindowPos();
-                ImVec2 size = ImGui::GetWindowSize();
-                ImVec2 mouse = ImGui::GetMousePos();
-                if ((mouse.x < pos.x || mouse.y < pos.y || mouse.x >= pos.x + size.x || mouse.y >= pos.y + size.y) && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) k_context_popout_open = false;
-                ImVec2 window_size = ImGui::GetWindowSize();
-                ImVec2 window_pos = k_context_popout_pos;
-                window_pos.x -= window_size.x;
-                ImGui::SetWindowPos(window_pos);
-                ImGui::End();
-                std::string timeline = k_context_popout_keyframe.timelineID;
-                keyframes = &k_frame_keys[timeline].second;
-                if (curve != -1) {
-                    (*keyframes)[index].curve = InterpolationCurve(curve);
-                    k_context_popout_open = false;
-                    k_previous_frame = -1;
-                }
-                if (doCopy) {
-                    int hoverKeyframeIndex = -1;
-                    for (int i = 0; i < keyframes->size(); i++) {
-                        if ((*keyframes)[i].position == k_current_frame) hoverKeyframeIndex = i;
-                    }
-                    Keyframe copy = Keyframe();
-                    copy.position = k_current_frame;
-                    copy.curve = (*keyframes)[index].curve;
-                    copy.value = (*keyframes)[index].value;
-                    copy.timelineID = (*keyframes)[index].timelineID;
-                    if (hoverKeyframeIndex == -1) keyframes->push_back(copy);
-                    else (*keyframes)[hoverKeyframeIndex] = copy;
-                    k_context_popout_open = false;
-                    k_previous_frame = -1;
-                }
-                if (doDelete) {
-                    keyframes->erase(keyframes->begin() + index);
-                    k_context_popout_open = false;
-                    k_previous_frame = -1;
-                }
-                saturn_keyframe_sort(keyframes);
-            }
-        }
 
         //ImGui::ShowDemoWindow();
     }
