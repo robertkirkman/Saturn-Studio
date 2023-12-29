@@ -268,6 +268,8 @@ void saturn_update() {
             (mouse_state.y - mouse_state.y_orig) * (mouse_state.y - mouse_state.y_orig)
         );
     else mouse_state.update_camera = false;
+    cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
+    cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
 
     if (!keyframe_playing && !camera_frozen) {
         gLakituState.focHSpeed = camera_focus * camera_savestate_mult * 0.8f;
@@ -337,10 +339,10 @@ void saturn_update() {
         
         bool end = true;
         for (const auto& entry : k_frame_keys) {
-            if (!saturn_keyframe_apply(entry.first, mcam_timer)) end = false;
+            if (!saturn_keyframe_apply(entry.first, k_current_frame)) end = false;
         }
         if (end) {
-            if (k_loop) mcam_timer = 0;
+            if (k_loop) k_current_frame = 0;
             else keyframe_playing = false;
         }
 
@@ -349,10 +351,7 @@ void saturn_update() {
 
         schroma_imgui_init();
 
-        if (!end) {
-            mcam_timer++;
-            k_current_frame = (uint32_t)mcam_timer;
-        }
+        if (!end) k_current_frame++;
     }
 
     if (camera_frozen && keyframe_playing) {

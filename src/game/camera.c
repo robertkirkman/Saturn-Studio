@@ -3216,7 +3216,9 @@ void update_camera(struct Camera *c) {
                     rotate_in_xz(offset, offset, -yaw);
                     rotate_in_yz(offset, offset, -pitch);
                     vec3f_add(c->pos, offset);
+                    if (mouse_state.x_diff != 0 || mouse_state.y_diff != 0) is_camera_moving = true;
                 }
+                if (mouse_state.scrollwheel != 0) is_camera_moving = true;
                 vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * camVelSpeed, pitch, yaw);
                 vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
 
