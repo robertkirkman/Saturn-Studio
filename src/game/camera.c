@@ -3199,10 +3199,10 @@ void update_camera(struct Camera *c) {
 
         if (machinimaMode) {
             if (!machinimaKeyframing && !machinimaCopying) {
+                f32 dist;
+                s16 pitch, yaw;
+                vec3f_get_dist_and_angle(c->pos, c->focus, &dist, &pitch, &yaw);
                 if (mouse_state.update_camera) {
-                    f32 dist;
-                    s16 pitch, yaw;
-                    vec3f_get_dist_and_angle(c->pos, c->focus, &dist, &pitch, &yaw);
                     Vec3f offset;
                     vec3f_set(offset, 0, 0, 0);
                     if (mouse_state.held & MOUSEBTN_MASK_L) {
@@ -3216,9 +3216,9 @@ void update_camera(struct Camera *c) {
                     rotate_in_xz(offset, offset, -yaw);
                     rotate_in_yz(offset, offset, -pitch);
                     vec3f_add(c->pos, offset);
-                    vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * camVelSpeed, pitch, yaw);
-                    vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
                 }
+                vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * camVelSpeed, pitch, yaw);
+                vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
 
                 if (cameraRollLeft) gLakituState.roll += camVelRSpeed * 512;
                 if (cameraRollRight) gLakituState.roll -= camVelRSpeed * 512;
