@@ -769,7 +769,7 @@ Star stars[NUM_STARS];
 void saturn_splash_screen_init(SDL_Renderer* renderer) {
     if (saturn_splash_screen_banner == nullptr) {
         int width, height;
-        unsigned char* image_data = stbi_load_from_memory(saturn_splash_screen_banner_data, 82675, &width, &height, nullptr, STBI_rgb_alpha);
+        unsigned char* image_data = stbi_load_from_memory(saturn_splash_screen_banner_data, sizeof(saturn_splash_screen_banner_data), &width, &height, nullptr, STBI_rgb_alpha);
         SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(image_data, width, height, 32, width * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
         saturn_splash_screen_banner = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
