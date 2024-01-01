@@ -1,40 +1,16 @@
-# Saturn
+# Saturn Studio
 
-- **Saturn** is an all-in-one machinima studio for *Super Mario 64*, based on [the PC port](https://github.com/sm64pc/sm64ex).
-- *In order to download or compile the editor, a prior copy of the game is required. This is to avoid including any copyrighted material.*
+An experimental fork of [Saturn](https://github.com/Llennpie/Saturn) that has features originally planned for the original version,
+but would make too much of a difference to implement, so it made more sense to make it a separate version.
 
-![image](https://github.com/Llennpie/Saturn/assets/44985633/e671b48a-e1c3-446a-9cff-0c76f49d069a)
+**I still encourage using the original version.** This version is intended for users that are more experienced with the program.
 
-### Download
+Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 
-- You can download the latest version from the [Releases](https://github.com/Llennpie/Saturn/releases/latest) page!
+### Features of the Studio version
 
-### Features
-
-```
-- Machinima camera system
-- Extensive color code editor
-- Custom model library
-  - Create, share, and download custom playermodels. No reloading required!
-  - Works with color codes
-  - Completely customizable expressions and textures
-- CHROMA KEY STAGE
-  - Toggle instantly from any level
-- Keyframe editor
-  - Animate almost anything!
-- Completely rebindable controls
-  - Supports most modern controllers
-- Dynamic window size/resolution
-- Interpolated 60 fps
-  
-...and more!
-```
-
-- For advanced compilation instructions, please refer to the [Wiki](https://github.com/Llennpie/Saturn/wiki).
-- Also join the [Discord](https://discord.gg/rGqREG2kYv) for news, model releases, support and more!
-
----
-
-In case you feel this project deserves some extra love, check out my Ko-fi-
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/J3J05B5WR)
+- A different UI, closer to Moon edition
+- Multiple Mario support
+- Input recording/playback
+- Recording transparent .webm videos directly in the editor
+- Capturing transparent screenshots
