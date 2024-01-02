@@ -21,6 +21,22 @@ struct ColorTemplate {
     unsigned int blue[2];
 };
 
+#define CC_HAT             0
+#define CC_OVERALLS        1
+#define CC_GLOVES          2
+#define CC_SHOES           3
+#define CC_SKIN            4
+#define CC_HAIR            5
+
+#define CC_SHIRT           6
+#define CC_SHOULDERS       7
+#define CC_ARMS            8
+#define CC_OVERALLS_BOTTOM 9
+#define CC_LEG_TOP         10
+#define CC_LEG_BOTTOM      11
+
+typedef struct ColorTemplate ColorCode[12];
+
 extern struct ColorTemplate defaultColorHat;
 extern struct ColorTemplate defaultColorOveralls;
 extern struct ColorTemplate defaultColorGloves;
@@ -46,7 +62,7 @@ extern struct ColorTemplate chromaColor;
 
 extern std::string HexifyColorTemplate(ColorTemplate &colorBodyPart);
 
-class ColorCode {
+class GameSharkCode {
     public:
         std::string Name = "Sample";
         std::string GameShark = "8107EC40 FF00\n8107EC42 0000\n8107EC38 7F00\n8107EC3A 0000\n"
@@ -165,18 +181,18 @@ class ColorCode {
         }
 };
 
-extern void PasteGameShark(std::string);
-extern void ApplyColorCode(ColorCode);
+extern void PasteGameShark(std::string, ColorCode cc);
+extern void ApplyColorCode(GameSharkCode);
 
 extern std::vector<std::string> GetColorCodeList(std::string);
-extern ColorCode LoadGSFile(std::string, std::string);
-extern void SaveGSFile(ColorCode, std::string);
+extern GameSharkCode LoadGSFile(std::string, std::string);
+extern void SaveGSFile(GameSharkCode, std::string);
 extern void DeleteGSFile(std::string);
 
 extern std::vector<std::string> color_code_list;
 extern std::vector<std::string> model_color_code_list;
 
-extern ColorCode current_color_code;
+extern GameSharkCode current_color_code;
 
 #endif
 

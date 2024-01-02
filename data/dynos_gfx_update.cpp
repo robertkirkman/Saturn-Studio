@@ -1,4 +1,5 @@
 #include "dynos.cpp.h"
+#include "saturn/saturn_actors.h"
 extern "C" {
 #include "object_fields.h"
 #include "game/level_update.h"
@@ -102,17 +103,21 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
 void DynOS_Gfx_Update() {
     if (gObjectLists) {
 
-        // Check packs
-        Array<bool> _Enabled;
-        const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
-        for (s32 i = 0; i != pDynosPacks.Count(); ++i) {
-            _Enabled.Add(DynOS_Opt_GetValue(String("dynos_pack_%d", i)));
-        }
-        
         // Loop through all object lists
-        for (s32 list : { OBJ_LIST_PLAYER, OBJ_LIST_DESTRUCTIVE, OBJ_LIST_GENACTOR, OBJ_LIST_PUSHABLE, OBJ_LIST_LEVEL, OBJ_LIST_DEFAULT, OBJ_LIST_SURFACE, OBJ_LIST_POLELIKE, OBJ_LIST_UNIMPORTANT }) {
+        for (s32 list : { OBJ_LIST_PLAYER, OBJ_LIST_SATURN, OBJ_LIST_DESTRUCTIVE, OBJ_LIST_GENACTOR, OBJ_LIST_PUSHABLE, OBJ_LIST_LEVEL, OBJ_LIST_DEFAULT, OBJ_LIST_SURFACE, OBJ_LIST_POLELIKE, OBJ_LIST_UNIMPORTANT }) {
             struct Object *_Head = (struct Object *) &gObjectLists[list];
             for (struct Object *_Object = (struct Object *) _Head->header.next; _Object != _Head; _Object = (struct Object *) _Object->header.next) {
+                MarioActor* _Actor = cur_obj_mario_actor(_Object);
+                if (_Actor == nullptr) continue;
+                int _ActorIdx = saturn_actor_indexof(_Actor);
+
+                // Check packs
+                Array<bool> _Enabled;
+                const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
+                for (s32 i = 0; i != pDynosPacks.Count(); ++i) {
+                    _Enabled.Add(DynOS_Opt_GetValue(String("dynos_pack_%d_%d", _ActorIdx, i)));
+                }
+
                 if (_Object->header.gfx.sharedChild) {
                     
                     // Actor index

@@ -771,6 +771,28 @@ static float gfx_adjust_x_for_aspect_ratio(float x) {
     return x * (4.0f / 3.0f) / ((float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height);
 }
 
+#define COLOR_OVERRIDE_BEGIN if (override_colors) {
+#define COLOR_OVERRIDE_END   }
+
+#define SHOULD_OVERRIDE(id) (r == 0x69 && g == id)
+
+#define OVERRIDE_CC_COLOR(id, shade, cond)                           \
+    else if (SHOULD_OVERRIDE(id) && (cond)) {                         \
+        r = intensity * saturn_get_actor(b)->colorcode[id].red[shade]; \
+        g = intensity *saturn_get_actor(b)->colorcode[id].green[shade]; \
+        b = intensity *saturn_get_actor(b)->colorcode[id].blue[shade];   \
+    }
+
+#define OVERRIDE_COLOR(id, src, shade) \
+    else if (SHOULD_OVERRIDE(id)) {     \
+        r = intensity * src.red[shade]   \
+        g = intensity * src.green[shade]  \
+        b = intensity * src.blue[shade]    \
+    }
+
+#define CC_SIDEBURN 12
+#define CHROMAKEY   13
+
 static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *vertices) {
     for (size_t i = 0; i < n_vertices; i++, dest_index++) {
         const Vtx_t *v = &vertices[i].v;
@@ -803,7 +825,7 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             int g = rsp.current_lights[rsp.current_num_lights - 1].col[1];
             int b = rsp.current_lights[rsp.current_num_lights - 1].col[2];
 
-            // here at saturn we love mors and sm64plus 
+            bool override_colors = support_color_codes || use_color_background;
 
             // Detect if these are one of Mario's colors
             // Also check for rounding inconsistencies
@@ -826,81 +848,27 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             bool chroma_floor = (r == 0x3f && g == 0x31 && b == 0x19 && use_color_background || r == 0x3f && g == 0x32 && b == 0x19 && use_color_background);
 
             // Override them lazily
-            if (support_color_codes || chroma_floor) {
-                if (mario_hat) {
-                    r = defaultColorHat.red[1];
-                    g = defaultColorHat.green[1];
-                    b = defaultColorHat.blue[1];
-                }
-                if (mario_overalls) {
-                    r = defaultColorOveralls.red[1];
-                    g = defaultColorOveralls.green[1];
-                    b = defaultColorOveralls.blue[1];
-                }
-                if (mario_gloves) {
-                    r = defaultColorGloves.red[1];
-                    g = defaultColorGloves.green[1];
-                    b = defaultColorGloves.blue[1];
-                }
-                if (mario_shoes) {
-                    r = defaultColorShoes.red[1];
-                    g = defaultColorShoes.green[1];
-                    b = defaultColorShoes.blue[1];
-                }
-                if (mario_skin) {
-                    r = defaultColorSkin.red[1];
-                    g = defaultColorSkin.green[1];
-                    b = defaultColorSkin.blue[1];
-                }
-                if (mario_hair) {
-                    r = defaultColorHair.red[1];
-                    g = defaultColorHair.green[1];
-                    b = defaultColorHair.blue[1];
-                }
-                if (mario_shirt) {
-                    r = sparkColorShirt.red[1];
-                    g = sparkColorShirt.green[1];
-                    b = sparkColorShirt.blue[1];
-                }
-                if (mario_shoulders) {
-                    r = sparkColorShoulders.red[1];
-                    g = sparkColorShoulders.green[1];
-                    b = sparkColorShoulders.blue[1];
-                }
-                if (mario_arms) {
-                    r = sparkColorArms.red[1];
-                    g = sparkColorArms.green[1];
-                    b = sparkColorArms.blue[1];
-                }
-                if (mario_overalls_bottom) {
-                    r = sparkColorOverallsBottom.red[1];
-                    g = sparkColorOverallsBottom.green[1];
-                    b = sparkColorOverallsBottom.blue[1];
-                }
-                if (mario_legtop) {
-                    r = sparkColorLegTop.red[1];
-                    g = sparkColorLegTop.green[1];
-                    b = sparkColorLegTop.blue[1];
-                }
-                if (mario_legbottom) {
-                    r = sparkColorLegBottom.red[1];
-                    g = sparkColorLegBottom.green[1];
-                    b = sparkColorLegBottom.blue[1];
-                }
-                if (creator_mario_sideburn) {
-                    r = defaultColorHair.red[0];
-                    g = defaultColorHair.green[0];
-                    b = defaultColorHair.blue[0];
-                }
-                if (chroma_floor) {
-                    r = chromaColor.red[1];
-                    g = chromaColor.green[1];
-                    b = chromaColor.blue[1];
-                }
-            }
+            float intensity = 1;
+            COLOR_OVERRIDE_BEGIN
+                //                ID                  shade  extra condition
+                OVERRIDE_CC_COLOR(CC_HAT,              true, true         );
+                OVERRIDE_CC_COLOR(CC_OVERALLS,         true, true         );
+                OVERRIDE_CC_COLOR(CC_GLOVES,           true, true         );
+                OVERRIDE_CC_COLOR(CC_SHOES,            true, true         );
+                OVERRIDE_CC_COLOR(CC_SKIN,             true, true         );
+                OVERRIDE_CC_COLOR(CC_HAIR,             true, true         );
+                OVERRIDE_CC_COLOR(CC_SHIRT,            true, support_spark);
+                OVERRIDE_CC_COLOR(CC_SHOULDERS,        true, support_spark);
+                OVERRIDE_CC_COLOR(CC_ARMS,             true, support_spark);
+                OVERRIDE_CC_COLOR(CC_OVERALLS_BOTTOM,  true, support_spark);
+                OVERRIDE_CC_COLOR(CC_LEG_TOP,          true, support_spark);
+                OVERRIDE_CC_COLOR(CC_LEG_BOTTOM,       true, support_spark);
+
+                OVERRIDE_COLOR(CHROMAKEY, chromaColor, true);
+            COLOR_OVERRIDE_END
             
             for (int i = 0; i < rsp.current_num_lights - 1; i++) {
-                float intensity = 0;
+                intensity = 0;
                 intensity += vn->n[0] * rsp.current_lights_coeffs[i][0];
                 intensity += vn->n[1] * rsp.current_lights_coeffs[i][1];
                 intensity += vn->n[2] * rsp.current_lights_coeffs[i][2];
@@ -912,84 +880,27 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
                     int lightb = rsp.current_lights[i].col[2];
 
                     // Override these too
-                    if (support_color_codes || chroma_floor) {
-                        if (mario_hat) {
-                            r += intensity * defaultColorHat.red[0];
-                            g += intensity * defaultColorHat.green[0];
-                            b += intensity * defaultColorHat.blue[0];
-                        }
-                        else if (mario_overalls) {
-                            r += intensity * defaultColorOveralls.red[0];
-                            g += intensity * defaultColorOveralls.green[0];
-                            b += intensity * defaultColorOveralls.blue[0];
-                        }
-                        else if (mario_gloves) {
-                            r += intensity * defaultColorGloves.red[0];
-                            g += intensity * defaultColorGloves.green[0];
-                            b += intensity * defaultColorGloves.blue[0];
-                        }
-                        else if (mario_shoes) {
-                            r += intensity * defaultColorShoes.red[0];
-                            g += intensity * defaultColorShoes.green[0];
-                            b += intensity * defaultColorShoes.blue[0];
-                        }
-                        else if (mario_skin) {
-                            r += intensity * defaultColorSkin.red[0];
-                            g += intensity * defaultColorSkin.green[0];
-                            b += intensity * defaultColorSkin.blue[0];
-                        }
-                        else if (mario_hair) {
-                            r += intensity * defaultColorHair.red[0];
-                            g += intensity * defaultColorHair.green[0];
-                            b += intensity * defaultColorHair.blue[0];
-                        }
-                        else if (mario_shirt) {
-                            r += intensity * sparkColorShirt.red[0];
-                            g += intensity * sparkColorShirt.green[0];
-                            b += intensity * sparkColorShirt.blue[0];
-                        }
-                        else if (mario_shoulders) {
-                            r += intensity * sparkColorShoulders.red[0];
-                            g += intensity * sparkColorShoulders.green[0];
-                            b += intensity * sparkColorShoulders.blue[0];
-                        }
-                        else if (mario_arms) {
-                            r += intensity * sparkColorArms.red[0];
-                            g += intensity * sparkColorArms.green[0];
-                            b += intensity * sparkColorArms.blue[0];
-                        }
-                        else if (mario_overalls_bottom) {
-                            r += intensity * sparkColorOverallsBottom.red[0];
-                            g += intensity * sparkColorOverallsBottom.green[0];
-                            b += intensity * sparkColorOverallsBottom.blue[0];
-                        }
-                        else if (mario_legtop) {
-                            r += intensity * sparkColorLegTop.red[0];
-                            g += intensity * sparkColorLegTop.green[0];
-                            b += intensity * sparkColorLegTop.blue[0];
-                        }
-                        else if (mario_legbottom) {
-                            r += intensity * sparkColorLegBottom.red[0];
-                            g += intensity * sparkColorLegBottom.green[0];
-                            b += intensity * sparkColorLegBottom.blue[0];
-                        }
-                        else if (creator_mario_sideburn) {
-                            r += intensity * 0;
-                            g += intensity * 0;
-                            b += intensity * 0;
-                        }
-                        else if (chroma_floor) {
-                            // No shading
-                            r += 0;
-                            g += 0;
-                            b += 0;
-                        }
-                        else {
+                    COLOR_OVERRIDE_BEGIN
+                        //                ID                   shade  extra condition
+                        OVERRIDE_CC_COLOR(CC_HAT,              false, true         );
+                        OVERRIDE_CC_COLOR(CC_OVERALLS,         false, true         );
+                        OVERRIDE_CC_COLOR(CC_GLOVES,           false, true         );
+                        OVERRIDE_CC_COLOR(CC_SHOES,            false, true         );
+                        OVERRIDE_CC_COLOR(CC_SKIN,             false, true         );
+                        OVERRIDE_CC_COLOR(CC_HAIR,             false, true         );
+                        OVERRIDE_CC_COLOR(CC_SHIRT,            false, support_spark);
+                        OVERRIDE_CC_COLOR(CC_SHOULDERS,        false, support_spark);
+                        OVERRIDE_CC_COLOR(CC_ARMS,             false, support_spark);
+                        OVERRIDE_CC_COLOR(CC_OVERALLS_BOTTOM,  false, support_spark);
+                        OVERRIDE_CC_COLOR(CC_LEG_TOP,          false, support_spark);
+                        OVERRIDE_CC_COLOR(CC_LEG_BOTTOM,       false, support_spark);
+                        else if (!SHOULD_OVERRIDE(CC_SIDEBURN) && !SHOULD_OVERRIDE(CHROMAKEY)) {
                             r += intensity * lightr;
                             g += intensity * lightg;
                             b += intensity * lightb;
                         }
-                    } else {
+                    COLOR_OVERRIDE_END
+                    else {
                         r += intensity * lightr;
                         g += intensity * lightg;
                         b += intensity * lightb;

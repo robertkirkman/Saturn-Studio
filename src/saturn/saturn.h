@@ -48,6 +48,11 @@ struct AnimationState {
     bool loop;
     float speed;
     int id;
+    int frame;
+    int customanim_length;
+    int customanim_numindices;
+    s16* customanim_indices;
+    s16* customanim_values;
 };
 
 struct MouseState {

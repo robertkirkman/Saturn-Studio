@@ -208,7 +208,7 @@ void cmd_timeline_value_bool(CommandContext context) {
     place_keyframe(arg_str("timeline"), arg_int("frame"), arg_int("index"), *(float*)new int(arg_bin("value")));
 }
 void cmd_colorcode(CommandContext context) {
-    ColorCode cc = LoadGSFile(arg_str("path"), "dynos/colocodes");
+    GameSharkCode cc = LoadGSFile(arg_str("path"), "dynos/colocodes");
     ApplyColorCode(cc);
 
     // thank you rise for the refactor 🙏

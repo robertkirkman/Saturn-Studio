@@ -14,3 +14,4 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 - Input recording/playback
 - Recording transparent .webm videos directly in the editor
 - Capturing transparent screenshots
+- Mouse-based camera controls

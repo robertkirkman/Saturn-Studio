@@ -37,26 +37,27 @@
 enum ObjectList
 {
     OBJ_LIST_PLAYER,      //  (0) Mario
-    OBJ_LIST_UNUSED_1,    //  (1) (unused)
-    OBJ_LIST_DESTRUCTIVE, //  (2) things that can be used to destroy other objects, like
+    OBJ_LIST_SATURN,      //  (1) Mario actors for Saturn
+    OBJ_LIST_UNUSED_1,    //  (2) (unused)
+    OBJ_LIST_DESTRUCTIVE, //  (3) things that can be used to destroy other objects, like
                           //      bob-ombs and corkboxes
-    OBJ_LIST_UNUSED_3,    //  (3) (unused)
-    OBJ_LIST_GENACTOR,    //  (4) general actors. most normal 'enemies' or actors are
+    OBJ_LIST_UNUSED_3,    //  (4) (unused)
+    OBJ_LIST_GENACTOR,    //  (5) general actors. most normal 'enemies' or actors are
                           //      on this list. (MIPS, bullet bill, bully, etc)
-    OBJ_LIST_PUSHABLE,    //  (5) pushable actors. This is a group of objects which
+    OBJ_LIST_PUSHABLE,    //  (6) pushable actors. This is a group of objects which
                           //      can push each other around as well as their parent
                           //      objects. (goombas, koopas, spinies)
-    OBJ_LIST_LEVEL,       //  (6) level objects. general level objects such as heart, star
-    OBJ_LIST_UNUSED_7,    //  (7) (unused)
-    OBJ_LIST_DEFAULT,     //  (8) default objects. objects that didnt start with a 00
+    OBJ_LIST_LEVEL,       //  (7) level objects. general level objects such as heart, star
+    OBJ_LIST_UNUSED_7,    //  (8) (unused)
+    OBJ_LIST_DEFAULT,     //  (9) default objects. objects that didnt start with a 00
                           //      command are put here, so this is treated as a default.
-    OBJ_LIST_SURFACE,     //  (9) surface objects. objects that specifically have surface
+    OBJ_LIST_SURFACE,     // (10) surface objects. objects that specifically have surface
                           //      collision and not object collision. (thwomp, whomp, etc)
-    OBJ_LIST_POLELIKE,    // (10) polelike objects. objects that attract or otherwise
+    OBJ_LIST_POLELIKE,    // (11) polelike objects. objects that attract or otherwise
                           //      "cling" Mario similar to a pole action. (hoot,
                           //      whirlpool, trees/poles, etc)
-    OBJ_LIST_SPAWNER,     // (11) spawners
-    OBJ_LIST_UNIMPORTANT, // (12) unimportant objects. objects that will not load
+    OBJ_LIST_SPAWNER,     // (12) spawners
+    OBJ_LIST_UNIMPORTANT, // (13) unimportant objects. objects that will not load
                           //      if there are not enough object slots: they will also
                           //      be manually unloaded to make room for slots if the list
                           //      gets exhausted.

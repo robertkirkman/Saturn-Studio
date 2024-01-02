@@ -205,7 +205,7 @@ void SparkilizeEditor() {
 void ResetColorCode(bool usingModel) {
     uiCcListId = 1;
     // Use Mario's default palette (class init)
-    current_color_code = ColorCode();
+    current_color_code = GameSharkCode();
     ApplyColorCode(current_color_code);
 
     // Model CCs will attempt to select their first color code instead
@@ -358,7 +358,7 @@ void OpenCCSelector() {
             ApplyColorCode(current_color_code);
             if (label_name_lower == "mario") {
                 label_name = "Sample";
-                current_color_code = ColorCode();
+                current_color_code = GameSharkCode();
             }
 
             UpdateEditorFromPalette();
@@ -429,18 +429,18 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
         }
         // Reset
         if (ImGui::Selectable(ICON_FK_UNDO " Reset")) {
-            if (mainName == "Hat, Main")                PasteGameShark("8107EC40 FF00\n8107EC42 0000");
-            if (mainName == "Overalls, Main")           PasteGameShark("8107EC28 0000\n8107EC2A FF00");
-            if (mainName == "Gloves, Main")             PasteGameShark("8107EC58 FFFF\n8107EC5A FF00");
-            if (mainName == "Shoes, Main")              PasteGameShark("8107EC70 721C\n8107EC72 0E00");
-            if (mainName == "Skin, Main")               PasteGameShark("8107EC88 FEC1\n8107EC8A 7900");
-            if (mainName == "Hair, Main")               PasteGameShark("8107ECA0 7306\n8107ECA2 0000");
-            if (mainName == "Shirt, Main")              PasteGameShark("8107ECB8 FFFF\n8107ECBA 0000");
-            if (mainName == "Shoulders, Main")          PasteGameShark("8107ECD0 00FF\n8107ECD2 FF00");
-            if (mainName == "Arms, Main")               PasteGameShark("8107ECE8 00FF\n8107ECEA 7F00");
-            if (mainName == "Overalls (Bottom), Main")  PasteGameShark("8107ED00 FF00\n8107ED02 FF00");
-            if (mainName == "Leg (Top), Main")          PasteGameShark("8107ED18 FF00\n8107ED1A 7F00");
-            if (mainName == "Leg (Bottom), Main")       PasteGameShark("8107ED30 7F00\n8107ED32 FF00");
+            if (mainName == "Hat, Main")                /*PasteGameShark("8107EC40 FF00\n8107EC42 0000")*/;
+            if (mainName == "Overalls, Main")           /*PasteGameShark("8107EC28 0000\n8107EC2A FF00")*/;
+            if (mainName == "Gloves, Main")             /*PasteGameShark("8107EC58 FFFF\n8107EC5A FF00")*/;
+            if (mainName == "Shoes, Main")              /*PasteGameShark("8107EC70 721C\n8107EC72 0E00")*/;
+            if (mainName == "Skin, Main")               /*PasteGameShark("8107EC88 FEC1\n8107EC8A 7900")*/;
+            if (mainName == "Hair, Main")               /*PasteGameShark("8107ECA0 7306\n8107ECA2 0000")*/;
+            if (mainName == "Shirt, Main")              /*PasteGameShark("8107ECB8 FFFF\n8107ECBA 0000")*/;
+            if (mainName == "Shoulders, Main")          /*PasteGameShark("8107ECD0 00FF\n8107ECD2 FF00")*/;
+            if (mainName == "Arms, Main")               /*PasteGameShark("8107ECE8 00FF\n8107ECEA 7F00")*/;
+            if (mainName == "Overalls (Bottom), Main")  /*PasteGameShark("8107ED00 FF00\n8107ED02 FF00")*/;
+            if (mainName == "Leg (Top), Main")          /*PasteGameShark("8107ED18 FF00\n8107ED1A 7F00")*/;
+            if (mainName == "Leg (Bottom), Main")       /*PasteGameShark("8107ED30 7F00\n8107ED32 FF00")*/;
             UpdateEditorFromPalette();
         }
         // Randomize
@@ -483,18 +483,18 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
         }
         // Reset
         if (ImGui::Selectable(ICON_FK_UNDO " Reset")) {
-            if (shadeName == "Hat, Shade")                PasteGameShark("8107EC38 7F00\n8107EC3A 0000");
-            if (shadeName == "Overalls, Shade")           PasteGameShark("8107EC20 0000\n8107EC22 7F00");
-            if (shadeName == "Gloves, Shade")             PasteGameShark("8107EC50 7F7F\n8107EC52 7F00");
-            if (shadeName == "Shoes, Shade")              PasteGameShark("8107EC68 390E\n8107EC6A 0700");
-            if (shadeName == "Skin, Shade")               PasteGameShark("8107EC80 7F60\n8107EC82 3C00");
-            if (shadeName == "Hair, Shade")               PasteGameShark("8107EC98 3903\n8107EC9A 0000");
-            if (shadeName == "Shirt, Shade")              PasteGameShark("8107ECB0 7F7F\n8107ECB2 0000");
-            if (shadeName == "Shoulders, Shade")          PasteGameShark("8107ECC8 007F\n8107ECCA 7F00");
-            if (shadeName == "Arms, Shade")               PasteGameShark("8107ECE0 007F\n8107ECE2 4000");
-            if (shadeName == "Overalls (Bottom), Shade")  PasteGameShark("8107ECF8 7F00\n8107ECFA 7F00");
-            if (shadeName == "Leg (Top), Shade")          PasteGameShark("8107ED10 7F00\n8107ED12 4000");
-            if (shadeName == "Leg (Bottom), Shade")       PasteGameShark("8107ED28 4000\n8107ED2A 7F00");
+            if (shadeName == "Hat, Shade")                /*PasteGameShark("8107EC38 7F00\n8107EC3A 0000")*/;
+            if (shadeName == "Overalls, Shade")           /*PasteGameShark("8107EC20 0000\n8107EC22 7F00")*/;
+            if (shadeName == "Gloves, Shade")             /*PasteGameShark("8107EC50 7F7F\n8107EC52 7F00")*/;
+            if (shadeName == "Shoes, Shade")              /*PasteGameShark("8107EC68 390E\n8107EC6A 0700")*/;
+            if (shadeName == "Skin, Shade")               /*PasteGameShark("8107EC80 7F60\n8107EC82 3C00")*/;
+            if (shadeName == "Hair, Shade")               /*PasteGameShark("8107EC98 3903\n8107EC9A 0000")*/;
+            if (shadeName == "Shirt, Shade")              /*PasteGameShark("8107ECB0 7F7F\n8107ECB2 0000")*/;
+            if (shadeName == "Shoulders, Shade")          /*PasteGameShark("8107ECC8 007F\n8107ECCA 7F00")*/;
+            if (shadeName == "Arms, Shade")               /*PasteGameShark("8107ECE0 007F\n8107ECE2 4000")*/;
+            if (shadeName == "Overalls (Bottom), Shade")  /*PasteGameShark("8107ECF8 7F00\n8107ECFA 7F00")*/;
+            if (shadeName == "Leg (Top), Shade")          /*PasteGameShark("8107ED10 7F00\n8107ED12 4000")*/;
+            if (shadeName == "Leg (Bottom), Shade")       /*PasteGameShark("8107ED28 4000\n8107ED2A 7F00")*/;
             UpdateEditorFromPalette();
         }
         // Randomize
@@ -630,7 +630,7 @@ void OpenCCEditor() {
                                                                                                                                                         ImGuiInputTextFlags_AutoSelectAll);
 
             if (ImGui::Button(ICON_FK_CLIPBOARD " Apply GS Code")) {
-                PasteGameShark(std::string(uiGameShark));
+                //PasteGameShark(std::string(uiGameShark));
                 current_color_code.ParseGameShark();
                 UpdateEditorFromPalette();
             } ImGui::SameLine(); imgui_bundled_help_marker(
