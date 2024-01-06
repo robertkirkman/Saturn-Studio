@@ -33,8 +33,6 @@ public:
         u64 ptr = (u64)this;
         PasteGameShark(GameSharkCode().GameShark, colorcode);
         marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
-        marioObj->oMarioActorPtrHi = (ptr >> 32) & 0xFFFFFFFF;
-        marioObj->oMarioActorPtrLo =  ptr        & 0xFFFFFFFF;
     }
     ~MarioActor() {
         obj_mark_for_deletion(marioObj);
@@ -49,6 +47,7 @@ void saturn_add_actor(MarioActor& actor) {
     MarioActor** actorptr = &mario_actor;
     while (*actorptr) actorptr = &(*actorptr)->next;
     MarioActor* new_actor = new MarioActor(actor);
+    new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
     new_actor->prev = *actorptr;
     *actorptr = new_actor;
 }
@@ -120,4 +119,11 @@ void bhv_mario_actor_loop() {
         o->header.gfx.unk38.animYTrans = 0;
     }
     o->header.gfx.unk38.animFrame = actor->animstate.frame;
+}
+
+void override_cc_color(float* r, float* g, float* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive) {
+    MarioActor* actor = saturn_get_actor(marioIndex);
+    *r = (*r * additive) + intensity * actor->colorcode[ccIndex].red[shadeIndex];
+    *g = (*g * additive) + intensity * actor->colorcode[ccIndex].green[shadeIndex];
+    *b = (*b * additive) + intensity * actor->colorcode[ccIndex].blue[shadeIndex];
 }

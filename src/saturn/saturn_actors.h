@@ -11,7 +11,7 @@ extern "C" {
 #include "include/behavior_data.h"
 }
 
-#define cur_obj_mario_actor(obj) (MarioActor*)(void*)((obj->oMarioActorPtrHi << 32) | obj->oMarioActorPtrLo);
+#define cur_obj_mario_actor(obj) saturn_get_actor(obj->oMarioActorIndex)
 
 class MarioActor;
 
@@ -26,6 +26,7 @@ extern int saturn_actor_sizeof();
 extern "C" {
 #endif
     void bhv_mario_actor_loop();
+    void override_cc_color(float* r, float* g, float* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
 #ifdef __cplusplus
 }
 #endif

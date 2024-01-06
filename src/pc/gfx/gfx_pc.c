@@ -28,6 +28,7 @@
 
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_textures.h"
+#include "saturn/saturn_actors.h"
 
 #include "saturn/imgui/saturn_imgui.h"
 
@@ -771,27 +772,14 @@ static float gfx_adjust_x_for_aspect_ratio(float x) {
     return x * (4.0f / 3.0f) / ((float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height);
 }
 
-#define COLOR_OVERRIDE_BEGIN if (override_colors) {
-#define COLOR_OVERRIDE_END   }
-
-#define SHOULD_OVERRIDE(id) (r == 0x69 && g == id)
-
-#define OVERRIDE_CC_COLOR(id, shade, cond)                           \
-    else if (SHOULD_OVERRIDE(id) && (cond)) {                         \
-        r = intensity * saturn_get_actor(b)->colorcode[id].red[shade]; \
-        g = intensity *saturn_get_actor(b)->colorcode[id].green[shade]; \
-        b = intensity *saturn_get_actor(b)->colorcode[id].blue[shade];   \
-    }
-
-#define OVERRIDE_COLOR(id, src, shade) \
-    else if (SHOULD_OVERRIDE(id)) {     \
-        r = intensity * src.red[shade]   \
-        g = intensity * src.green[shade]  \
-        b = intensity * src.blue[shade]    \
-    }
-
-#define CC_SIDEBURN 12
-#define CHROMAKEY   13
+#define SPARK && support_spark
+#define OVERRIDE cc_overrides[override_index++]
+#define COLOR_CLOSE_TO(R, G, B) \
+(                                \
+    fabsf((R) - (r)) <= 1 &&      \
+    fabsf((G) - (g)) <= 1 &&       \
+    fabsf((B) - (b)) <= 1           \
+)
 
 static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *vertices) {
     for (size_t i = 0; i < n_vertices; i++, dest_index++) {
@@ -827,48 +815,52 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
 
             bool override_colors = support_color_codes || use_color_background;
 
-            // Detect if these are one of Mario's colors
-            // Also check for rounding inconsistencies
-            bool mario_hat = (r == 0x7f && g == 0x00 && b == 0x00) | (r == 0x7E && g == 0x00 && b == 0x00);
-            bool mario_overalls = (r == 0x00 && g == 0x00 && b == 0x7f) | (r == 0x00 && g == 0x00 && b == 0x7E);
-            bool mario_gloves = (r == 0x00 && g == 0x7f && b == 0x00) | (r == 0x00 && g == 0x7E && b == 0x00);
-            bool mario_shoes = (r == 0x39 && g == 0x0e && b == 0x07) | (r == 0x39 && g == 0xD && b == 0x7) | (r == 0x38 && g == 0xD && b == 0x7);
-            bool mario_skin = (r == 0x7f && g == 0x60 && b == 0x3c) | (r == 0x7E && g == 0x60 && b == 0x3C);
-            bool mario_hair = (r == 0x39 && g == 0x03 && b == 0x00) | (r == 0x39 && g == 0x2 && b == 0x00);
-            // Spark
-            bool mario_shirt = ((r == 0x7f && g == 0x7f && b == 0x00) | (r == 0x7E && g == 0x7E && b == 0x00)) & support_spark;
-            bool mario_shoulders = ((r == 0x00 && g == 0x7f && b == 0x7f) | (r == 0x00 && g == 0x7E && b == 0x7E)) & support_spark;
-            bool mario_arms = ((r == 0x00 && g == 0x7f && b == 0x40) | (r == 0x00 && g == 0x7F && b == 0x3F)) & support_spark;
-            bool mario_overalls_bottom = ((r == 0x7f && g == 0x00 && b == 0x7f) | (r == 0x7E && g == 0x00 && b == 0x7E)) & support_spark;
-            bool mario_legtop = ((r == 0x7f && g == 0x00 && b == 0x40) | (r == 0x7F && g == 0x00 && b == 0x3F)) & support_spark;
-            bool mario_legbottom = ((r == 0x40 && g == 0x00 && b == 0x7f) | (r == 0x3F && g == 0x00 && b == 0x7F)) & support_spark;
+            bool cc_overrides[12];
+            int override_index = 0;
 
-            // Extras
-            bool creator_mario_sideburn = (r == 0x73 && g == 0x06 && b == 0x00) | (r == 0x73 && g == 0x05 && b == 0x00);
-            bool chroma_floor = (r == 0x3f && g == 0x31 && b == 0x19 && use_color_background || r == 0x3f && g == 0x32 && b == 0x19 && use_color_background);
+            OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x00, 0x00)      ;      // hat
+            OVERRIDE = COLOR_CLOSE_TO(0x00, 0x00, 0x7F)      ;      // overalls
+            OVERRIDE = COLOR_CLOSE_TO(0x00, 0x7F, 0x00)      ;      // gloves
+            OVERRIDE = COLOR_CLOSE_TO(0x39, 0x0E, 0x07)      ;      // shoes
+            OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x60, 0x3C)      ;      // skin
+            OVERRIDE = COLOR_CLOSE_TO(0x39, 0x03, 0x00)      ;      // hair
+            OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x7F, 0x00) SPARK;      // shirt
+            OVERRIDE = COLOR_CLOSE_TO(0x00, 0x7F, 0x7F) SPARK;      // shoulders
+            OVERRIDE = COLOR_CLOSE_TO(0x00, 0x7F, 0x40) SPARK;      // arms
+            OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x00, 0x7f) SPARK;      // overalls bottom
+            OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x00, 0x40) SPARK;      // leg top
+            OVERRIDE = COLOR_CLOSE_TO(0x40, 0x00, 0x7F) SPARK;      // leg bottom
+            bool mario_sideburn = COLOR_CLOSE_TO(0x73, 0x06, 0x00); // creator mario sideburn
+            bool chroma_floor   = COLOR_CLOSE_TO(0x3F, 0x31, 0x39); // chroma floor
+            cc_overrides[CC_HAIR] |= mario_sideburn;
 
-            // Override them lazily
-            float intensity = 1;
-            COLOR_OVERRIDE_BEGIN
-                //                ID                  shade  extra condition
-                OVERRIDE_CC_COLOR(CC_HAT,              true, true         );
-                OVERRIDE_CC_COLOR(CC_OVERALLS,         true, true         );
-                OVERRIDE_CC_COLOR(CC_GLOVES,           true, true         );
-                OVERRIDE_CC_COLOR(CC_SHOES,            true, true         );
-                OVERRIDE_CC_COLOR(CC_SKIN,             true, true         );
-                OVERRIDE_CC_COLOR(CC_HAIR,             true, true         );
-                OVERRIDE_CC_COLOR(CC_SHIRT,            true, support_spark);
-                OVERRIDE_CC_COLOR(CC_SHOULDERS,        true, support_spark);
-                OVERRIDE_CC_COLOR(CC_ARMS,             true, support_spark);
-                OVERRIDE_CC_COLOR(CC_OVERALLS_BOTTOM,  true, support_spark);
-                OVERRIDE_CC_COLOR(CC_LEG_TOP,          true, support_spark);
-                OVERRIDE_CC_COLOR(CC_LEG_BOTTOM,       true, support_spark);
+            override_index = 0;
 
-                OVERRIDE_COLOR(CHROMAKEY, chromaColor, true);
-            COLOR_OVERRIDE_END
+            if (override_colors) {
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, 0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      0, 1, 1, false);
+
+                if (chroma_floor && use_color_background) {
+                    r = chromaColor.red[1];
+                    g = chromaColor.green[1];
+                    b = chromaColor.blue[1];
+                }
+            }
+
+            override_index = 0;
             
             for (int i = 0; i < rsp.current_num_lights - 1; i++) {
-                intensity = 0;
+                float intensity = 0;
                 intensity += vn->n[0] * rsp.current_lights_coeffs[i][0];
                 intensity += vn->n[1] * rsp.current_lights_coeffs[i][1];
                 intensity += vn->n[2] * rsp.current_lights_coeffs[i][2];
@@ -880,26 +872,26 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
                     int lightb = rsp.current_lights[i].col[2];
 
                     // Override these too
-                    COLOR_OVERRIDE_BEGIN
-                        //                ID                   shade  extra condition
-                        OVERRIDE_CC_COLOR(CC_HAT,              false, true         );
-                        OVERRIDE_CC_COLOR(CC_OVERALLS,         false, true         );
-                        OVERRIDE_CC_COLOR(CC_GLOVES,           false, true         );
-                        OVERRIDE_CC_COLOR(CC_SHOES,            false, true         );
-                        OVERRIDE_CC_COLOR(CC_SKIN,             false, true         );
-                        OVERRIDE_CC_COLOR(CC_HAIR,             false, true         );
-                        OVERRIDE_CC_COLOR(CC_SHIRT,            false, support_spark);
-                        OVERRIDE_CC_COLOR(CC_SHOULDERS,        false, support_spark);
-                        OVERRIDE_CC_COLOR(CC_ARMS,             false, support_spark);
-                        OVERRIDE_CC_COLOR(CC_OVERALLS_BOTTOM,  false, support_spark);
-                        OVERRIDE_CC_COLOR(CC_LEG_TOP,          false, support_spark);
-                        OVERRIDE_CC_COLOR(CC_LEG_BOTTOM,       false, support_spark);
-                        else if (!SHOULD_OVERRIDE(CC_SIDEBURN) && !SHOULD_OVERRIDE(CHROMAKEY)) {
+                    if (override_colors) {
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, 0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      0, 0, intensity, true);
+
+                        else if (!(mario_sideburn || chroma_floor)) {
                             r += intensity * lightr;
                             g += intensity * lightg;
                             b += intensity * lightb;
                         }
-                    COLOR_OVERRIDE_END
+                    }
                     else {
                         r += intensity * lightr;
                         g += intensity * lightg;
