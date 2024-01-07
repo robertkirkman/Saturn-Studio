@@ -255,6 +255,11 @@ void SaveGSFile(GameSharkCode colorCode, std::string filePath) {
 }
 
 void DeleteGSFile(std::string filePath) {
+    // Disallow paths that reach out of bounds
+    if (filePath.find("/colorcodes/") == std::string::npos ||
+        filePath.find("../") != std::string::npos)
+            return;
+
     if (fs::exists(filePath))
         fs::remove(filePath);
 }
