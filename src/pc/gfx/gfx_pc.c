@@ -34,6 +34,9 @@
 
 #include "src/engine/geo_layout.h"
 
+#include "game/object_list_processor.h"
+#include "include/object_fields.h"
+
 #define SUPPORT_CHECK(x) assert(x)
 
 // SCALE_M_N: upscale/downscale M-bit integer to N-bit
@@ -781,6 +784,9 @@ static float gfx_adjust_x_for_aspect_ratio(float x) {
     fabsf((B) - (b)) <= 1           \
 )
 
+#define COLOR_SHADE 1, 1,         false
+#define COLOR_MAIN  0, intensity, true
+
 static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *vertices) {
     for (size_t i = 0; i < n_vertices; i++, dest_index++) {
         const Vtx_t *v = &vertices[i].v;
@@ -835,20 +841,21 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             cc_overrides[CC_HAIR] |= mario_sideburn;
 
             override_index = 0;
+            int marioIndex = gCurrentObject->oMarioActorIndex;
 
             if (override_colors) {
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, 0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         0, 1, 1, false);
-                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      0, 1, 1, false);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         marioIndex, COLOR_SHADE);
+                if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      marioIndex, COLOR_SHADE);
 
                 if (chroma_floor && use_color_background) {
                     r = chromaColor.red[1];
@@ -873,18 +880,18 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
 
                     // Override these too
                     if (override_colors) {
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, 0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         0, 0, intensity, true);
-                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      0, 0, intensity, true);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAT,             marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS,        marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_GLOVES,          marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOES,           marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SKIN,            marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_HAIR,            marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHIRT,           marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_SHOULDERS,       marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_ARMS,            marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_OVERALLS_BOTTOM, marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_TOP,         marioIndex, COLOR_MAIN);
+                        if (OVERRIDE) override_cc_color(&r, &g, &b, CC_LEG_BOTTOM,      marioIndex, COLOR_MAIN);
 
                         else if (!(mario_sideburn || chroma_floor)) {
                             r += intensity * lightr;
@@ -1617,6 +1624,10 @@ static void gfx_run_dl(Gfx* cmd) {
         
         switch (opcode) {
             // RSP commands:
+            case G_SETOBJ:
+                gCurrentObject = (struct Object*)seg_addr(cmd->words.w1);
+                printf("G_SETOBJ called on obj %p\n", gCurrentObject);
+                break;
             case G_MTX:
 #ifdef F3DEX_GBI_2
                 gfx_sp_matrix(C0(0, 8) ^ G_MTX_PUSH, (const int32_t *) seg_addr(cmd->words.w1));

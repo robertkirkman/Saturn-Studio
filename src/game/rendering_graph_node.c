@@ -13,6 +13,7 @@
 #include "saturn/saturn.h"
 #include "saturn/saturn_animations.h"
 #include "pc/configfile.h"
+#include "object_list_processor.h"
 
 /**
  * This file contains the code that processes the scene graph for rendering.
@@ -634,7 +635,12 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
  */
 static void geo_process_display_list(struct GraphNodeDisplayList *node) {
     if (node->displayList != NULL) {
-        geo_append_display_list(node->displayList, node->node.flags >> 8);
+        Gfx* gfx = alloc_display_list(sizeof(Gfx) * 3);
+        Gfx* head = gfx;
+        gSPSetObject(head++, gCurrentObject);
+        gSPDisplayList(head++, node->displayList);
+        gSPEndDisplayList(head++);
+        geo_append_display_list(gfx, node->node.flags >> 8);
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
@@ -1110,6 +1116,8 @@ static void geo_process_object(struct Object *node) {
     Mat4 mtxf;
     s32 hasAnimation = (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0;
     Vec3f scaleInterpolated;
+
+    gCurrentObject = node;
 
     if (node->header.gfx.unk18 == gCurGraphNodeRoot->areaIndex) {
         if (node->header.gfx.throwMatrix != NULL) {

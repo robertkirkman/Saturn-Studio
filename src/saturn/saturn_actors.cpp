@@ -53,33 +53,33 @@ void saturn_add_actor(MarioActor& actor) {
 }
 
 void saturn_remove_actor(int index) {
-    MarioActor** actorptr = &mario_actor;
+    MarioActor* actorptr = mario_actor;
     for (int i = 0; i < index; i++) {
-        if (!*actorptr) return;
-        actorptr = &(*actorptr)->next;
+        if (!actorptr) return;
+        actorptr = actorptr->next;
     }
-    MarioActor* prev = (*actorptr)->prev;
-    MarioActor* next = (*actorptr)->next;
+    MarioActor* prev = actorptr->prev;
+    MarioActor* next = actorptr->next;
     if (prev) prev->next = next;
     if (next) next->prev = prev;
-    delete *actorptr;
+    delete actorptr;
 }
 
 MarioActor* saturn_get_actor(int index) {
-    MarioActor** actorptr = &mario_actor;
+    MarioActor* actorptr = mario_actor;
     for (int i = 0; i < index; i++) {
-        if (!*actorptr) return nullptr;
-        actorptr = &(*actorptr)->next;
+        if (!actorptr) return nullptr;
+        actorptr = actorptr->next;
     }
-    return *actorptr;
+    return actorptr;
 }
 
 int saturn_actor_indexof(MarioActor* actor) {
-    MarioActor** actorptr = &mario_actor;
+    MarioActor* actorptr = mario_actor;
     int idx = 0;
-    while (*actorptr) {
-        if (*actorptr == actor) return idx;
-        actorptr = &(*actorptr)->next;
+    while (actorptr) {
+        if (actorptr == actor) return idx;
+        actorptr = actorptr->next;
         idx++;
     }
     return idx;
@@ -121,8 +121,9 @@ void bhv_mario_actor_loop() {
     o->header.gfx.unk38.animFrame = actor->animstate.frame;
 }
 
-void override_cc_color(float* r, float* g, float* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive) {
+void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive) {
     MarioActor* actor = saturn_get_actor(marioIndex);
+    if (actor == nullptr) return;
     *r = (*r * additive) + intensity * actor->colorcode[ccIndex].red[shadeIndex];
     *g = (*g * additive) + intensity * actor->colorcode[ccIndex].green[shadeIndex];
     *b = (*b * additive) + intensity * actor->colorcode[ccIndex].blue[shadeIndex];
