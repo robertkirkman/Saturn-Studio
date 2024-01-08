@@ -1,6 +1,8 @@
 #ifndef SaturnActors
 #define SaturnActors
 
+#include "include/types.h"
+
 #ifdef __cplusplus
 
 #include "saturn/saturn.h"
@@ -14,8 +16,6 @@ extern "C" {
 #include "include/object_fields.h"
 #include "include/behavior_data.h"
 }
-
-#define cur_obj_mario_actor(obj) saturn_get_actor(obj->oMarioActorIndex)
 
 class MarioActor {
 public:
@@ -57,6 +57,7 @@ extern "C" {
 #endif
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
+    bool saturn_rotate_head(Vec3s rotation);
 #ifdef __cplusplus
 }
 #endif
