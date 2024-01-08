@@ -107,7 +107,7 @@ void DynOS_Gfx_Update() {
         for (s32 list : { OBJ_LIST_PLAYER, OBJ_LIST_SATURN, OBJ_LIST_DESTRUCTIVE, OBJ_LIST_GENACTOR, OBJ_LIST_PUSHABLE, OBJ_LIST_LEVEL, OBJ_LIST_DEFAULT, OBJ_LIST_SURFACE, OBJ_LIST_POLELIKE, OBJ_LIST_UNIMPORTANT }) {
             struct Object *_Head = (struct Object *) &gObjectLists[list];
             for (struct Object *_Object = (struct Object *) _Head->header.next; _Object != _Head; _Object = (struct Object *) _Object->header.next) {
-                MarioActor* _Actor = cur_obj_mario_actor(_Object);
+                MarioActor* _Actor = saturn_get_actor(_Object->oMarioActorIndex);
                 if (_Actor == nullptr) continue;
                 int _ActorIdx = saturn_actor_indexof(_Actor);
 

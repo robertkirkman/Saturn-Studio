@@ -59,7 +59,7 @@ int saturn_actor_sizeof() {
 }
 
 void bhv_mario_actor_loop() {
-    MarioActor* actor = cur_obj_mario_actor(o);
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     o->oPosX = actor->x;
     o->oPosY = actor->y;
     o->oPosZ = actor->z;
@@ -96,4 +96,15 @@ void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int 
     *r = (*r * additive) + intensity * actor->colorcode[ccIndex].red[shadeIndex];
     *g = (*g * additive) + intensity * actor->colorcode[ccIndex].green[shadeIndex];
     *b = (*b * additive) + intensity * actor->colorcode[ccIndex].blue[shadeIndex];
+}
+
+bool saturn_rotate_head(Vec3s rotation) {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (actor != nullptr) vec3s_set(rotation,
+        actor->head_rot_x,
+        actor->head_rot_y,
+        0
+    );
+    else vec3s_set(rotation, 0, 0, 0);
+    return actor != nullptr;
 }

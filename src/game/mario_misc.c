@@ -26,6 +26,7 @@
 #include "saturn/saturn_textures.h"
 
 #include "saturn/saturn.h"
+#include "saturn/saturn_actors.h"
 
 #define TOAD_STAR_1_REQUIREMENT 12
 #define TOAD_STAR_2_REQUIREMENT 25
@@ -447,8 +448,8 @@ Gfx *geo_mario_head_rotation(s32 callContext, struct GraphNode *node, UNUSED Mat
             rotNode->rotation[1] = bodyState->headAngle[2];
             rotNode->rotation[2] = bodyState->headAngle[0];
         } else {
-            vec3s_set(bodyState->headAngle, 0, 0, 0);
-            vec3s_set(rotNode->rotation, 0, 0, 0);
+            if (!saturn_rotate_head(bodyState->headAngle)) vec3s_set(bodyState->headAngle, 0, 0, 0);
+            vec3s_copy(rotNode->rotation, bodyState->headAngle);
         }
     }
     return NULL;
