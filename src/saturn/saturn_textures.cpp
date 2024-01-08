@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 
 #include "saturn/saturn.h"
+#include "saturn/saturn_actors.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/imgui/saturn_imgui.h"
 #include "saturn/imgui/saturn_imgui_chroma.h"
@@ -19,9 +20,11 @@
 #include "pc/configfile.h"
 
 extern "C" {
+#include "include/object_fields.h"
 #include "game/mario.h"
 #include "game/camera.h"
 #include "game/level_update.h"
+#include "game/object_list_processor.h"
 #include "sm64.h"
 #include "pc/gfx/gfx_pc.h"
 #include "levels/castle_inside/header.h"
@@ -176,63 +179,6 @@ const void* saturn_bind_texture(const void* input) {
     
     std::string texName = inputTexture;
 
-    // Custom model expressions
-    if (current_model.Active && texName.find("saturn_") != std::string::npos) {
-        for (int i = 0; i < current_model.Expressions.size(); i++) {
-            Expression expression = current_model.Expressions[i];
-            if (expression.CurrentIndex < 0) return input;
-            // Checks if the incoming texture has the expression's "key"
-            // This could be "saturn_eye", "saturn_mouth", etc.
-            if (expression.PathHasReplaceKey(texName, "saturn_")) {
-                outputTexture = stack_to_heap(expression.Textures[expression.CurrentIndex].GetRelativePath())->c_str();
-                const void* output = static_cast<const void*>(outputTexture);
-                return output;
-            }
-        }
-    }
-
-    // Vanilla eye textures
-    if (current_model.Expressions.size() > 0) {
-        if (custom_eyes_enabled && current_model.UsingVanillaEyes() && current_model.Expressions[0].Name == "eyes") {
-            if (texName.find("saturn_eye") != string::npos ||
-                // Unused vanilla textures
-                texName == "actors/mario/mario_eyes_left_unused.rgba16.png" ||
-                texName == "actors/mario/mario_eyes_right_unused.rgba16.png" ||
-                texName == "actors/mario/mario_eyes_up_unused.rgba16.png" ||
-                texName == "actors/mario/mario_eyes_down_unused.rgba16.png") {
-                    if (current_model.Expressions[0].Textures.size() > 0) {
-                        outputTexture = stack_to_heap(current_model.Expressions[0].Textures[current_model.Expressions[0].CurrentIndex].GetRelativePath())->c_str();
-                        const void* output = static_cast<const void*>(outputTexture);
-                        return output;
-                    }
-            }
-        }
-    }
-
-    // Non-model custom blink cycle
-    /*if (force_blink && eye_array.size() > 0 && is_replacing_eyes) {
-        if (texName == "actors/mario/mario_eyes_center.rgba16.png" && blink_eye_1 != "") {
-            outputTexture = blink_eye_1.c_str();
-            const void* output = static_cast<const void*>(outputTexture);
-            return output;
-        } else if (texName == "actors/mario/mario_eyes_half_closed.rgba16.png" && blink_eye_2 != "") {
-            outputTexture = blink_eye_2.c_str();
-            const void* output = static_cast<const void*>(outputTexture);
-            return output;
-        } else if (texName == "actors/mario/mario_eyes_closed.rgba16.png" && blink_eye_3 != "") {
-            outputTexture = blink_eye_3.c_str();
-            const void* output = static_cast<const void*>(outputTexture);
-            return output;
-        }
-    }*/
-
-    // Non-model cap logo/emblem
-
-    if (show_vmario_emblem) {
-        if (texName == "actors/mario/no_m.rgba16.png")
-            return "actors/mario/mario_logo.rgba16.png";
-    }
-
     // AUTO-CHROMA
 
     // Overwrite skybox
@@ -323,6 +269,66 @@ const void* saturn_bind_texture(const void* input) {
 
     if (texName.find("textures/skyboxes/cloud.") != string::npos)
         return static_cast<const void*>(stack_to_heap(texName.replace(18, 5, "cloud_floor"))->c_str());
+
+    MarioActor* actor = saturn_get_actor(gCurrentObject->oMarioActorIndex);
+    if (actor == nullptr) return input;
+
+    // Custom model expressions
+    if (actor->model.Active && texName.find("saturn_") != std::string::npos) {
+        for (int i = 0; i < actor->model.Expressions.size(); i++) {
+            Expression expression = actor->model.Expressions[i];
+            if (expression.CurrentIndex < 0) return input;
+            // Checks if the incoming texture has the expression's "key"
+            // This could be "saturn_eye", "saturn_mouth", etc.
+            if (expression.PathHasReplaceKey(texName, "saturn_")) {
+                outputTexture = stack_to_heap(expression.Textures[expression.CurrentIndex].GetRelativePath())->c_str();
+                const void* output = static_cast<const void*>(outputTexture);
+                return output;
+            }
+        }
+    }
+
+    // Vanilla eye textures
+    if (actor->model.Expressions.size() > 0) {
+        if (custom_eyes_enabled && actor->model.UsingVanillaEyes() && actor->model.Expressions[0].Name == "eyes") {
+            if (texName.find("saturn_eye") != string::npos ||
+                // Unused vanilla textures
+                texName == "actors/mario/mario_eyes_left_unused.rgba16.png" ||
+                texName == "actors/mario/mario_eyes_right_unused.rgba16.png" ||
+                texName == "actors/mario/mario_eyes_up_unused.rgba16.png" ||
+                texName == "actors/mario/mario_eyes_down_unused.rgba16.png") {
+                    if (actor->model.Expressions[0].Textures.size() > 0) {
+                        outputTexture = stack_to_heap(actor->model.Expressions[0].Textures[actor->model.Expressions[0].CurrentIndex].GetRelativePath())->c_str();
+                        const void* output = static_cast<const void*>(outputTexture);
+                        return output;
+                    }
+            }
+        }
+    }
+
+    // Non-model custom blink cycle
+    /*if (force_blink && eye_array.size() > 0 && is_replacing_eyes) {
+        if (texName == "actors/mario/mario_eyes_center.rgba16.png" && blink_eye_1 != "") {
+            outputTexture = blink_eye_1.c_str();
+            const void* output = static_cast<const void*>(outputTexture);
+            return output;
+        } else if (texName == "actors/mario/mario_eyes_half_closed.rgba16.png" && blink_eye_2 != "") {
+            outputTexture = blink_eye_2.c_str();
+            const void* output = static_cast<const void*>(outputTexture);
+            return output;
+        } else if (texName == "actors/mario/mario_eyes_closed.rgba16.png" && blink_eye_3 != "") {
+            outputTexture = blink_eye_3.c_str();
+            const void* output = static_cast<const void*>(outputTexture);
+            return output;
+        }
+    }*/
+
+    // Non-model cap logo/emblem
+
+    if (!actor->show_emblem) {
+        if (texName == "actors/mario/no_m.rgba16.png")
+            return "actors/mario/mario_logo.rgba16.png";
+    }
 
     return input;
 }

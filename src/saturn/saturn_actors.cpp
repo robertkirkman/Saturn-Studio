@@ -1,6 +1,3 @@
-#include "saturn.h"
-#include "saturn_colors.h"
-#include "saturn_models.h"
 #include "saturn_actors.h"
 
 extern "C" {
@@ -10,34 +7,6 @@ extern "C" {
 #include "engine/math_util.h"
 #include "game/memory.h"
 }
-
-class MarioActor {
-public:
-    float x = 0;
-    float y = 0;
-    float z = 0;
-    float angle = 0;
-    float xScale = 1;
-    float yScale = 1;
-    float zScale = 1;
-    bool show_emblem = true;
-    int head_rot_x = 0;
-    int head_rot_y = 0;
-    Model model = Model();
-    ColorCode colorcode;
-    struct AnimationState animstate;
-    MarioActor* prev = nullptr;
-    MarioActor* next = nullptr;
-    struct Object* marioObj = nullptr;
-    MarioActor() {
-        u64 ptr = (u64)this;
-        PasteGameShark(GameSharkCode().GameShark, colorcode);
-        marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
-    }
-    ~MarioActor() {
-        obj_mark_for_deletion(marioObj);
-    }
-};
 
 #define o gCurrentObject
 

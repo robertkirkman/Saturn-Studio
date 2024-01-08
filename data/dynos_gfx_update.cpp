@@ -1,5 +1,5 @@
-#include "dynos.cpp.h"
 #include "saturn/saturn_actors.h"
+#include "dynos.cpp.h"
 extern "C" {
 #include "object_fields.h"
 #include "game/level_update.h"
