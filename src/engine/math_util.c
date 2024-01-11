@@ -925,3 +925,20 @@ u32 string_hash(const char* str, int off, int len) {
     }
     return out;
 }
+
+void get_raycast_dir(Vec3f dest, s16 yaw, s16 pitch, float fov, float aspect_ratio, float x, float y) {
+    vec3f_set(dest,
+        sins(yaw) * coss(pitch),
+        sins(pitch),
+        coss(yaw) * coss(pitch)
+    );
+
+    float tan_fov = tanf((fov / 1.75) / 180 * 3.14159265359f);
+    float h = (2 * x - 1) * tan_fov * aspect_ratio;
+    float v = (2 * y - 1) * tan_fov;
+    dest[0] -= h * coss(yaw);
+    dest[1] -= v;
+    dest[2] += h * sins(yaw);
+
+    vec3f_normalize(dest);
+}

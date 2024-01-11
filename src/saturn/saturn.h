@@ -64,6 +64,7 @@ struct MouseState {
     int y_orig;
     int held;
     int pressed;
+    int released;
     float scrollwheel;
     float dist_travelled;
     bool update_camera;

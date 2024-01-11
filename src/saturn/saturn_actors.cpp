@@ -12,7 +12,7 @@ extern "C" {
 
 MarioActor* gMarioActorList = nullptr;
 
-void saturn_spawn_actor(float x, float y, float z) {
+MarioActor* saturn_spawn_actor(float x, float y, float z) {
     MarioActor actor;
     actor.x = x;
     actor.y = y;
@@ -23,16 +23,17 @@ void saturn_spawn_actor(float x, float y, float z) {
     actor.animstate.speed = 1;
     actor.animstate.id = MARIO_ANIM_FIRST_PERSON;
     actor.animstate.frame = 0;
-    saturn_add_actor(actor);
+    return saturn_add_actor(actor);
 }
 
-void saturn_add_actor(MarioActor& actor) {
+MarioActor* saturn_add_actor(MarioActor& actor) {
     MarioActor** actorptr = &gMarioActorList;
     while (*actorptr) actorptr = &(*actorptr)->next;
     MarioActor* new_actor = new MarioActor(actor);
     new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
     new_actor->prev = *actorptr;
     *actorptr = new_actor;
+    return new_actor;
 }
 
 void saturn_remove_actor(int index) {

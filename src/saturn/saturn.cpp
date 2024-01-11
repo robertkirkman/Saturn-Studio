@@ -26,6 +26,7 @@
 
 extern "C" {
 #include "audio/external.h"
+#include "engine/surface_collision.h"
 }
 
 bool mario_exists;
@@ -232,6 +233,7 @@ void saturn_update() {
         mouse_state.held |= io.MouseDown[i] << i;
     }
     mouse_state.pressed = mouse_state.held & ~prev_mouse_state.held;
+    mouse_state.released = ~mouse_state.held & prev_mouse_state.held;
     mouse_state.x_diff = mouse_state.x - prev_mouse_state.x;
     mouse_state.y_diff = mouse_state.y - prev_mouse_state.y;
 
@@ -309,9 +311,6 @@ void saturn_update() {
             gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
             gLakituState.yaw = gCamera->yaw;
         }
-        saturn_spawn_actor(-100, 100, 0);
-        saturn_spawn_actor(0, 100, 0);
-        saturn_spawn_actor(100, 100, 0);
     }
 
     // Keyframes
@@ -400,6 +399,26 @@ void saturn_update() {
                 gMarioState->marioObj->header.gfx.unk38.animAccel = current_animation.speed * 65535;
 
             if (using_chainer && is_anim_playing) saturn_run_chainer();
+        }
+    }
+
+    if (mouse_state.dist_travelled <= 3) {
+        if (mouse_state.released & MOUSEBTN_MASK_L) {
+            Vec3f dir, hit;
+            s16 yaw, pitch;
+            float dist;
+            float x = (mouse_state.x - game_viewport[0]) / game_viewport[2];
+            float y = (mouse_state.y - game_viewport[1]) / game_viewport[3];
+            struct Surface* surface = nullptr;
+            vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
+            get_raycast_dir(dir, yaw, pitch, camera_fov, gfx_current_dimensions.aspect_ratio, x, y);
+            vec3f_mul(dir, 8000);
+            find_surface_on_ray(gCamera->pos, dir, &surface, hit);
+            vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
+            saturn_spawn_actor(hit[0], hit[1], hit[2])->angle = yaw;
+        }
+        if (mouse_state.released & MOUSEBTN_MASK_R) {
+
         }
     }
 

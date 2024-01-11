@@ -44,8 +44,8 @@ public:
 
 extern MarioActor* mario_actor;
 
-extern void saturn_spawn_actor(float x, float y, float z);
-extern void saturn_add_actor(MarioActor& actor);
+extern MarioActor* saturn_spawn_actor(float x, float y, float z);
+extern MarioActor* saturn_add_actor(MarioActor& actor);
 extern void saturn_remove_actor(int index);
 extern MarioActor* saturn_get_actor(int index);
 extern int saturn_actor_indexof(MarioActor* actor);
