@@ -12,6 +12,20 @@ extern "C" {
 
 MarioActor* mario_actor = nullptr;
 
+void saturn_spawn_actor(float x, float y, float z) {
+    MarioActor actor;
+    actor.x = x;
+    actor.y = y;
+    actor.z = z;
+    actor.animstate.custom = false;
+    actor.animstate.hang = false;
+    actor.animstate.loop = true;
+    actor.animstate.speed = 1;
+    actor.animstate.id = MARIO_ANIM_FIRST_PERSON;
+    actor.animstate.frame = 0;
+    saturn_add_actor(actor);
+}
+
 void saturn_add_actor(MarioActor& actor) {
     MarioActor** actorptr = &mario_actor;
     while (*actorptr) actorptr = &(*actorptr)->next;
@@ -31,6 +45,7 @@ void saturn_remove_actor(int index) {
     MarioActor* next = actorptr->next;
     if (prev) prev->next = next;
     if (next) next->prev = prev;
+    obj_mark_for_deletion(actorptr->marioObj);
     delete actorptr;
 }
 
@@ -59,6 +74,7 @@ int saturn_actor_sizeof() {
 }
 
 void bhv_mario_actor_loop() {
+    std::cout << "processing actor " << o->oMarioActorIndex << std::endl;
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     o->oPosX = actor->x;
     o->oPosY = actor->y;
@@ -87,6 +103,13 @@ void bhv_mario_actor_loop() {
         o->header.gfx.unk38.animAccel = 0;
         o->header.gfx.unk38.animYTrans = 0;
     }
+    int length = o->header.gfx.unk38.curAnim->unk08 - 1;
+    actor->animstate.frame += actor->animstate.speed;
+    if (actor->animstate.frame >= length) {
+        if (actor->animstate.loop) actor->animstate.frame -= length;
+        else actor->animstate.frame = length - 1;
+    }
+    o->header.gfx.unk38.animYTrans = 0xBD;
     o->header.gfx.unk38.animFrame = actor->animstate.frame;
 }
 

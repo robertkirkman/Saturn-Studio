@@ -40,13 +40,11 @@ public:
         PasteGameShark(GameSharkCode().GameShark, colorcode);
         marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
     }
-    ~MarioActor() {
-        obj_mark_for_deletion(marioObj);
-    }
 };
 
 extern MarioActor* mario_actor;
 
+extern void saturn_spawn_actor(float x, float y, float z);
 extern void saturn_add_actor(MarioActor& actor);
 extern void saturn_remove_actor(int index);
 extern MarioActor* saturn_get_actor(int index);

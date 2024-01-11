@@ -22,6 +22,7 @@
 #include "saturn/cmd/saturn_cmd.h"
 #include "saturn/saturn_rom_extract.h"
 #include "saturn/saturn_timelines.h"
+#include "saturn/saturn_actors.h"
 
 extern "C" {
 #include "audio/external.h"
@@ -308,6 +309,9 @@ void saturn_update() {
             gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
             gLakituState.yaw = gCamera->yaw;
         }
+        saturn_spawn_actor(-100, 100, 0);
+        saturn_spawn_actor(0, 100, 0);
+        saturn_spawn_actor(100, 100, 0);
     }
 
     // Keyframes

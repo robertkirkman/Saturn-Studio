@@ -325,7 +325,7 @@ const void* saturn_bind_texture(const void* input) {
 
     // Non-model cap logo/emblem
 
-    if (!actor->show_emblem) {
+    if (actor->show_emblem) {
         if (texName == "actors/mario/no_m.rgba16.png")
             return "actors/mario/mario_logo.rgba16.png";
     }

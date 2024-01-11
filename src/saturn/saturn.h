@@ -48,7 +48,7 @@ struct AnimationState {
     bool loop;
     float speed;
     int id;
-    int frame;
+    float frame;
     int customanim_length;
     int customanim_numindices;
     s16* customanim_indices;
