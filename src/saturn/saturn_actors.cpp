@@ -10,7 +10,7 @@ extern "C" {
 
 #define o gCurrentObject
 
-MarioActor* mario_actor = nullptr;
+MarioActor* gMarioActorList = nullptr;
 
 void saturn_spawn_actor(float x, float y, float z) {
     MarioActor actor;
@@ -27,7 +27,7 @@ void saturn_spawn_actor(float x, float y, float z) {
 }
 
 void saturn_add_actor(MarioActor& actor) {
-    MarioActor** actorptr = &mario_actor;
+    MarioActor** actorptr = &gMarioActorList;
     while (*actorptr) actorptr = &(*actorptr)->next;
     MarioActor* new_actor = new MarioActor(actor);
     new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
@@ -36,7 +36,7 @@ void saturn_add_actor(MarioActor& actor) {
 }
 
 void saturn_remove_actor(int index) {
-    MarioActor* actorptr = mario_actor;
+    MarioActor* actorptr = gMarioActorList;
     for (int i = 0; i < index; i++) {
         if (!actorptr) return;
         actorptr = actorptr->next;
@@ -50,7 +50,7 @@ void saturn_remove_actor(int index) {
 }
 
 MarioActor* saturn_get_actor(int index) {
-    MarioActor* actorptr = mario_actor;
+    MarioActor* actorptr = gMarioActorList;
     for (int i = 0; i < index; i++) {
         if (!actorptr) return nullptr;
         actorptr = actorptr->next;
@@ -59,7 +59,7 @@ MarioActor* saturn_get_actor(int index) {
 }
 
 int saturn_actor_indexof(MarioActor* actor) {
-    MarioActor* actorptr = mario_actor;
+    MarioActor* actorptr = gMarioActorList;
     int idx = 0;
     while (actorptr) {
         if (actorptr == actor) return idx;
@@ -74,7 +74,6 @@ int saturn_actor_sizeof() {
 }
 
 void bhv_mario_actor_loop() {
-    std::cout << "processing actor " << o->oMarioActorIndex << std::endl;
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     o->oPosX = actor->x;
     o->oPosY = actor->y;
