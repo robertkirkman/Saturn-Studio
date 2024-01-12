@@ -27,6 +27,7 @@
 extern "C" {
 #include "audio/external.h"
 #include "engine/surface_collision.h"
+#include "game/object_collision.h"
 }
 
 bool mario_exists;
@@ -402,23 +403,32 @@ void saturn_update() {
         }
     }
 
-    if (mouse_state.dist_travelled <= 3) {
+    if (mouse_state.dist_travelled <= 3 && mouse_state.released &&
+        mouse_state.x >= game_viewport[0]                    && mouse_state.y >= game_viewport[1] &&
+        mouse_state.x <  game_viewport[0] + game_viewport[2] && mouse_state.y <  game_viewport[1] + game_viewport[3]) {
+        Vec3f dir, hit;
+        s16 yaw, pitch;
+        float dist;
+        float x = (mouse_state.x - game_viewport[0]) / game_viewport[2];
+        float y = (mouse_state.y - game_viewport[1]) / game_viewport[3];
+        struct Surface* surface = nullptr;
+        vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
+        get_raycast_dir(dir, yaw, pitch, camera_fov, gfx_current_dimensions.aspect_ratio, x, y);
+        vec3f_mul(dir, 8000);
         if (mouse_state.released & MOUSEBTN_MASK_L) {
-            Vec3f dir, hit;
-            s16 yaw, pitch;
-            float dist;
-            float x = (mouse_state.x - game_viewport[0]) / game_viewport[2];
-            float y = (mouse_state.y - game_viewport[1]) / game_viewport[3];
-            struct Surface* surface = nullptr;
-            vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
-            get_raycast_dir(dir, yaw, pitch, camera_fov, gfx_current_dimensions.aspect_ratio, x, y);
-            vec3f_mul(dir, 8000);
             find_surface_on_ray(gCamera->pos, dir, &surface, hit);
             vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
-            saturn_spawn_actor(hit[0], hit[1], hit[2])->angle = yaw;
+            MarioActor* actor = saturn_spawn_actor(hit[0], hit[1], hit[2]);
+            actor->angle = yaw;
         }
         if (mouse_state.released & MOUSEBTN_MASK_R) {
-
+            struct Object* obj = get_mario_actor_from_ray(gCamera->pos, dir);
+            if (obj) {
+                MarioActor* actor = saturn_get_actor(obj->oMarioActorIndex);
+                if (actor) {
+                    std::cout << "clicked on actor " << obj->oMarioActorIndex << std::endl;
+                }
+            }
         }
     }
 
