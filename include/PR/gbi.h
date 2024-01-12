@@ -2888,7 +2888,7 @@ typedef union {
 {                                          \
 	Gfx* _g = (Gfx*)(pkt);                  \
 	_g->words.w0 = _SHIFTL(G_SETOBJ, 24, 8); \
-	_g->words.w1 = (u32)(obj);                \
+	_g->words.w1 = (uintptr_t)(obj);          \
 }
 
 #ifdef	F3DEX_GBI_2
