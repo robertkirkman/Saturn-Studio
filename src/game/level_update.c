@@ -1,6 +1,7 @@
 #include <ultra64.h>
 #include <stdbool.h>
 
+#include "saturn/saturn_actors.h"
 #include "sm64.h"
 #include "seq_ids.h"
 #include "dialog_ids.h"
@@ -1250,6 +1251,8 @@ s32 init_level(void) {
     if (gMarioState->action == ACT_INTRO_CUTSCENE) {
         sound_banks_disable(2, 0x0330);
     }
+
+    saturn_clear_actors();
 
     return 1;
 }

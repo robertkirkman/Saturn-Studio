@@ -53,6 +53,7 @@ extern int saturn_actor_sizeof();
 
 extern "C" {
 #endif
+    void saturn_clear_actors();
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
     bool saturn_rotate_head(Vec3s rotation);

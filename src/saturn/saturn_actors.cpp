@@ -1,4 +1,5 @@
 #include "saturn_actors.h"
+#include "game/object_helpers.h"
 
 extern "C" {
 #include "include/object_fields.h"
@@ -86,6 +87,17 @@ int saturn_actor_indexof(MarioActor* actor) {
 
 int saturn_actor_sizeof() {
     return saturn_actor_indexof(nullptr);
+}
+
+void saturn_clear_actors() {
+    MarioActor* actor = gMarioActorList;
+    while (actor) {
+        MarioActor* next = actor->next;
+        obj_mark_for_deletion(actor->marioObj);
+        delete actor;
+        actor = next;
+    }
+    gMarioActorList = nullptr;
 }
 
 void bhv_mario_actor_loop() {
