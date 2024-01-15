@@ -26,13 +26,25 @@ MarioActor* saturn_spawn_actor(float x, float y, float z) {
     return saturn_add_actor(actor);
 }
 
+void reassign_actor_indexes() {
+    MarioActor* actor = gMarioActorList;
+    int i = 0;
+    while (actor) {
+        actor->marioObj->oMarioActorIndex = i++;
+        actor = actor->next;
+    }
+}
+
 MarioActor* saturn_add_actor(MarioActor& actor) {
-    MarioActor** actorptr = &gMarioActorList;
-    while (*actorptr) actorptr = &(*actorptr)->next;
     MarioActor* new_actor = new MarioActor(actor);
     new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
-    new_actor->prev = *actorptr;
-    *actorptr = new_actor;
+    if (gMarioActorList) {
+        MarioActor* prev = gMarioActorList;
+        while (prev->next) prev = prev->next;
+        prev->next = new_actor;
+        new_actor->prev = prev;
+    }
+    else gMarioActorList = new_actor;
     return new_actor;
 }
 
@@ -44,8 +56,10 @@ void saturn_remove_actor(int index) {
     }
     MarioActor* prev = actorptr->prev;
     MarioActor* next = actorptr->next;
-    if (prev) prev->next = next;
     if (next) next->prev = prev;
+    if (prev) prev->next = next;
+    else gMarioActorList = next;
+    reassign_actor_indexes();
     obj_mark_for_deletion(actorptr->marioObj);
     delete actorptr;
 }

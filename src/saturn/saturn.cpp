@@ -403,7 +403,7 @@ void saturn_update() {
         }
     }
 
-    if (mouse_state.dist_travelled <= 3 && mouse_state.released &&
+    if (mouse_state.dist_travelled <= 3 && mouse_state.released && !is_mario_menu_open() &&
         mouse_state.x >= game_viewport[0]                    && mouse_state.y >= game_viewport[1] &&
         mouse_state.x <  game_viewport[0] + game_viewport[2] && mouse_state.y <  game_viewport[1] + game_viewport[3]) {
         Vec3f dir, hit;
@@ -424,9 +424,8 @@ void saturn_update() {
         if (mouse_state.released & MOUSEBTN_MASK_R) {
             struct Object* obj = get_mario_actor_from_ray(gCamera->pos, dir);
             if (obj) {
-                MarioActor* actor = saturn_get_actor(obj->oMarioActorIndex);
-                if (actor) {
-                    std::cout << "clicked on actor " << obj->oMarioActorIndex << std::endl;
+                if (obj->oMarioActorIndex >= 0 && obj->oMarioActorIndex < saturn_actor_sizeof()) {
+                    saturn_imgui_open_mario_menu(obj->oMarioActorIndex);
                 }
             }
         }

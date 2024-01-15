@@ -33,6 +33,9 @@ extern void saturn_keyframe_popout(std::vector<std::string> id);
 extern void saturn_keyframe_popout_next_line(std::string id);
 extern void saturn_keyframe_popout_next_line(std::vector<std::string> id);
 
+extern bool is_mario_menu_open();
+extern void saturn_imgui_open_mario_menu(int index);
+
 template <typename T>
 extern void saturn_keyframe_popout(const T &edit_value, s32 data_type, std::string, std::string);
 
