@@ -90,6 +90,7 @@ int saturn_actor_sizeof() {
 
 void bhv_mario_actor_loop() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (!actor) return;
     o->oPosX = actor->x;
     o->oPosY = actor->y;
     o->oPosZ = actor->z;

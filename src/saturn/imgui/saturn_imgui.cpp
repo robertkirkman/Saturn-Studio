@@ -742,15 +742,17 @@ void saturn_keyframe_window() {
     k_previous_frame = k_current_frame;
 }
 
-bool mario_menu_open = false;
+bool mario_menu_do_open = false;
+bool mario_menu_is_open = false;
+bool mario_menu_prev_is_open = false;
 int mario_menu_index = -1;
 
 bool is_mario_menu_open() {
-    return mario_menu_open;
+    return mario_menu_prev_is_open || mario_menu_is_open;
 }
 
 void saturn_imgui_open_mario_menu(int index) {
-    mario_menu_open = true;
+    mario_menu_do_open = true;
     mario_menu_index = index;
 }
 
@@ -975,8 +977,11 @@ void saturn_imgui_update() {
             if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
             ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
             ImGui::PopStyleVar();
-            if (ImGui::BeginPopupContextItem("Mario Menu")) {
-                mario_menu_open = false;
+            mario_menu_prev_is_open =  mario_menu_is_open;
+            mario_menu_is_open = false;
+            if (ImGui::BeginPopup("Mario Menu")) {
+                mario_menu_is_open = true;
+                mario_menu_do_open = false;
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
                 if (ImGui::MenuItem(ICON_FK_TRASH " Remove")) {
                     saturn_remove_actor(mario_menu_index);
@@ -985,7 +990,7 @@ void saturn_imgui_update() {
                 sdynos_imgui_menu();
                 ImGui::EndPopup();
             }
-            if (mario_menu_open) ImGui::OpenPopup("Mario Menu");
+            if (mario_menu_do_open) ImGui::OpenPopup("Mario Menu");
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         } ImGui::End();
         ImGui::PopStyleVar();

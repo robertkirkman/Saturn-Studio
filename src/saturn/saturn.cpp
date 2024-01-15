@@ -420,10 +420,12 @@ void saturn_update() {
             vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
             MarioActor* actor = saturn_spawn_actor(hit[0], hit[1], hit[2]);
             actor->angle = yaw;
+            std::cout << "spawned actor " << actor << std::endl;
         }
         if (mouse_state.released & MOUSEBTN_MASK_R) {
             struct Object* obj = get_mario_actor_from_ray(gCamera->pos, dir);
             if (obj) {
+                std::cout << "clicked on actor " << obj << std::endl;
                 if (obj->oMarioActorIndex >= 0 && obj->oMarioActorIndex < saturn_actor_sizeof()) {
                     saturn_imgui_open_mario_menu(obj->oMarioActorIndex);
                 }
