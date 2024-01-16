@@ -26,7 +26,6 @@
 #include "icons/IconsForkAwesome.h"
 #include "icons/IconsFontAwesome5.h"
 #include "saturn/filesystem/saturn_projectfile.h"
-#include "saturn/cmd/saturn_cmd.h"
 #include "saturn/saturn_json.h"
 
 #include <SDL2/SDL.h>
@@ -836,47 +835,6 @@ void saturn_imgui_update() {
 
             ImGui::Separator();
 
-            if (ImGui::BeginMenu(ICON_FK_CODE " Macros")) {
-                ImGui::BeginChild("###menu_macros", ImVec2(165, 75), true);
-                for (int i = 0; i < macro_array.size(); i++) {
-                    std::string macro = macro_array[i];
-                    bool selected = false;
-                    if (filesystem::is_directory("dynos/macros/" + current_macro_dir + macro)) {
-                        if (ImGui::Selectable((std::string(ICON_FK_FOLDER " ") + macro).c_str(), &selected)) {
-                            if (macro == "../") {
-                                current_macro_dir = macro_dir_stack[macro_dir_stack.size() - 1];
-                                macro_dir_stack.pop_back();
-                            }
-                            else {
-                                macro_dir_stack.push_back(current_macro_dir);
-                                current_macro_dir += macro;
-                            }
-                            saturn_load_macros();
-                        }
-                    }
-                    else {
-                        selected = i == current_macro_id;
-                        if (ImGui::Selectable(macro.c_str(), &selected)) {
-                            current_macro_id = i;
-                        }
-                    }
-                }
-                ImGui::EndChild();
-                if (ImGui::Button(ICON_FK_UNDO " Refresh")) {
-                    saturn_load_macros();
-                } ImGui::SameLine();
-                if (current_macro_id == -1) ImGui::BeginDisabled();
-                if (ImGui::Button("Run")) {
-                    saturn_cmd_clear_registers();
-                    saturn_cmd_eval_file("dynos/macros/" + current_macro_dir + macro_array[current_macro_id]);
-                }
-                if (current_macro_id == -1) ImGui::EndDisabled();
-                ImGui::SameLine();
-                imgui_bundled_help_marker("EXPERIMENTAL - Allows you to run commands and do stuff in bulk.\nCurrently has no debugging or documentation.");
-                ImGui::Checkbox("Command Line", &configEnableCli);
-                ImGui::EndMenu();
-            }
-
             if (ImGui::CollapsingHeader("Camera")) {
                 windowCcEditor = false;
 
@@ -987,7 +945,7 @@ void saturn_imgui_update() {
                     saturn_remove_actor(mario_menu_index);
                 }
                 ImGui::PopStyleColor();
-                sdynos_imgui_menu();
+                sdynos_imgui_menu(mario_menu_index);
                 ImGui::EndPopup();
             }
             if (mario_menu_do_open) ImGui::OpenPopup("Mario Menu");
@@ -1025,24 +983,6 @@ void saturn_imgui_update() {
                 }
                 ImGui::End();
             }
-        }
-
-        if (configEnableCli)
-        if (ImGui::BeginViewportSideBar("###CliMenuBar", viewport, ImGuiDir_Down, height, window_flags)) {
-            if (ImGui::BeginMenuBar()) {
-                ImGui::Dummy({ 0, 0 });
-                ImGui::SameLine(-7);
-                ImGui::PushItemWidth(ImGui::GetWindowWidth());
-                if (ImGui::InputText("###cli_input", cli_input, CLI_MAX_INPUT_SIZE, ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    is_cli = true;
-                    saturn_cmd_eval(std::string(cli_input));
-                    cli_input[0] = 0;
-                    ImGui::SetKeyboardFocusHere(-1);
-                }
-                ImGui::PopItemWidth();
-                ImGui::EndMenuBar();
-            }
-            ImGui::End();
         }
 
         /*if (windowStats) {

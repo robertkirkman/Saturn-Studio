@@ -7,6 +7,8 @@
 #include <cstring>
 #include <iostream>
 #include "GL/glew.h"
+#include "saturn/saturn_actors.h"
+#include "types.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -133,7 +135,7 @@ void expression_preview(const char* filename) {
     //}
 }
 
-void OpenModelSelector() {
+void OpenModelSelector(MarioActor* actor) {
     ImGui::Text("Model Packs");
     ImGui::SameLine(); imgui_bundled_help_marker(
         "DynOS v1.1 by PeachyPeach\n\nThese are DynOS model packs, used for live model loading.\nPlace packs in /dynos/packs.");
@@ -271,18 +273,21 @@ void sdynos_imgui_init() {
     //if (sDynosPacks.Count() != 1) model_details += "s";
 }
 
-void sdynos_imgui_menu() {
+bool link_scaling = true;
+
+void sdynos_imgui_menu(int index) {
+    MarioActor* actor = saturn_get_actor(index);
     if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
         // Color Code Selection
         if (!support_color_codes || !current_model.ColorCodeSupport) ImGui::BeginDisabled();
-            OpenCCSelector();
+            OpenCCSelector(actor);
             // Open File Dialog
             if (ImGui::Button(ICON_FK_FILE_TEXT_O " Open CC Folder...###open_cc_folder"))
                 open_directory(std::string(sys_exe_path()) + "/dynos/colorcodes/");
         if (!support_color_codes || !current_model.ColorCodeSupport) ImGui::EndDisabled();
 
         // Model Selection
-        OpenModelSelector();
+        OpenModelSelector(actor);
 
         ImGui::EndMenu();
     }
@@ -327,128 +332,71 @@ void sdynos_imgui_menu() {
         if (ImGui::BeginTabBar("###misc_tabbar", ImGuiTabBarFlags_None)) {
 
             if (ImGui::BeginTabItem("Switches###switches_scale")) {
-                const char* eyes[] = { "Blinking", "Open", "Half", "Closed", ICON_FK_EYE_SLASH " Custom A", ICON_FK_EYE_SLASH " Custom B", ICON_FK_EYE_SLASH " Custom C", ICON_FK_EYE_SLASH " Custom D", "Dead" };
-                if (ImGui::Combo("Eyes###eye_state", &scrollEyeState, eyes, IM_ARRAYSIZE(eyes))) {
-                    if (scrollEyeState < 4) custom_eyes_enabled = false;
-                    else custom_eyes_enabled = true;
-                }
-
+                const char* eyes[] = { "Blinking", "Open", "Half", "Closed", "Left", "Right", "Up", "Down", "Dead" };
+                ImGui::Combo("Eyes###eye_state", &actor->eye_state, eyes, IM_ARRAYSIZE(eyes));
                 const char* hands[] = { "Fists", "Open", "Peace", "With Cap", "With Wing Cap", "Right Open" };
-                ImGui::Combo("Hand###hand_state", &scrollHandState, hands, IM_ARRAYSIZE(hands));
+                ImGui::Combo("Hand###hand_state", &actor->hand_state, hands, IM_ARRAYSIZE(hands));
                 const char* caps[] = { "Cap On", "Cap Off", "Wing Cap" }; // unused "wing cap off" not included
-                ImGui::Combo("Cap###cap_state", &scrollCapState, caps, IM_ARRAYSIZE(caps));
-                const char* powerups[] = { "Default", "Metal", "Vanish", "Metal & Vanish" };
-                ImGui::Combo("Powerup###powerup_state", &saturnModelState, powerups, IM_ARRAYSIZE(powerups));
-                bool wing_cap = gMarioState->flags & MARIO_WING_CAP;
-                if (ImGui::Checkbox("Wing Cap", &wing_cap)) {
-                    if (wing_cap) {
-                        gMarioState->capTimer = 1800;
-                        gMarioState->flags |= MARIO_WING_CAP;
-                    }
-                    else {
-                        gMarioState->capTimer = 0;
-                        gMarioState->flags &= ~MARIO_WING_CAP;
-                    }
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Clear Cap State")) {
-                    gMarioState->capTimer = 0;
-                    gMarioState->flags &= ~(MARIO_WING_CAP | MARIO_METAL_CAP | MARIO_VANISH_CAP);
-                    stop_cap_music();
-                }
+                ImGui::Combo("Cap###cap_state", &actor->cap_state, caps, IM_ARRAYSIZE(caps));
+                const char* powerups[] = { "Default", "Vanish", "Metal", "Metal & Vanish" };
+                ImGui::Combo("Powerup###powerup_state", &actor->powerup_state, powerups, IM_ARRAYSIZE(powerups));
+                if (actor->powerup_state & 1) ImGui::SliderFloat("Alpha", &actor->alpha, 0, 255);
                 if (AnyModelsEnabled()) ImGui::BeginDisabled();
-                ImGui::Checkbox("M Cap Emblem", &show_vmario_emblem);
+                ImGui::Checkbox("M Cap Emblem", &actor->show_emblem);
                 imgui_bundled_tooltip("Enables the signature \"M\" logo on Mario's cap.");
                 saturn_keyframe_popout("k_v_cap_emblem");
                 if (AnyModelsEnabled()) ImGui::EndDisabled();
 
                 ImGui::EndTabItem();
             }
-            if (ImGui::BeginTabItem("Shading###tab_shading")) {
-                ImGui::SliderFloat("X###wdir_x", &world_light_dir1, -2.f, 2.f);
-                saturn_keyframe_popout("k_shade_x");
-                ImGui::SliderFloat("Y###wdir_y", &world_light_dir2, -2.f, 2.f);
-                saturn_keyframe_popout("k_shade_y");
-                ImGui::SliderFloat("Z###wdir_z", &world_light_dir3, -2.f, 2.f);
-                saturn_keyframe_popout("k_shade_z");
-                ImGui::SliderFloat("Tex###wdir_tex", &world_light_dir4, 1.f, 4.f);
-                saturn_keyframe_popout("k_shade_t");
-
-                ImGui::ColorEdit4("Col###wlight_col", gLightingColor, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
-                
-                if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-                    ImGui::OpenPopup("###texColColorPresets");
-
-                if (ImGui::BeginPopup("###texColColorPresets")) {
-                    if (ImGui::Selectable(ICON_FK_UNDO " Reset")) {
-                        gLightingColor[0] = 1.f;
-                        gLightingColor[1] = 1.f;
-                        gLightingColor[2] = 1.f;
-                    }
-                    if (ImGui::Selectable("Randomize")) {
-                        gLightingColor[0] = (rand() % 255) / 255.0f;
-                        gLightingColor[1] = (rand() % 255) / 255.0f;
-                        gLightingColor[2] = (rand() % 255) / 255.0f;
-                    }
-                    ImGui::EndPopup();
-                }
-
-                ImGui::SameLine(); ImGui::Text("Col");
-                saturn_keyframe_popout("k_light_col");
-
-                if (world_light_dir1 != 0.f || world_light_dir2 != 0.f || world_light_dir3 != 0.f || world_light_dir4 != 1.f) {
-                    if (ImGui::Button("Reset###reset_wshading")) {
-                        world_light_dir1 = 0.f;
-                        world_light_dir2 = 0.f;
-                        world_light_dir3 = 0.f;
-                        world_light_dir4 = 1.f;
-                        gLightingColor[0] = 1.f;
-                        gLightingColor[1] = 1.f;
-                        gLightingColor[2] = 1.f;
-                    }
-                }
-                ImGui::EndTabItem();
-            }
             if (ImGui::BeginTabItem("Special###tab_special")) {
-                if (linkMarioScale) {
-                    ImGui::SliderFloat("Size###mscale_all", &marioScaleSizeX, 0.f, 2.f);
+                if (link_scaling) {
+                    if (ImGui::SliderFloat("Size###mscale_all", &actor->xScale, 0.f, 2.f)) {
+                        actor->yScale = actor->xScale;
+                        actor->zScale = actor->xScale;
+                    }
                     saturn_keyframe_popout("k_scale");
                 } else {
-                    ImGui::SliderFloat("X###mscale_x", &marioScaleSizeX, -2.f, 2.f);
+                    ImGui::SliderFloat("X###mscale_x", &actor->xScale, -2.f, 2.f);
                     saturn_keyframe_popout("k_scale_x");
-                    ImGui::SliderFloat("Y###mscale_y", &marioScaleSizeY, -2.f, 2.f);
+                    ImGui::SliderFloat("Y###mscale_y", &actor->yScale, -2.f, 2.f);
                     saturn_keyframe_popout("k_scale_y");
-                    ImGui::SliderFloat("Z###mscale_z", &marioScaleSizeZ, -2.f, 2.f);
+                    ImGui::SliderFloat("Z###mscale_z", &actor->zScale, -2.f, 2.f);
                     saturn_keyframe_popout("k_scale_z");
                 }
-                ImGui::Checkbox("Link###link_mario_scale", &linkMarioScale);
-                if (marioScaleSizeX != 1.f || marioScaleSizeY != 1.f || marioScaleSizeZ != 1.f) {
+                ImGui::Checkbox("Link###link_mario_scale", &link_scaling);
+                if (actor->xScale != 1.f || actor->yScale != 1.f || actor->zScale != 1.f) {
                     ImGui::SameLine(); if (ImGui::Button("Reset###reset_mscale")) {
-                        marioScaleSizeX = 1.f;
-                        marioScaleSizeY = 1.f;
-                        marioScaleSizeZ = 1.f;
+                        actor->xScale = 1.f;
+                        actor->yScale = 1.f;
+                        actor->zScale = 1.f;
                     }
                 }
 
                 if (mario_exists) {
+                    Vec3f actor_pos;
+                    vec3f_set(actor_pos, actor->x, actor->y, actor->z);
+
                     ImGui::Dummy(ImVec2(0, 5));
                     ImGui::Text("Position");
-                    ImGui::InputFloat3("###mario_set_pos", (float*)&gMarioState->pos);
+                    ImGui::InputFloat3("###mario_set_pos", actor_pos);
                     if (ImGui::Button(ICON_FK_FILES_O " Copy###copy_mario")) {
-                        vec3f_copy(stored_mario_pos, gMarioState->pos);
-                        vec3s_copy(stored_mario_angle, gMarioState->faceAngle);
+                        vec3f_copy(stored_mario_pos, actor_pos);
+                        vec3s_set(stored_mario_angle, 0, actor->angle, 0);
                         has_copy_mario = true;
                     } ImGui::SameLine();
                     if (!has_copy_mario) ImGui::BeginDisabled();
                     if (ImGui::Button(ICON_FK_CLIPBOARD " Paste###paste_mario")) {
                         if (has_copy_mario) {
-                            vec3f_copy(gMarioState->pos, stored_mario_pos);
-                            vec3f_copy(gMarioState->marioObj->header.gfx.pos, stored_mario_pos);
-                            vec3s_copy(gMarioState->faceAngle, stored_mario_angle);
-                            vec3s_set(gMarioState->marioObj->header.gfx.angle, 0, stored_mario_angle[1], 0);
+                            vec3f_copy(actor_pos, stored_mario_pos);
+                            actor->angle = stored_mario_angle[1];
                         }
                     }
                     if (!has_copy_mario) ImGui::EndDisabled();
+
+                    actor->x = actor_pos[0];
+                    actor->y = actor_pos[1];
+                    actor->z = actor_pos[2];
                 }
 
                 ImGui::EndTabItem();
@@ -469,51 +417,41 @@ void sdynos_imgui_menu() {
             imgui_bundled_tooltip("Controls the axis range for Mario's running input; Can be used to force walking (36) or tiptoe (25) animations.");
 
             ImGui::TableSetColumnIndex(1);
-            if (gMarioState) {
-                if (ImGuiKnobs::Knob("Angle", &this_face_angle, -180.f, 180.f, 0.f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    gMarioState->faceAngle[1] = (s16)(this_face_angle * 182.04f);
-                } else if (!k_popout_focused || keyframe_playing) {
-                    this_face_angle = (float)gMarioState->faceAngle[1] / 182.04;
-                }
-                saturn_keyframe_popout("k_angle");
+            float angle = actor->angle / 32768.0f * 180;
+
+            ImGuiKnobs::Knob("Angle", &angle, -180.f, 180.f, 0.f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal);
+            saturn_keyframe_popout("k_angle");
+
+            ImGui::Checkbox("Spin###spin_angle", &actor->spinning);
+            if (actor->spinning) {
+                angle += actor->spin_speed * 5;
+                ImGui::SliderFloat("Speed###spin,speed", &actor->spin_speed, -2.f, 2.f, "%.1f");
             }
 
-            ImGui::Checkbox("Spin###spin_angle", &is_spinning);
-            if (is_spinning) {
-                ImGui::SliderFloat("Speed###spin,speed", &spin_mult, -2.f, 2.f, "%.1f");
-            }
-
-            if (this_face_angle > 180) this_face_angle = -180;
-            if (this_face_angle < -180) this_face_angle = 180;
+            actor->angle = angle / 180 * 32768;
 
             ImGui::EndTable();
         }
         if (mario_exists) if (ImGui::BeginMenu("Head Rotations")) {
-            ImGui::Checkbox("Enable", &enable_head_rotations);
-            imgui_bundled_tooltip("Whether or not Mario's head rotates in his idle animation.");
-            saturn_keyframe_popout("k_head_rot");
-            ImGui::Separator();
             ImGui::Text("C-Up Settings");
-            if (gMarioState->action != ACT_FIRST_PERSON) ImGui::BeginDisabled();
             ImGui::PushItemWidth(75);
             ImGui::SliderFloat("Speed", &mario_headrot_speed, 0, 50, "%.1f");
             ImGui::PopItemWidth();
             if (ImGui::BeginTable("headrot_table", 2)) {
-                float fake_yaw = mario_headrot_yaw * 360 / 65536;
-                float fake_pitch = mario_headrot_pitch * 360 / 65536;
+                float fake_yaw = actor->head_rot_x * 360.f / 65536;
+                float fake_pitch = actor->head_rot_y * 360.f / 65536;
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 if (ImGuiKnobs::Knob("Yaw", &fake_yaw, configCUpLimit ? -120.0f : -180.0f, configCUpLimit ? 120.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    mario_headrot_yaw = fake_yaw * 65536 / 360;
+                    actor->head_rot_x = fake_yaw * 65536 / 360;
                 }
                 ImGui::TableSetColumnIndex(1);
                 if (ImGuiKnobs::Knob("Pitch", &fake_pitch, configCUpLimit ? -45.0f : -180.0f, configCUpLimit ? 80.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    mario_headrot_pitch = fake_pitch * 65536 / 360;
+                    actor->head_rot_y = fake_pitch * 65536 / 360;
                 }
                 ImGui::EndTable();
             }
             saturn_keyframe_popout("k_mario_headrot");
-            if (gMarioState->action != ACT_FIRST_PERSON) ImGui::EndDisabled();
             ImGui::EndMenu();
         }
 

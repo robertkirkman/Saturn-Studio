@@ -27,13 +27,15 @@ public:
     float yScale = 1;
     float zScale = 1;
     bool show_emblem = true;
+    bool spinning = false;
+    float spin_speed = 1;
     int head_rot_x = 0;
     int head_rot_y = 0;
     int eye_state = 0;
     int cap_state = 0;
     int hand_state = 0;
     int powerup_state = 0;
-    float alpha = 255;
+    float alpha = 128;
     Model model = Model();
     ColorCode colorcode;
     struct AnimationState animstate;

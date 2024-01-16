@@ -304,7 +304,7 @@ void OpenModelCCSelector(Model model, std::vector<std::string> list, std::string
     }
 }
 
-void OpenCCSelector() {
+void OpenCCSelector(MarioActor* actor) {
     ImGui::Text("Color Codes");
     ImGui::SameLine(); imgui_bundled_help_marker(
         "These are GameShark color codes, which overwrite Mario's lights. Place GS files in dynos/colorcodes.");

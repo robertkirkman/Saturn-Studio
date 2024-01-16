@@ -5,6 +5,7 @@
     #include <string>
     #include "saturn/libs/imgui/imgui.h"
     #include "saturn/saturn_models.h"
+    #include "saturn/saturn_actors.h"
 
     extern int uiCcListId;
 
@@ -13,7 +14,7 @@
     extern void ResetColorCode(bool);
     extern void RefreshColorCodeList();
 
-    extern void OpenCCSelector();
+    extern void OpenCCSelector(MarioActor* actoro);
     extern void OpenModelCCSelector(Model, std::vector<std::string>, std::string);
     extern void OpenCCEditor();
 

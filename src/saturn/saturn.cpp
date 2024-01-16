@@ -17,9 +17,7 @@
 #include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn/filesystem/saturn_locationfile.h"
 #include "data/dynos.cpp.h"
-#include "saturn/filesystem/saturn_registerfile.h"
 #include "saturn/filesystem/saturn_animfile.h"
-#include "saturn/cmd/saturn_cmd.h"
 #include "saturn/saturn_rom_extract.h"
 #include "saturn/saturn_timelines.h"
 #include "saturn/saturn_actors.h"
@@ -249,7 +247,8 @@ void saturn_update() {
         if (mouse_state.x >= game_viewport[0] &&
             mouse_state.y >= game_viewport[1] &&
             mouse_state.x <  game_viewport[0] + game_viewport[2] &&
-            mouse_state.y <  game_viewport[1] + game_viewport[3]) mouse_state.update_camera = true;
+            mouse_state.y <  game_viewport[1] + game_viewport[3] &&
+            !is_mario_menu_open()) mouse_state.update_camera = true;
     }
     if (mouse_state.held & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R))
         mouse_state.dist_travelled = sqrt(
@@ -420,12 +419,10 @@ void saturn_update() {
             vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
             MarioActor* actor = saturn_spawn_actor(hit[0], hit[1], hit[2]);
             actor->angle = yaw;
-            std::cout << "spawned actor " << actor << std::endl;
         }
         if (mouse_state.released & MOUSEBTN_MASK_R) {
             struct Object* obj = get_mario_actor_from_ray(gCamera->pos, dir);
             if (obj) {
-                std::cout << "clicked on actor " << obj << std::endl;
                 if (obj->oMarioActorIndex >= 0 && obj->oMarioActorIndex < saturn_actor_sizeof()) {
                     saturn_imgui_open_mario_menu(obj->oMarioActorIndex);
                 }
@@ -458,8 +455,6 @@ void saturn_update() {
     if (is_spinning && mario_exists) {
         gMarioState->faceAngle[1] += (s16)(spin_mult * 15 * 182.04f);
     }
-
-    saturn_cmd_resume();
 
     // Autosave
 
@@ -760,7 +755,6 @@ bool saturn_do_load() {
         //if (DynOS_Gfx_GetPacks().Count() != 1) model_details += "s";
         saturn_imgui_init();
         saturn_load_locations();
-        saturn_cmd_registers_load();
         saturn_load_favorite_anims();
         saturn_fill_data_table();
         saturn_launch_timer = 0;

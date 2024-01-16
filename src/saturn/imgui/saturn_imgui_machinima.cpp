@@ -442,6 +442,53 @@ void imgui_machinima_quick_options() {
         }
     }
 
+    if (ImGui::BeginMenu("Shading")) {
+        ImGui::SliderFloat("X###wdir_x", &world_light_dir1, -2.f, 2.f);
+        saturn_keyframe_popout("k_shade_x");
+        ImGui::SliderFloat("Y###wdir_y", &world_light_dir2, -2.f, 2.f);
+        saturn_keyframe_popout("k_shade_y");
+        ImGui::SliderFloat("Z###wdir_z", &world_light_dir3, -2.f, 2.f);
+        saturn_keyframe_popout("k_shade_z");
+        ImGui::SliderFloat("Tex###wdir_tex", &world_light_dir4, 1.f, 4.f);
+        saturn_keyframe_popout("k_shade_t");
+
+        ImGui::ColorEdit4("Col###wlight_col", gLightingColor, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+        
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            ImGui::OpenPopup("###texColColorPresets");
+
+        if (ImGui::BeginPopup("###texColColorPresets")) {
+            if (ImGui::Selectable(ICON_FK_UNDO " Reset")) {
+                gLightingColor[0] = 1.f;
+                gLightingColor[1] = 1.f;
+                gLightingColor[2] = 1.f;
+            }
+            if (ImGui::Selectable("Randomize")) {
+                gLightingColor[0] = (rand() % 255) / 255.0f;
+                gLightingColor[1] = (rand() % 255) / 255.0f;
+                gLightingColor[2] = (rand() % 255) / 255.0f;
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::SameLine(); ImGui::Text("Col");
+        saturn_keyframe_popout("k_light_col");
+
+        if (world_light_dir1 != 0.f || world_light_dir2 != 0.f || world_light_dir3 != 0.f || world_light_dir4 != 1.f) {
+            if (ImGui::Button("Reset###reset_wshading")) {
+                world_light_dir1 = 0.f;
+                world_light_dir2 = 0.f;
+                world_light_dir3 = 0.f;
+                world_light_dir4 = 1.f;
+                gLightingColor[0] = 1.f;
+                gLightingColor[1] = 1.f;
+                gLightingColor[2] = 1.f;
+            }
+        }
+
+        ImGui::EndMenu();
+    }
+
     UNSTABLE
     if (ImGui::BeginMenu("(!) Custom Level")) {
         bool in_custom_level = gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3;

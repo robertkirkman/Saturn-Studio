@@ -16,7 +16,7 @@ extern "C" {
 #endif
     //void apply_cc_from_editor(void);
     void sdynos_imgui_init(void);
-    void sdynos_imgui_menu(void);
+    void sdynos_imgui_menu(int index);
 #ifdef __cplusplus
 }
 #endif
