@@ -29,6 +29,11 @@ public:
     bool show_emblem = true;
     int head_rot_x = 0;
     int head_rot_y = 0;
+    int eye_state = 0;
+    int cap_state = 0;
+    int hand_state = 0;
+    int powerup_state = 0;
+    float alpha = 255;
     Model model = Model();
     ColorCode colorcode;
     struct AnimationState animstate;
@@ -57,8 +62,15 @@ extern "C" {
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
     bool saturn_rotate_head(Vec3s rotation);
+    s16 saturn_actor_geo_switch(u8 item);
+    float saturn_actor_get_alpha();
 #ifdef __cplusplus
 }
 #endif
+
+#define ACTOR_SWITCH_EYE     0
+#define ACTOR_SWITCH_CAP     1
+#define ACTOR_SWITCH_HAND    2
+#define ACTOR_SWITCH_POWERUP 3
 
 #endif

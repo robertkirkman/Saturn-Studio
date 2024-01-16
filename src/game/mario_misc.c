@@ -341,7 +341,7 @@ Gfx *geo_mirror_mario_set_alpha(s32 callContext, struct GraphNode *node, UNUSED 
     UNUSED u8 unused2[4];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        alpha = (bodyState->modelState & 0x100) ? (bodyState->modelState & 0xFF) : 255;
+        alpha = saturn_actor_get_alpha();
         gfx = make_gfx_mario_alpha(asGenerated, alpha);
     }
     return gfx;
@@ -372,7 +372,8 @@ Gfx *geo_switch_mario_eyes(s32 callContext, struct GraphNode *node, UNUSED Mat4 
     s16 blinkFrame;
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        if (bodyState->eyeState == 0) { // force_blink
+        s16 eye = saturn_actor_geo_switch(ACTOR_SWITCH_EYE);
+        if (eye == 0) { // force_blink
             blinkFrame = ((switchCase->numCases * 32 + gAreaUpdateCounter) >> 1) & 0x1F;
             if (blinkFrame < 7) {
                 switchCase->selectedCase = gMarioBlinkAnimation[blinkFrame];
@@ -380,7 +381,7 @@ Gfx *geo_switch_mario_eyes(s32 callContext, struct GraphNode *node, UNUSED Mat4 
                 switchCase->selectedCase = 0;
             }
         } else {
-            switchCase->selectedCase = bodyState->eyeState - 1;
+            switchCase->selectedCase = eye - 1;
         }
     }
     return NULL;
@@ -464,16 +465,17 @@ Gfx *geo_switch_mario_hand(s32 callContext, struct GraphNode *node, UNUSED Mat4 
     struct MarioBodyState *bodyState = &gBodyStates[0];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        if (bodyState->handState == MARIO_HAND_FISTS) {
+        s16 hand = saturn_actor_geo_switch(ACTOR_SWITCH_HAND);
+        if (hand == MARIO_HAND_FISTS) {
             // switch between fists (0) and open (1)
             switchCase->selectedCase = ((bodyState->action & ACT_FLAG_SWIMMING_OR_FLYING) != 0);
         } else {
             if (switchCase->numCases == 0) {
                 switchCase->selectedCase =
-                    (bodyState->handState < 5) ? bodyState->handState : MARIO_HAND_OPEN;
+                    (hand < 5) ? hand : MARIO_HAND_OPEN;
             } else {
                 switchCase->selectedCase =
-                    (bodyState->handState < 2) ? bodyState->handState : MARIO_HAND_FISTS;
+                    (hand < 2) ? hand : MARIO_HAND_FISTS;
             }
         }
     }
@@ -517,7 +519,7 @@ Gfx *geo_switch_mario_cap_effect(s32 callContext, struct GraphNode *node, UNUSED
     struct MarioBodyState *bodyState = &gBodyStates[switchCase->numCases];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        switchCase->selectedCase = bodyState->modelState >> 8;
+        switchCase->selectedCase = saturn_actor_geo_switch(ACTOR_SWITCH_POWERUP);
     }
     return NULL;
 }
@@ -532,10 +534,11 @@ Gfx *geo_switch_mario_cap_on_off(s32 callContext, struct GraphNode *node, UNUSED
     struct MarioBodyState *bodyState = &gBodyStates[switchCase->numCases];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        switchCase->selectedCase = bodyState->capState & 1;
+        s16 cap = saturn_actor_geo_switch(ACTOR_SWITCH_CAP);
+        switchCase->selectedCase = cap & 1;
         while (next != node) {
             if (next->type == GRAPH_NODE_TYPE_TRANSLATION_ROTATION) {
-                if (bodyState->capState & 2) {
+                if (cap & 2) {
                     next->flags |= GRAPH_RENDER_ACTIVE;
                 } else {
                     next->flags &= ~GRAPH_RENDER_ACTIVE;

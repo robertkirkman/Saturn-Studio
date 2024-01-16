@@ -158,3 +158,29 @@ bool saturn_rotate_head(Vec3s rotation) {
     else vec3s_set(rotation, 0, 0, 0);
     return actor != nullptr;
 }
+
+s16 saturn_actor_geo_switch(u8 item) {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (actor == nullptr) return 0;
+    switch (item) {
+        case ACTOR_SWITCH_EYE:
+            return actor->eye_state;
+            break;
+        case ACTOR_SWITCH_CAP:
+            return actor->cap_state;
+            break;
+        case ACTOR_SWITCH_HAND:
+            return actor->hand_state;
+            break;
+        case ACTOR_SWITCH_POWERUP:
+            return actor->powerup_state;
+            break;
+    }
+    return 0;
+}
+
+float saturn_actor_get_alpha() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (actor == nullptr) return 255;
+    return actor->alpha;
+}
