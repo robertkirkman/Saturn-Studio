@@ -38,6 +38,7 @@ public:
     float alpha = 128;
     Model model = Model();
     ColorCode colorcode;
+    int cc_index = 0;
     struct AnimationState animstate;
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;

@@ -335,7 +335,7 @@ void OpenCCSelector(MarioActor* actor) {
 
     for (int n = 0; n < color_code_list.size(); n++) {
 
-        const bool is_selected = (uiCcListId == n + 1);
+        const bool is_selected = (actor->cc_index == n + 1);
         std::string label_name = color_code_list[n].substr(0, color_code_list[n].size() - 3);
 
         // If we're searching, only include CCs with the search keyword in the name
@@ -351,7 +351,7 @@ void OpenCCSelector(MarioActor* actor) {
 
         // Selectable
         if (ImGui::Selectable(label_name.c_str(), is_selected)) {
-            uiCcListId = n + 1;
+            actor->cc_index = n + 1;
 
             // Overwrite current color code
             current_color_code = LoadGSFile(color_code_list[n], "dynos/colorcodes");
@@ -360,6 +360,7 @@ void OpenCCSelector(MarioActor* actor) {
                 label_name = "Sample";
                 current_color_code = GameSharkCode();
             }
+            PasteGameShark(current_color_code.GameShark, actor->colorcode);
 
             UpdateEditorFromPalette();
 

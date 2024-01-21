@@ -628,6 +628,15 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
     gMatStackIndex--;
 }
 
+static Gfx* create_object_dl(Gfx* dl) {
+    Gfx* gfx = alloc_display_list(sizeof(Gfx) * 3);
+    Gfx* head = gfx;
+    gSPSetObject(head++, gCurrentObject);
+    gSPDisplayList(head++, dl);
+    gSPEndDisplayList(head++);
+    return gfx;
+}
+
 /**
  * Process a display list node. It draws a display list without first pushing
  * a transformation on the stack, so all transformations are inherited from the
@@ -635,12 +644,7 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
  */
 static void geo_process_display_list(struct GraphNodeDisplayList *node) {
     if (node->displayList != NULL) {
-        Gfx* gfx = alloc_display_list(sizeof(Gfx) * 3);
-        Gfx* head = gfx;
-        gSPSetObject(head++, gCurrentObject);
-        gSPDisplayList(head++, node->displayList);
-        gSPEndDisplayList(head++);
-        geo_append_display_list(gfx, node->node.flags >> 8);
+        geo_append_display_list(create_object_dl(node->displayList), node->node.flags >> 8);
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
@@ -811,7 +815,7 @@ static void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
     mtxf_to_mtx(mtxInterpolated, gMatStackInterpolated[gMatStackIndex]);
     gMatStackInterpolatedFixed[gMatStackIndex] = mtxInterpolated;
     if (node->displayList != NULL) {
-        geo_append_display_list(node->displayList, node->node.flags >> 8);
+        geo_append_display_list(create_object_dl(node->displayList), node->node.flags >> 8);
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
