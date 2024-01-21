@@ -1,5 +1,6 @@
 #include "saturn_imgui.h"
 
+#include <ios>
 #include <string>
 #include <iostream>
 #include <algorithm>
@@ -72,9 +73,6 @@ extern "C" {
 #include "game/object_list_processor.h"
 }
 
-
-#define CLI_MAX_INPUT_SIZE 4096
-
 using namespace std;
 
 SDL_Window* window = nullptr;
@@ -115,35 +113,9 @@ bool splash_finished = false;
 std::string editor_theme = "moon";
 std::vector<std::pair<std::string, std::string>> theme_list = {};
 
-std::vector<std::string> macro_array = {};
-std::vector<std::string> macro_dir_stack = {};
-std::string current_macro_dir = "";
-int current_macro_id = -1;
-int current_macro_dir_count = 0;
-char cli_input[CLI_MAX_INPUT_SIZE];
-
 float game_viewport[4] = { 0, 0, -1, -1 };
 
 #include "saturn/saturn_timelines.h"
-
-void saturn_load_macros() {
-    std::string dir = "dynos/macros/" + current_macro_dir;
-    macro_array.clear();
-    current_macro_id = -1;
-    current_macro_dir_count = 1;
-    if (current_macro_dir != "") macro_array.push_back("../");
-    else current_macro_dir_count = 0;
-    for (auto& entry : filesystem::directory_iterator(dir)) {
-        if (!filesystem::is_directory(entry)) continue;
-        macro_array.push_back(entry.path().filename().u8string() + "/");
-        current_macro_dir_count++;
-    }
-    for (auto& entry : filesystem::directory_iterator(dir)) {
-        if (filesystem::is_directory(entry)) continue;
-        if (entry.path().extension().u8string() == ".stm")
-            macro_array.push_back(entry.path().filename().u8string());
-    }
-}
 
 // Bundled Components
 
@@ -422,6 +394,8 @@ void saturn_imgui_set_frame_buffer(void* fb) {
 
 // Set up ImGui
 
+bool imgui_config_exists = false;
+
 ImGuiID saturn_imgui_setup_dockspace() {
     ImGuiViewport* viewport = ImGui::GetWindowViewport();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -443,8 +417,25 @@ ImGuiID saturn_imgui_setup_dockspace() {
     return dockspace;
 }
 
+void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
+    if (imgui_config_exists) return;
+    imgui_config_exists = true;
+    ImGuiID left, right, up, down;
+    ImGui::DockBuilderRemoveNode(dockspace);
+    ImGui::DockBuilderAddNode(dockspace, ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace, ImGui::GetWindowViewport()->Size);
+    ImGui::DockBuilderSplitNode(dockspace, ImGuiDir_Up, 0.7f, &up, &down);
+    ImGui::DockBuilderSplitNode(up, ImGuiDir_Left, 0.25f, &left, &right);
+    ImGui::DockBuilderDockWindow("Machinima", left);
+    ImGui::DockBuilderDockWindow("Settings", left);
+    ImGui::DockBuilderDockWindow("Game", right);
+    ImGui::DockBuilderDockWindow("Timeline###kf_timeline", down);
+}
+
 void saturn_imgui_init_backend(SDL_Window * sdl_window, SDL_GLContext ctx) {
     window = sdl_window;
+
+    imgui_config_exists = std::filesystem::exists("imgui.ini");
 
     const char* glsl_version = "#version 120";
     ImGuiContext* imgui = ImGui::CreateContext();
@@ -490,7 +481,6 @@ void saturn_imgui_init() {
     ssettings_imgui_init();
     
     saturn_load_project_list();
-    saturn_load_macros();
 }
 
 void saturn_imgui_handle_events(SDL_Event * event) {
@@ -1029,6 +1019,8 @@ void saturn_imgui_update() {
         }*/
 
         //ImGui::ShowDemoWindow();
+
+        saturn_imgui_create_dockspace_layout(dockspace);
     }
 
     is_cc_editing = windowCcEditor & support_color_codes & current_model.ColorCodeSupport;
