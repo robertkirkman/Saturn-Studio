@@ -37,21 +37,6 @@ std::vector<std::string> model_color_code_list;
 
 GameSharkCode current_color_code;
 
-// Palette as used by GFX
-ColorTemplate defaultColorHat               {255, 127, 0,   0,   0,   0  };
-ColorTemplate defaultColorOveralls          {0,   0,   0,   0,   255, 127};
-ColorTemplate defaultColorGloves            {255, 127, 255, 127, 255, 127};
-ColorTemplate defaultColorShoes             {114, 57,  28,  14,  14,  7  };
-ColorTemplate defaultColorSkin              {254, 127, 193, 96,  121, 60 };
-ColorTemplate defaultColorHair              {115, 57,  6,   3,   0,   0  };
-
-ColorTemplate sparkColorShirt               {255, 127, 255, 127, 0,   0  };
-ColorTemplate sparkColorShoulders           {0,   0,   255, 127, 255, 127};
-ColorTemplate sparkColorArms                {0,   0,   255, 127, 127, 64 };
-ColorTemplate sparkColorOverallsBottom      {255, 127, 0,   0,   255, 127}; 
-ColorTemplate sparkColorLegTop              {255, 127, 0,   0,   127, 64 };
-ColorTemplate sparkColorLegBottom           {127, 64,  0,   0,   255, 127};
-
 std::string HexifyColorTemplate(ColorTemplate &colorBodyPart) {
     char colour[64];
     ImFormatString(colour, IM_ARRAYSIZE(colour), "%02X%02X%02X%02X%02X%02X"
@@ -157,12 +142,88 @@ void PasteGameShark(std::string GameShark, ColorCode cc) {
     }
 }
 
+GameSharkCode ParseGameShark(MarioActor* actor) {
+    GameSharkCode gscode;
+    std::string gameshark;
+
+    std::string col1 = HexifyColorTemplate(actor->colorcode[CC_HAT]);
+    std::string col2 = HexifyColorTemplate(actor->colorcode[CC_OVERALLS]);
+    std::string col3 = HexifyColorTemplate(actor->colorcode[CC_GLOVES]);
+    std::string col4 = HexifyColorTemplate(actor->colorcode[CC_SHOES]);
+    std::string col5 = HexifyColorTemplate(actor->colorcode[CC_SKIN]);
+    std::string col6 = HexifyColorTemplate(actor->colorcode[CC_HAIR]);
+
+    gameshark += "8107EC40 " + col1.substr(0, 4) + "\n";
+    gameshark += "8107EC42 " + col1.substr(4, 2) + "00\n";
+    gameshark += "8107EC38 " + col1.substr(6, 4) + "\n";
+    gameshark += "8107EC3A " + col1.substr(10, 2) + "00\n";
+    gameshark += "8107EC28 " + col2.substr(0, 4) + "\n";
+    gameshark += "8107EC2A " + col2.substr(4, 2) + "00\n";
+    gameshark += "8107EC20 " + col2.substr(6, 4) + "\n";
+    gameshark += "8107EC22 " + col2.substr(10, 2) + "00\n";
+    gameshark += "8107EC58 " + col3.substr(0, 4) + "\n";
+    gameshark += "8107EC5A " + col3.substr(4, 2) + "00\n";
+    gameshark += "8107EC50 " + col3.substr(6, 4) + "\n";
+    gameshark += "8107EC52 " + col3.substr(10, 2) + "00\n";
+    gameshark += "8107EC70 " + col4.substr(0, 4) + "\n";
+    gameshark += "8107EC72 " + col4.substr(4, 2) + "00\n";
+    gameshark += "8107EC68 " + col4.substr(6, 4) + "\n";
+    gameshark += "8107EC6A " + col4.substr(10, 2) + "00\n";
+    gameshark += "8107EC88 " + col5.substr(0, 4) + "\n";
+    gameshark += "8107EC8A " + col5.substr(4, 2) + "00\n";
+    gameshark += "8107EC80 " + col5.substr(6, 4) + "\n";
+    gameshark += "8107EC82 " + col5.substr(10, 2) + "00\n";
+    gameshark += "8107ECA0 " + col6.substr(0, 4)+ "\n";
+    gameshark += "8107ECA2 " + col6.substr(4, 2) + "00\n";
+    gameshark += "8107EC98 " + col6.substr(6, 4)+ "\n";
+    gameshark += "8107EC9A " + col6.substr(10, 2) + "00";
+
+    if (actor->model.SparkSupport) {
+        gameshark += "\n";
+
+        std::string col7 = HexifyColorTemplate(actor->colorcode[CC_SHIRT]);
+        std::string col8 = HexifyColorTemplate(actor->colorcode[CC_SHOULDERS]);
+        std::string col9 = HexifyColorTemplate(actor->colorcode[CC_ARMS]);
+        std::string col10 = HexifyColorTemplate(actor->colorcode[CC_OVERALLS_BOTTOM]);
+        std::string col11 = HexifyColorTemplate(actor->colorcode[CC_LEG_TOP]);
+        std::string col12 = HexifyColorTemplate(actor->colorcode[CC_LEG_BOTTOM]);
+
+        gameshark += "8107ECB8 " + col7.substr(0, 4) + "\n";
+        gameshark += "8107ECBA " + col7.substr(4, 2) + "00\n";
+        gameshark += "8107ECB0 " + col7.substr(6, 4) + "\n";
+        gameshark += "8107ECB2 " + col7.substr(10, 2) + "00\n";
+        gameshark += "8107ECD0 " + col8.substr(0, 4) + "\n";
+        gameshark += "8107ECD2 " + col8.substr(4, 2) + "00\n";
+        gameshark += "8107ECC8 " + col8.substr(6, 4) + "\n";
+        gameshark += "8107ECCA " + col8.substr(10, 2) + "00\n";
+        gameshark += "8107ECE8 " + col9.substr(0, 4) + "\n";
+        gameshark += "8107ECEA " + col9.substr(4, 2) + "00\n";
+        gameshark += "8107ECE0 " + col9.substr(6, 4) + "\n";
+        gameshark += "8107ECE2 " + col9.substr(10, 2) + "00\n";
+        gameshark += "8107ED00 " + col10.substr(0, 4) + "\n";
+        gameshark += "8107ED02 " + col10.substr(4, 2) + "00\n";
+        gameshark += "8107ECF8 " + col10.substr(6, 4) + "\n";
+        gameshark += "8107ECFA " + col10.substr(10, 2) + "00\n";
+        gameshark += "8107ED18 " + col11.substr(0, 4) + "\n";
+        gameshark += "8107ED1A " + col11.substr(4, 2) + "00\n";
+        gameshark += "8107ED10 " + col11.substr(6, 4) + "\n";
+        gameshark += "8107ED12 " + col11.substr(10, 2) + "00\n";
+        gameshark += "8107ED30 " + col12.substr(0, 4) + "\n";
+        gameshark += "8107ED32 " + col12.substr(4, 2) + "00\n";
+        gameshark += "8107ED28 " + col12.substr(6, 4) + "\n";
+        gameshark += "8107ED2A " + col12.substr(10, 2) + "00";
+    }
+
+    gscode.GameShark = gameshark;
+    return gscode;
+}
+
 /*
     Applies a ColorCode to the game, overwriting the vanilla palette.
 */
-void ApplyColorCode(GameSharkCode colorCode) {
+void ApplyColorCode(GameSharkCode colorCode, MarioActor* actor) {
     current_color_code = colorCode;
-    //PasteGameShark(colorCode.GameShark);
+    PasteGameShark(colorCode.GameShark, actor->colorcode);
 }
 
 std::vector<std::string> GetColorCodeList(std::string folderPath) {

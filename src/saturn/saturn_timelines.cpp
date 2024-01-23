@@ -17,7 +17,7 @@ std::map<std::string, std::tuple<void*, KeyframeType, char, std::string, int, in
 void saturn_fill_data_table() {
     SATURN_KFENTRY_BOOL("k_skybox_mode", use_color_background, "Skybox Mode");
     SATURN_KFENTRY_BOOL("k_shadows", enable_shadows, "Shadows");
-    SATURN_KFENTRY_FLOAT("k_shade_x", world_light_dir1, "Mario Shade X");
+    /*SATURN_KFENTRY_FLOAT("k_shade_x", world_light_dir1, "Mario Shade X");
     SATURN_KFENTRY_FLOAT("k_shade_y", world_light_dir2, "Mario Shade Y");
     SATURN_KFENTRY_FLOAT("k_shade_z", world_light_dir3, "Mario Shade Z");
     SATURN_KFENTRY_FLOAT("k_shade_t", world_light_dir4, "Mario Shade Tex");
@@ -27,7 +27,7 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_scale_z", marioScaleSizeZ, "Mario Scale Z");
     SATURN_KFENTRY_BOOL("k_head_rot", enable_head_rotations, "Head Rotations");
     SATURN_KFENTRY_BOOL("k_v_cap_emblem", show_vmario_emblem, "M Cap Emblem");
-    SATURN_KFENTRY_FLOAT("k_angle", gMarioState->faceAngle[1], "Mario Angle");
+    SATURN_KFENTRY_FLOAT("k_angle", gMarioState->faceAngle[1], "Mario Angle");*/
     SATURN_KFENTRY_BOOL("k_hud", configHUD, "HUD");
     SATURN_KFENTRY_FLOAT("k_fov", camera_fov, "FOV");
     SATURN_KFENTRY_FLOAT("k_focus", camera_focus, "Follow");
@@ -40,7 +40,7 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_gravity", gravity, "Gravity");
     SATURN_KFENTRY_COLOR_VEC3F("k_light_col", gLightingColor, "Light Color");
     SATURN_KFENTRY_COLOR("k_color", uiChromaColor, "Skybox Color");
-    SATURN_KFENTRY_COLOR("k_1/2###hat_half_1", uiHatColor, "Hat, Main");
+    /*SATURN_KFENTRY_COLOR("k_1/2###hat_half_1", uiHatColor, "Hat, Main");
     SATURN_KFENTRY_COLOR("k_1/2###hat_half_2", uiHatShadeColor, "Hat, Shade");
     SATURN_KFENTRY_COLOR("k_1/2###overalls_half_1", uiOverallsColor, "Overalls, Main");
     SATURN_KFENTRY_COLOR("k_1/2###overalls_half_2", uiOverallsShadeColor, "Overalls, Shade");
@@ -65,5 +65,5 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_COLOR("k_1/2###leg_bottom_half_1", uiLegBottomColor, "Leg (Bottom), Main");
     SATURN_KFENTRY_COLOR("k_1/2###leg_bottom_half_2", uiLegBottomShadeColor, "Leg (Bottom), Shade");
     SATURN_KFENTRY_ANIM("k_mario_anim", "Animation");
-    SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");
+    SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");*/
 }

@@ -293,12 +293,9 @@ void sdynos_imgui_menu(int index) {
     }
 
     // Color Code Editor
-    if (ImGui::MenuItem(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", NULL, windowCcEditor, support_color_codes & current_model.ColorCodeSupport)) {
-        if (support_color_codes && current_model.ColorCodeSupport) {
-            windowAnimPlayer = false;
-            windowChromaKey = false;
-            windowCcEditor = !windowCcEditor;
-        }
+    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", support_color_codes & current_model.ColorCodeSupport)) {
+        OpenCCEditor(actor);
+        ImGui::EndMenu();
     }
 
     // Animation Mixtape

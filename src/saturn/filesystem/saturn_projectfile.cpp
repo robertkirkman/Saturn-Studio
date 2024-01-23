@@ -40,7 +40,9 @@ namespace fs = std::filesystem;
 
 #include "saturn/saturn_timelines.h"
 
-#define SATURN_PROJECT_VERSION 3
+// todo: rewrite this whole fuckin thing
+
+/*#define SATURN_PROJECT_VERSION 3
 
 #define SATURN_PROJECT_IDENTIFIER           "STPJ"
 #define SATURN_PROJECT_GAME_IDENTIFIER      "GAME"
@@ -356,7 +358,7 @@ void saturn_project_mario_handler(SaturnFormatStream* stream, int version) {
     custom_eyes_enabled = saturn_format_read_int8(stream);
 }
 
-void saturn_load_project(char* filename) {
+*/void saturn_load_project(char* filename) {}/*
     k_frame_keys.clear();
     saturn_format_input((char*)full_file_path(filename).c_str(), SATURN_PROJECT_IDENTIFIER, {
         { SATURN_PROJECT_GAME_IDENTIFIER, saturn_project_game_handler },
@@ -369,7 +371,7 @@ void saturn_load_project(char* filename) {
     });
     std::cout << "Loaded project " << filename << std::endl;
 }
-void saturn_save_project(char* filename) {
+*/void saturn_save_project(char* filename) {}/*
     SaturnFormatStream stream = saturn_format_output(SATURN_PROJECT_IDENTIFIER, SATURN_PROJECT_VERSION);
     if (autoChroma) {
         saturn_format_new_section(&stream, SATURN_PROJECT_CHROMAKEY_IDENTIFIER);
@@ -611,7 +613,7 @@ void saturn_save_project(char* filename) {
     }
     saturn_format_write((char*)full_file_path(filename).c_str(), &stream);
     std::cout << "Saved project " << filename << std::endl;
-}
+}*/
 
 std::string project_dir;
 std::vector<std::string> project_array;
