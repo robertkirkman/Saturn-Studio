@@ -17,11 +17,11 @@ std::map<std::string, std::tuple<void*, KeyframeType, char, std::string, int, in
 void saturn_fill_data_table() {
     SATURN_KFENTRY_BOOL("k_skybox_mode", use_color_background, "Skybox Mode");
     SATURN_KFENTRY_BOOL("k_shadows", enable_shadows, "Shadows");
-    /*SATURN_KFENTRY_FLOAT("k_shade_x", world_light_dir1, "Mario Shade X");
-    SATURN_KFENTRY_FLOAT("k_shade_y", world_light_dir2, "Mario Shade Y");
-    SATURN_KFENTRY_FLOAT("k_shade_z", world_light_dir3, "Mario Shade Z");
-    SATURN_KFENTRY_FLOAT("k_shade_t", world_light_dir4, "Mario Shade Tex");
-    SATURN_KFENTRY_FLOAT("k_scale", marioScaleSizeX, "Mario Scale");
+    SATURN_KFENTRY_FLOAT("k_shade_x", world_light_dir1, "Shade X");
+    SATURN_KFENTRY_FLOAT("k_shade_y", world_light_dir2, "Shade Y");
+    SATURN_KFENTRY_FLOAT("k_shade_z", world_light_dir3, "Shade Z");
+    SATURN_KFENTRY_FLOAT("k_shade_t", world_light_dir4, "Shade Tex");
+    /*SATURN_KFENTRY_FLOAT("k_scale", marioScaleSizeX, "Mario Scale");
     SATURN_KFENTRY_FLOAT("k_scale_x", marioScaleSizeX, "Mario Scale X");
     SATURN_KFENTRY_FLOAT("k_scale_y", marioScaleSizeY, "Mario Scale Y");
     SATURN_KFENTRY_FLOAT("k_scale_z", marioScaleSizeZ, "Mario Scale Z");
