@@ -182,5 +182,6 @@ s16 saturn_actor_geo_switch(u8 item) {
 float saturn_actor_get_alpha() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (actor == nullptr) return 255;
-    return actor->alpha;
+    if (actor->powerup_state & 1) return actor->alpha;
+    return 255;
 }
