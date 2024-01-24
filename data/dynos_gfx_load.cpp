@@ -1,3 +1,4 @@
+#include "saturn/saturn_actors.h"
 #include "dynos.cpp.h"
 
 //
@@ -104,6 +105,7 @@ static void LoadTextureData(FILE *aFile, GfxData *aGfxData) {
         _Node->mData->mRawFormat = G_IM_FMT_RGBA;
         _Node->mData->mRawSize   = G_IM_SIZ_32b;
         _Node->mData->mRawData   = Array<u8>(_RawData, _RawData + (_Node->mData->mRawWidth * _Node->mData->mRawHeight * 4));
+        saturn_actor_add_model_texture((std::string("gfx/") + _Node->mName.begin()).data(), (char*)_RawData, _Node->mData->mRawWidth, _Node->mData->mRawHeight);
         free(_RawData);
     } else { // Probably a palette
         _Node->mData->mRawData   = Array<u8>();

@@ -1,5 +1,6 @@
 #include "saturn_actors.h"
 #include "game/object_helpers.h"
+#include "saturn/saturn_models.h"
 
 extern "C" {
 #include "include/object_fields.h"
@@ -184,4 +185,50 @@ float saturn_actor_get_alpha() {
     if (actor == nullptr) return 255;
     if (actor->powerup_state & 1) return actor->alpha;
     return 255;
+}
+
+struct ModelTexture {
+    struct ModelTexture* next;
+    char* id;
+    char* data;
+    int w, h;
+};
+struct ModelTexture* gModelTextureList;
+
+void saturn_actor_add_model_texture(char* id, char* data, int w, int h) {
+    struct ModelTexture* curr = gModelTextureList;
+    while (curr) {
+        if (strcmp(curr->id, id) == 0) return;
+        curr = curr->next;
+    }
+    struct ModelTexture* tex = (struct ModelTexture*)malloc(sizeof(struct ModelTexture));
+    int texid_len = strlen(id) + 1;
+    char* texid = (char*)malloc(texid_len);
+    char* texdata = (char*)malloc(w * h * 4);
+    memcpy(texid, id, texid_len);
+    memcpy(texdata, data, w * h * 4);
+    tex->w = w;
+    tex->h = h;
+    tex->id = texid;
+    tex->data = texdata;
+    tex->next = nullptr;
+    if (gModelTextureList) {
+        struct ModelTexture* prev = gModelTextureList;
+        while (prev->next) prev = prev->next;
+        prev->next = tex;
+    }
+    else gModelTextureList = tex;
+}
+
+char* saturn_actor_get_model_texture(char* id, int* w, int* h) {
+    struct ModelTexture* curr = gModelTextureList;
+    while (curr) {
+        if (strcmp(curr->id, id) == 0) {
+            *w = curr->w;
+            *h = curr->h;
+            return curr->data;
+        }
+        curr = curr->next;
+    }
+    return nullptr;
 }

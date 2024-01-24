@@ -521,6 +521,12 @@ void load_texture(const char *fullpath) {
     int w, h;
     u64 imgsize = 0;
 
+    char* model_data = saturn_actor_get_model_texture(fullpath, &w, &h);
+    if (model_data) {
+        gfx_rapi->upload_texture(model_data, w, h);
+        return;
+    }
+
     u8 *imgdata = fs_load_file(fullpath, &imgsize);
     if (imgdata) {
         // TODO: implement stbi_callbacks or some shit instead of loading the whole texture

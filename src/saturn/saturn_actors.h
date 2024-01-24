@@ -68,6 +68,8 @@ extern "C" {
     bool saturn_rotate_head(Vec3s rotation);
     s16 saturn_actor_geo_switch(u8 item);
     float saturn_actor_get_alpha();
+    void saturn_actor_add_model_texture(char* id, char* data, int w, int h);
+    char* saturn_actor_get_model_texture(char* id, int* w, int* h);
 #ifdef __cplusplus
 }
 #endif
