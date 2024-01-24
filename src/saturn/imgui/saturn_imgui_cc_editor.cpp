@@ -443,10 +443,7 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
 }
 
 void OpenCCEditor(MarioActor* actor) {
-    if (current_actor != actor) {
-        current_actor = actor;
-        UpdateEditorFromPalette();
-    }
+    CCChangeActor(actor);
     ImGui::PushItemWidth(100);
     ImGui::InputText(".gs", uiCcLabelName, IM_ARRAYSIZE(uiCcLabelName));
     ImGui::PopItemWidth();
@@ -535,4 +532,10 @@ void OpenCCEditor(MarioActor* actor) {
         }
         ImGui::EndTabBar();
     }
+}
+
+void CCChangeActor(MarioActor* actor) {
+    if (current_actor == actor) return;
+    current_actor = actor;
+    UpdateEditorFromPalette();
 }

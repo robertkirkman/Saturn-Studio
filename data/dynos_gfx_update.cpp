@@ -109,13 +109,12 @@ void DynOS_Gfx_Update() {
             for (struct Object *_Object = (struct Object *) _Head->header.next; _Object != _Head; _Object = (struct Object *) _Object->header.next) {
                 MarioActor* _Actor = saturn_get_actor(_Object->oMarioActorIndex);
                 if (_Actor == nullptr) continue;
-                int _ActorIdx = saturn_actor_indexof(_Actor);
 
                 // Check packs
                 Array<bool> _Enabled;
                 const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
                 for (s32 i = 0; i != pDynosPacks.Count(); ++i) {
-                    _Enabled.Add(DynOS_Opt_GetValue(String("dynos_pack_%d_%d", _ActorIdx, i)));
+                    _Enabled.Add(_Actor->selected_model == i);
                 }
 
                 if (_Object->header.gfx.sharedChild) {

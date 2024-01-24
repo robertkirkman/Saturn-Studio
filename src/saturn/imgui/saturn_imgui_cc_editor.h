@@ -18,6 +18,8 @@
     extern void OpenModelCCSelector(Model, std::vector<std::string>, std::string);
     extern void OpenCCEditor(MarioActor* actor);
 
+    extern void CCChangeActor(MarioActor* actor);
+
     extern bool has_open_any_model_cc;
 
     extern ImVec4 uiColors[][2];

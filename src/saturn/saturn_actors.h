@@ -36,9 +36,10 @@ public:
     int hand_state = 0;
     int powerup_state = 0;
     float alpha = 128;
+    int selected_model = -1;
+    int cc_index = 0;
     Model model = Model();
     ColorCode colorcode;
-    int cc_index = 0;
     struct AnimationState animstate;
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;

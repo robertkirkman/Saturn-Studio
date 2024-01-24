@@ -136,6 +136,7 @@ void expression_preview(const char* filename) {
 }
 
 void OpenModelSelector(MarioActor* actor) {
+    CCChangeActor(actor);
     ImGui::Text("Model Packs");
     ImGui::SameLine(); imgui_bundled_help_marker(
         "DynOS v1.1 by PeachyPeach\n\nThese are DynOS model packs, used for live model loading.\nPlace packs in /dynos/packs.");
@@ -158,7 +159,7 @@ void OpenModelSelector(MarioActor* actor) {
         for (int i = 0; i < model_list.size(); i++) {
             Model model = model_list[i];
             if (model.Active) {
-                bool is_selected = DynOS_Opt_GetValue(String("dynos_pack_%d", i));
+                bool is_selected = actor->selected_model == i;
 
                 // If we're searching, only include CCs with the search keyword in the name
                 // Also convert to lowercase
@@ -173,22 +174,15 @@ void OpenModelSelector(MarioActor* actor) {
 
                 std::string packLabelId = model.FolderName + "###s_model_pack_" + std::to_string(i);
                 if (ImGui::Selectable(packLabelId.c_str(), &is_selected)) {
-                    // Deselect other packs, but LSHIFT allows additive
-                    for (int j = 0; j < sDynosPacks.Count(); j++) {
-                        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LSHIFT] == false)
-                            DynOS_Opt_SetValue(String("dynos_pack_%d", j), false);
-                    }
-
                     if (saturn_timeline_exists("k_mario_expr")) k_frame_keys.erase("k_mario_expr");
                     
                     // Select model
-                    DynOS_Opt_SetValue(String("dynos_pack_%d", i), is_selected);
-                    current_model = model;
-                    current_model_id = i;
+                    actor->model = model;
+                    actor->selected_model = i;
 
                     // Load expressions
-                    current_model.Expressions.clear();
-                    current_model.Expressions = LoadExpressions(current_model.FolderPath);
+                    actor->model.Expressions.clear();
+                    actor->model.Expressions = LoadExpressions(current_model.FolderPath);
 
                     if (is_selected) {
                         std::cout << "Loaded " << model.Name << " by " << model.Author << std::endl;
@@ -201,8 +195,8 @@ void OpenModelSelector(MarioActor* actor) {
                         }
                     } else {
                         if (!AnyModelsEnabled()) {
-                            current_model = Model();
-                            current_model_id = -1;
+                            actor->model = Model();
+                            actor->selected_model = -1;
                         }
                         
                         // Reset model CCs
