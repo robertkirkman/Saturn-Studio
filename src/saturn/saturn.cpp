@@ -241,14 +241,12 @@ void saturn_update() {
     machinimaMode = (camera_frozen) ? 1 : 0;
     machinimaKeyframing = (keyframe_playing && active_data_type == KEY_CAMERA);
 
+    bool is_focused = is_focused_on_game();
     if (mouse_state.pressed & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R)) {
         mouse_state.x_orig = mouse_state.x;
         mouse_state.y_orig = mouse_state.y;
-        if (mouse_state.x >= game_viewport[0] &&
-            mouse_state.y >= game_viewport[1] &&
-            mouse_state.x <  game_viewport[0] + game_viewport[2] &&
-            mouse_state.y <  game_viewport[1] + game_viewport[3] &&
-            !is_mario_menu_open()) mouse_state.update_camera = true;
+        mouse_state.focused_on_game = is_focused;
+        if (mouse_state.focused_on_game) mouse_state.update_camera = true;
     }
     if (mouse_state.held & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R))
         mouse_state.dist_travelled = sqrt(
@@ -402,9 +400,7 @@ void saturn_update() {
         }
     }
 
-    if (mouse_state.dist_travelled <= 3 && mouse_state.released && !is_mario_menu_open() &&
-        mouse_state.x >= game_viewport[0]                    && mouse_state.y >= game_viewport[1] &&
-        mouse_state.x <  game_viewport[0] + game_viewport[2] && mouse_state.y <  game_viewport[1] + game_viewport[3]) {
+    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game) {
         Vec3f dir, hit;
         s16 yaw, pitch;
         float dist;
