@@ -781,7 +781,10 @@ static float gfx_adjust_x_for_aspect_ratio(float x) {
     return x * (4.0f / 3.0f) / ((float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height);
 }
 
-#define SPARK && support_spark
+#define CC_SUPPORT    (1 << 0)
+#define SPARK_SUPPORT (1 << 1)
+
+#define SPARK && (support_flags & SPARK_SUPPORT)
 #define OVERRIDE cc_overrides[override_index++]
 #define COLOR_CLOSE_TO(R, G, B) \
 (                                \
@@ -827,7 +830,10 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             int g = rsp.current_lights[rsp.current_num_lights - 1].col[1];
             int b = rsp.current_lights[rsp.current_num_lights - 1].col[2];
 
-            bool override_colors = support_color_codes || use_color_background;
+            int marioIndex = gCurrentObject->oMarioActorIndex;
+            int support_flags = saturn_actor_get_support_flags(marioIndex);
+
+            bool override_colors = (support_flags & CC_SUPPORT) || use_color_background;
 
             bool cc_overrides[12];
             int override_index = 0;
@@ -849,7 +855,6 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             cc_overrides[CC_HAIR] |= mario_sideburn;
 
             override_index = 0;
-            int marioIndex = gCurrentObject->oMarioActorIndex;
 
             if (override_colors) {
                 if (false); // OVERRIDE_COLOR is an else-if tree

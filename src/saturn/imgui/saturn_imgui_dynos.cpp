@@ -272,12 +272,12 @@ void sdynos_imgui_menu(int index) {
     if (actor == nullptr) return;
     if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
         // Color Code Selection
-        if (!support_color_codes || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
+        if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
             OpenCCSelector(actor);
             // Open File Dialog
             if (ImGui::Button(ICON_FK_FILE_TEXT_O " Open CC Folder...###open_cc_folder"))
                 open_directory(std::string(sys_exe_path()) + "/dynos/colorcodes/");
-        if (!support_color_codes || !actor->model.ColorCodeSupport) ImGui::EndDisabled();
+        if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::EndDisabled();
 
         // Model Selection
         OpenModelSelector(actor);
@@ -286,7 +286,7 @@ void sdynos_imgui_menu(int index) {
     }
 
     // Color Code Editor
-    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", support_color_codes & actor->model.ColorCodeSupport)) {
+    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", actor->cc_support & actor->model.ColorCodeSupport)) {
         OpenCCEditor(actor);
         ImGui::EndMenu();
     }
@@ -301,17 +301,17 @@ void sdynos_imgui_menu(int index) {
     ImGui::Separator();
 
     if (!actor->model.ColorCodeSupport) ImGui::BeginDisabled();
-        ImGui::Checkbox("Color Code Support", &support_color_codes);
+        ImGui::Checkbox("Color Code Support", &actor->cc_support);
         imgui_bundled_tooltip(
             "Toggles color code features.");
 
-        if (!support_color_codes) ImGui::BeginDisabled();
+        if (!actor->cc_support) ImGui::BeginDisabled();
             if (actor->model.SparkSupport) {
-                ImGui::Checkbox("CometSPARK Support", &support_spark);
+                ImGui::Checkbox("CometSPARK Support", &actor->spark_support);
                 imgui_bundled_tooltip(
                     "Toggles SPARK features, which provides supported models with extra color values.");
             }
-        if (!support_color_codes) ImGui::EndDisabled();
+        if (!actor->cc_support) ImGui::EndDisabled();
     if (!actor->model.ColorCodeSupport) ImGui::EndDisabled();
 
     // Misc. Avatar Settings

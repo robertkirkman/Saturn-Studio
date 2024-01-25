@@ -501,7 +501,7 @@ void OpenCCEditor(MarioActor* actor) {
             ColorPartBox(actor->model.Colors.Hair.c_str(), "Hair, Main", "Hair, Shade", uiColors[CC_HAIR], "1/2###hair_half");
 
             if (actor->model.SparkSupport) {
-                if (!support_spark) ImGui::BeginDisabled();
+                if (!actor->spark_support) ImGui::BeginDisabled();
                     // SPARKILIZE
                     if (ImGui::SmallButton("v SPARKILIZE v###cc_editor_sparkilize")) {
                         SparkilizeEditor();
@@ -513,7 +513,7 @@ void OpenCCEditor(MarioActor* actor) {
                     ColorPartBox(actor->model.Colors.Pelvis.c_str(), "Overalls (Bottom), Main", "Overalls (Bottom), Shade", uiColors[CC_OVERALLS_BOTTOM], "1/2###overalls_bottom_half");
                     ColorPartBox(actor->model.Colors.Thighs.c_str(), "Leg (Top), Main", "Leg (Top), Shade", uiColors[CC_LEG_TOP], "1/2###leg_top_half");
                     ColorPartBox(actor->model.Colors.Calves.c_str(), "Leg (Bottom), Main", "Leg (Bottom), Shade", uiColors[CC_LEG_BOTTOM], "1/2###leg_bottom_half");
-                if (!support_spark) ImGui::EndDisabled();
+                if (!actor->spark_support) ImGui::EndDisabled();
             }
             
             ImGui::EndTabItem();

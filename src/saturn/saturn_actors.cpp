@@ -187,6 +187,12 @@ float saturn_actor_get_alpha() {
     return 255;
 }
 
+int saturn_actor_get_support_flags(int marioIndex) {
+    MarioActor* actor = saturn_get_actor(marioIndex);;
+    if (actor == nullptr) return 0;
+    return (actor->spark_support << 1) | actor->cc_support;
+}
+
 struct ModelTexture {
     struct ModelTexture* next;
     char* id;
