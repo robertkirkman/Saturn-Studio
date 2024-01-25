@@ -269,6 +269,7 @@ bool link_scaling = true;
 
 void sdynos_imgui_menu(int index) {
     MarioActor* actor = saturn_get_actor(index);
+    if (actor == nullptr) return;
     if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
         // Color Code Selection
         if (!support_color_codes || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
