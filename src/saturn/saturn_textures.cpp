@@ -290,7 +290,7 @@ const void* saturn_bind_texture(const void* input) {
 
     // Vanilla eye textures
     if (actor->model.Expressions.size() > 0) {
-        if (custom_eyes_enabled && actor->model.UsingVanillaEyes() && actor->model.Expressions[0].Name == "eyes") {
+        if (actor->custom_eyes && actor->model.UsingVanillaEyes() && actor->model.Expressions[0].Name == "eyes") {
             if (texName.find("saturn_eye") != string::npos ||
                 // Unused vanilla textures
                 texName == "actors/mario/mario_eyes_left_unused.rgba16.png" ||
