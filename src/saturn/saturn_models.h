@@ -80,7 +80,7 @@ class Model {
             return this->FolderName;
         }
         Model() {
-            LoadEyesFolder();
+            LoadEyesFolder(this);
         }
 };
 

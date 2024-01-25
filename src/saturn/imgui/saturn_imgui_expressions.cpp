@@ -15,6 +15,7 @@
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_models.h"
 #include "saturn/saturn_textures.h"
+#include "saturn/saturn_actors.h"
 #include "saturn_imgui.h"
 #include "data/dynos.cpp.h"
 #include <SDL2/SDL.h>
@@ -183,21 +184,22 @@ void RecursiveSelector(Expression* expression, int depth, std::string parent_pat
 }
 
 /* Creates a nested expression selection menu for a model; Contains dropdown OR checkbox widgets */
-void OpenExpressionSelector() {
-    if (custom_eyes_enabled) {
-        if (current_model.Expressions.size() > 0 && current_model.CustomEyeSupport)
+void OpenExpressionSelector(MarioActor* actor) {
+    if (!actor) return;
+    if (actor->custom_eyes) {
+        if (actor->model.Expressions.size() > 0 && actor->model.CustomEyeSupport)
         // Eye Selector
-        ImGui::BeginChild(("###menu_eye_%s", current_model.Expressions[0].Name.c_str()), ImVec2(200, 150), true);
-        RecursiveSelector(&current_model.Expressions[0], 0, current_model.Expressions[0].FolderPath, 0);
+        ImGui::BeginChild(("###menu_eye_%s", actor->model.Expressions[0].Name.c_str()), ImVec2(200, 150), true);
+        RecursiveSelector(&actor->model.Expressions[0], 0, actor->model.Expressions[0].FolderPath, 0);
         ImGui::EndChild();
     }
 
-    if (!current_model.Active) return;
-    if (current_model.Expressions.size() > 1) {
+    if (!actor->model.Active) return;
+    if (actor->model.Expressions.size() > 1) {
         // Other Expressions
-        if (current_model.Expressions.size() > 8) ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
-        for (int i = 0; i < current_model.Expressions.size(); i++) {
-            Expression expression = current_model.Expressions[i];
+        if (actor->model.Expressions.size() > 8) ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+        for (int i = 0; i < actor->model.Expressions.size(); i++) {
+            Expression expression = actor->model.Expressions[i];
             if (expression.Name == "eyes") continue;
 
             std::string label_name = "###exp_label_" + expression.Name;
@@ -215,24 +217,24 @@ void OpenExpressionSelector() {
                     bool is_selected = (expression.CurrentIndex == select_index);
 
                     if (ImGui::Checkbox(label_name.c_str(), &is_selected)) {
-                        if (is_selected) current_model.Expressions[i].CurrentIndex = select_index;
-                        else current_model.Expressions[i].CurrentIndex = deselect_index;
+                        if (is_selected) actor->model.Expressions[i].CurrentIndex = select_index;
+                        else actor->model.Expressions[i].CurrentIndex = deselect_index;
                     }
                     // Popout showing the checkbox's actively displayed value
                     // This is technically the opposite of the dropdowns and selectables, which shows the value-that-will-be, not current
-                    ShowTextureContextMenu(&current_model.Expressions[i], current_model.Expressions[i].Textures[expression.CurrentIndex], i);
+                    ShowTextureContextMenu(&actor->model.Expressions[i], actor->model.Expressions[i].Textures[expression.CurrentIndex], i);
             } else {
                 // Use dropdown
                 std::string defaultLabel = ((expression.Textures.size() > 0) ? expression.Textures[expression.CurrentIndex].FileName : expression.Name) + "###combo_" + expression.Name.c_str();
                 if (ImGui::BeginCombo(label_name.c_str(), defaultLabel.c_str(), ImGuiComboFlags_None)) {
-                    RecursiveSelector(&current_model.Expressions[i], 0, expression.FolderPath, i);
+                    RecursiveSelector(&actor->model.Expressions[i], 0, expression.FolderPath, i);
                     ImGui::EndCombo();
                 }
-                ShowTextureContextMenu(&current_model.Expressions[i], current_model.Expressions[i].Textures[expression.CurrentIndex], i);
+                ShowTextureContextMenu(&actor->model.Expressions[i], actor->model.Expressions[i].Textures[expression.CurrentIndex], i);
             }
             ImGui::PopItemWidth();
         }
 
-        if (current_model.Expressions.size() > 8) ImGui::EndChild();
+        if (actor->model.Expressions.size() > 8) ImGui::EndChild();
     }
 }

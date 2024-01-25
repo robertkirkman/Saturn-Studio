@@ -182,7 +182,7 @@ void OpenModelSelector(MarioActor* actor) {
 
                     // Load expressions
                     actor->model.Expressions.clear();
-                    actor->model.Expressions = LoadExpressions(current_model.FolderPath);
+                    actor->model.Expressions = LoadExpressions(&actor->model, actor->model.FolderPath);
 
                     if (is_selected) {
                         std::cout << "Loaded " << model.Name << " by " << model.Author << std::endl;
@@ -258,8 +258,6 @@ void OpenModelSelector(MarioActor* actor) {
 }
 
 void sdynos_imgui_init() {
-    LoadEyesFolder();
-
     model_list = GetModelList("dynos/packs");
     RefreshColorCodeList();
 
@@ -273,12 +271,12 @@ void sdynos_imgui_menu(int index) {
     MarioActor* actor = saturn_get_actor(index);
     if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
         // Color Code Selection
-        if (!support_color_codes || !current_model.ColorCodeSupport) ImGui::BeginDisabled();
+        if (!support_color_codes || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
             OpenCCSelector(actor);
             // Open File Dialog
             if (ImGui::Button(ICON_FK_FILE_TEXT_O " Open CC Folder...###open_cc_folder"))
                 open_directory(std::string(sys_exe_path()) + "/dynos/colorcodes/");
-        if (!support_color_codes || !current_model.ColorCodeSupport) ImGui::EndDisabled();
+        if (!support_color_codes || !actor->model.ColorCodeSupport) ImGui::EndDisabled();
 
         // Model Selection
         OpenModelSelector(actor);
@@ -287,7 +285,7 @@ void sdynos_imgui_menu(int index) {
     }
 
     // Color Code Editor
-    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", support_color_codes & current_model.ColorCodeSupport)) {
+    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", support_color_codes & actor->model.ColorCodeSupport)) {
         OpenCCEditor(actor);
         ImGui::EndMenu();
     }
@@ -301,19 +299,19 @@ void sdynos_imgui_menu(int index) {
 
     ImGui::Separator();
 
-    if (!current_model.ColorCodeSupport) ImGui::BeginDisabled();
+    if (!actor->model.ColorCodeSupport) ImGui::BeginDisabled();
         ImGui::Checkbox("Color Code Support", &support_color_codes);
         imgui_bundled_tooltip(
             "Toggles color code features.");
 
         if (!support_color_codes) ImGui::BeginDisabled();
-            if (current_model.SparkSupport) {
+            if (actor->model.SparkSupport) {
                 ImGui::Checkbox("CometSPARK Support", &support_spark);
                 imgui_bundled_tooltip(
                     "Toggles SPARK features, which provides supported models with extra color values.");
             }
         if (!support_color_codes) ImGui::EndDisabled();
-    if (!current_model.ColorCodeSupport) ImGui::EndDisabled();
+    if (!actor->model.ColorCodeSupport) ImGui::EndDisabled();
 
     // Misc. Avatar Settings
     if (ImGui::BeginMenu("Customize...###menu_misc")) {
@@ -453,42 +451,37 @@ void sdynos_imgui_menu(int index) {
     ImGui::Separator();
 
     // Model Metadata
-    if (!current_model.Author.empty()) {
-        string metaLabelText = (ICON_FK_USER " " + current_model.Name);
-        string metaDataText = "v" + current_model.Version;
-        if (current_model.Description != "")
-            metaDataText = "v" + current_model.Version + "\n" + current_model.Description;
+    if (!actor->model.Author.empty()) {
+        string metaLabelText = (ICON_FK_USER " " + actor->model.Name);
+        string metaDataText = "v" + actor->model.Version;
+        if (actor->model.Description != "")
+            metaDataText = "v" + actor->model.Version + "\n" + actor->model.Description;
 
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
         ImGui::BeginChild("###model_metadata", ImVec2(0, 45), true, ImGuiWindowFlags_NoScrollbar);
         ImGui::Text(metaLabelText.c_str()); imgui_bundled_tooltip(metaDataText.c_str());
         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-            open_directory(std::string(sys_exe_path()) + "/" + current_model.FolderPath + "/");
-        ImGui::TextDisabled(("@ " + current_model.Author).c_str());
+            open_directory(std::string(sys_exe_path()) + "/" + actor->model.FolderPath + "/");
+        ImGui::TextDisabled(("@ " + actor->model.Author).c_str());
         ImGui::EndChild();
         ImGui::PopStyleVar();
 
         ImGui::Separator();
     }
 
-    if (current_model.CustomEyeSupport) {
+    if (actor->model.CustomEyeSupport) {
         // Custom Eyes Checkbox
-        if (ImGui::Checkbox("Custom Eyes", &custom_eyes_enabled)) {
-            if (scrollEyeState < 4 && custom_eyes_enabled) scrollEyeState = 4;
-            else scrollEyeState = 0;
-        }
-        if (!AnyModelsEnabled())
-            imgui_bundled_tooltip("Place custom eye PNG textures in /dynos/eyes/.");
+        ImGui::Checkbox("Custom Eyes", &actor->custom_eyes);
 
-        if ((custom_eyes_enabled && current_model.Expressions.size() > 0) || current_model.Expressions.size() > 1)
+        if ((actor->custom_eyes && actor->model.Expressions.size() > 0) || actor->model.Expressions.size() > 1)
             ImGui::Separator();
 
         // Expressions Selector
-        OpenExpressionSelector();
+        OpenExpressionSelector(actor);
 
         // Keyframing
-        if (custom_eyes_enabled ||
+        /*if (custom_eyes_enabled ||
             current_model.Expressions.size() > 0)
-                saturn_keyframe_popout_next_line("k_mario_expr");
+                saturn_keyframe_popout_next_line("k_mario_expr");*/
     }
 }

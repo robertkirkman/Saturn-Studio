@@ -112,7 +112,7 @@ std::vector<TexturePath> LoadExpressionTextures(std::string FolderPath, Expressi
 }
 
 /* Loads an expression list into a specified model */
-std::vector<Expression> LoadExpressions(std::string modelFolderPath) {
+std::vector<Expression> LoadExpressions(Model* model, std::string modelFolderPath) {
     std::vector<Expression> expressions_list;
 
     // Check if the model's /expressions folder exists
@@ -141,7 +141,7 @@ std::vector<Expression> LoadExpressions(std::string modelFolderPath) {
     }
 
     // If no eyes folder was loaded, load from vanilla eyes
-    if (current_model.UsingVanillaEyes())
+    if (model->UsingVanillaEyes())
         expressions_list.insert(expressions_list.begin(), VanillaEyes);
 
     return expressions_list;
@@ -149,7 +149,7 @@ std::vector<Expression> LoadExpressions(std::string modelFolderPath) {
 
 Expression VanillaEyes;
 /* Loads textures from dynos/eyes/ into a global Expression */
-void LoadEyesFolder() {
+void LoadEyesFolder(Model* model) {
     // Check if the dynos/eyes/ folder exists
     if (fs::is_directory("dynos/eyes")) {
         VanillaEyes.Name = "eyes";
@@ -157,8 +157,8 @@ void LoadEyesFolder() {
         VanillaEyes.Textures = LoadExpressionTextures(VanillaEyes.FolderPath, VanillaEyes);
         VanillaEyes.Folders = LoadExpressionFolders(VanillaEyes.FolderPath);
     }
-    if (current_model.Expressions.size() == 0) current_model.Expressions.push_back(VanillaEyes);
-    else if (current_model.UsingVanillaEyes()) current_model.Expressions[0] = VanillaEyes;
+    if (model->Expressions.size() == 0) model->Expressions.push_back(VanillaEyes);
+    else if (model->UsingVanillaEyes()) model->Expressions[0] = VanillaEyes;
 }
 
 std::map<std::string, std::string*> heap_strs = {};

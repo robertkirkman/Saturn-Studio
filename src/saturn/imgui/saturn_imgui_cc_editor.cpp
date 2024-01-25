@@ -131,10 +131,13 @@ void ResetColorCode(bool usingModel) {
 }
 
 void RefreshColorCodeList() {
-    if (current_model.HasColorCodeFolder()) {
-        model_color_code_list.clear();
-        model_color_code_list = GetColorCodeList(current_model.FolderPath + "/colorcodes");
-    } else {
+    if (current_actor) {
+        if (current_actor->model.HasColorCodeFolder()) {
+            model_color_code_list.clear();
+            model_color_code_list = GetColorCodeList(current_actor->model.FolderPath + "/colorcodes");
+        }
+    }
+    else {
         color_code_list.clear();
         color_code_list = GetColorCodeList("dynos/colorcodes");
     }
@@ -144,7 +147,7 @@ void RefreshColorCodeList() {
 
 void OpenModelCCSelector(Model model, std::vector<std::string> list, std::string ccSearchLower) {
     for (int n = 0; n < list.size(); n++) {
-        const bool is_selected = (uiCcListId == ((n + 1) * -1) && model.FolderPath == current_model.FolderPath);
+        const bool is_selected = (uiCcListId == ((n + 1) * -1) && model.FolderPath == current_actor->model.FolderPath);
         std::string label_name = list[n].substr(0, list[n].size() - 3);
 
         // If we're searching, only include CCs with the search keyword in the name
@@ -160,7 +163,7 @@ void OpenModelCCSelector(Model model, std::vector<std::string> list, std::string
 
         // Selectable
         if (ImGui::Selectable((ICON_FK_USER " " + label_name).c_str(), is_selected)) {
-            if (model.FolderPath == current_model.FolderPath)
+            if (model.FolderPath == current_actor->model.FolderPath)
                 uiCcListId = (n + 1) * -1;
             else uiCcListId = 0;
 
@@ -231,10 +234,10 @@ void OpenCCSelector(MarioActor* actor) {
     ImGui::BeginChild("###menu_cc_selector", ImVec2(-FLT_MIN, 100), true);
 
     //if (!ImGui::IsPopupOpen(0u, ImGuiPopupFlags_AnyPopupId)) {
-        if (model_color_code_list.size() > 0 && current_model.HasColorCodeFolder()) {
+        if (model_color_code_list.size() > 0 && current_actor->model.HasColorCodeFolder()) {
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-            if (ImGui::TreeNode((current_model.FolderName + "###model_cc_header").c_str())) {
-                OpenModelCCSelector(current_model, model_color_code_list, ccSearchLower);
+            if (ImGui::TreeNode((current_actor->model.FolderName + "###model_cc_header").c_str())) {
+                OpenModelCCSelector(current_actor->model, model_color_code_list, ccSearchLower);
                 ImGui::TreePop();
             }
         }

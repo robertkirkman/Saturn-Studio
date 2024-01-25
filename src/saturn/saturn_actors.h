@@ -38,6 +38,7 @@ public:
     float alpha = 128;
     int selected_model = -1;
     int cc_index = 0;
+    bool custom_eyes = false;
     Model model = Model();
     ColorCode colorcode;
     struct AnimationState animstate;

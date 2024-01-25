@@ -8,8 +8,9 @@
 #include <string>
 #include <vector>
 #include "saturn/saturn_models.h"
+#include "saturn/saturn_actors.h"
 
-extern void OpenExpressionSelector();
+extern void OpenExpressionSelector(MarioActor* actor);
 
 #endif
 #endif

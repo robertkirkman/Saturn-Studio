@@ -165,7 +165,7 @@ s16 saturn_actor_geo_switch(u8 item) {
     if (actor == nullptr) return 0;
     switch (item) {
         case ACTOR_SWITCH_EYE:
-            return actor->eye_state;
+            return actor->custom_eyes ? 4 : actor->eye_state;
             break;
         case ACTOR_SWITCH_CAP:
             return actor->cap_state;

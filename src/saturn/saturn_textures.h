@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <iostream>
 
+class Model;
+
 class TexturePath {
 public:
     std::string FileName;
@@ -53,11 +55,11 @@ public:
 extern bool custom_eyes_enabled;
 
 extern Expression VanillaEyes;
-extern void LoadEyesFolder();
+extern void LoadEyesFolder(Model*);
 
 std::vector<TexturePath> LoadExpressionTextures(std::string, Expression);
 std::vector<TexturePath> LoadExpressionFolders(std::string);
-std::vector<Expression> LoadExpressions(std::string);
+std::vector<Expression> LoadExpressions(Model*, std::string);
 
 void saturn_copy_file(std::string from, std::string to);
 void saturn_delete_file(std::string file);
