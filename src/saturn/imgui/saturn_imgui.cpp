@@ -415,7 +415,12 @@ void saturn_capture_screenshot() {
                 transparent_color[0] == image[i + 0] &&
                 transparent_color[1] == image[i + 1] &&
                 transparent_color[2] == image[i + 2]
-            ) image[i + 3] = 0;
+            ) {
+                image[i + 0] = 0;
+                image[i + 1] = 0;
+                image[i + 2] = 0;
+                image[i + 3] = 0;
+            }
             flipped[j + 0] = image[i + 0];
             flipped[j + 1] = image[i + 1];
             flipped[j + 2] = image[i + 2];
