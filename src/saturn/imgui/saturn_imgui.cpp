@@ -374,7 +374,7 @@ void imgui_update_theme() {
 }
 
 int selected_video_format = 0;
-int videores[] = { 1280, 720 };
+int videores[] = { 1920, 1080 };
 bool capturing_video = false;
 
 bool saturn_imgui_get_viewport(int* width, int* height) {
@@ -1005,6 +1005,14 @@ void saturn_imgui_update() {
                     ImGui::EndChild();
                 }
                 ImGui::PopStyleVar();
+            }
+            if (ImGui::BeginCombo("###res_preset", "Resolution Preset")) {
+                if (ImGui::Selectable("240p 4:3 (N64)")) { videores[0] =  320; videores[1] =  240; }
+                if (ImGui::Selectable("720p 16:9"))      { videores[0] = 1280; videores[1] =  720; }
+                if (ImGui::Selectable("1080p 16:9"))     { videores[0] = 1920; videores[1] = 1080; }
+                if (ImGui::Selectable("4K 16:9"))        { videores[0] = 3840; videores[1] = 2160; }
+                if (ImGui::Selectable("8K 16:9"))        { videores[0] = 7680; videores[1] = 4320; }
+                ImGui::EndCombo();
             }
             ImGui::InputInt2("Resolution", videores);
             if (!ffmpeg_installed) ImGui::BeginDisabled();
