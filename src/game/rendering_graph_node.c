@@ -14,6 +14,7 @@
 #include "saturn/saturn_animations.h"
 #include "pc/configfile.h"
 #include "object_list_processor.h"
+#include "behavior_data.h"
 
 /**
  * This file contains the code that processes the scene graph for rendering.
@@ -1117,6 +1118,7 @@ static void interpolate_matrix(Mat4 result, Mat4 a, Mat4 b) {
  * Process an object node.
  */
 static void geo_process_object(struct Object *node) {
+    if (node->behavior != bhvMarioActor && autoChroma && !autoChromaObjects) return;
     Mat4 mtxf;
     s32 hasAnimation = (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0;
     Vec3f scaleInterpolated;
