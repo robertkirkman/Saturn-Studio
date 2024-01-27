@@ -11,6 +11,7 @@
 #include "sm64.h"
 #include "src/saturn/saturn.h"
 #include "src/saturn/saturn_colors.h"
+#include "src/saturn/imgui/saturn_imgui.h"
 
 
 /**
@@ -382,9 +383,11 @@ Gfx *create_skybox_facing_camera(s8 player, s8 background, f32 fov,
     s8 colorIndex = 1;
 
     if ((gCurrLevelNum == LEVEL_SA && colorIndex == 1 || autoChroma) && use_color_background) {
-        sSkyboxColors[colorIndex][0] = chromaColor.red[0];
-        sSkyboxColors[colorIndex][1] = chromaColor.green[0];
-        sSkyboxColors[colorIndex][2] = chromaColor.blue[0];
+        int r, g, b;
+        saturn_get_transparent_color(&r, &g, &b);
+        sSkyboxColors[colorIndex][0] = r;
+        sSkyboxColors[colorIndex][1] = g;
+        sSkyboxColors[colorIndex][2] = b;
     } else if (background == 8 && !(save_file_get_star_flags(gCurrSaveFileNum - 1, COURSE_JRB - 1) & 1) && !autoChroma) {
         // If the first star is collected in JRB, make the sky darker and slightly green
         colorIndex = 0;

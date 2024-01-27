@@ -204,9 +204,6 @@ void saturn_update() {
     // Keybinds
 
     if (mario_exists) {
-        if (gPlayer1Controller->buttonPressed & D_JPAD) {
-            showMenu = !showMenu;
-        }
         if (!saturn_disable_sm64_input()) {
             if (gPlayer1Controller->buttonPressed & L_JPAD) {
                 if (!is_anim_playing) {

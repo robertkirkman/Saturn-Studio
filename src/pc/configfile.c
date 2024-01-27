@@ -82,7 +82,6 @@ unsigned int configRumbleStrength = 50;
 unsigned int configKeyFreeze[MAX_BINDS]     = { 0x0021,   0x100B,     VK_INVALID };
 unsigned int configKeyPlayAnim[MAX_BINDS]   = { 0x0018,   0x100D,     VK_INVALID };
 unsigned int configKeyLoopAnim[MAX_BINDS]   = { 0x0017,   0x100E,     VK_INVALID };
-unsigned int configKeyShowMenu[MAX_BINDS]   = { 0x003b,   0x1004,     VK_INVALID };
 #ifdef EXTERNAL_DATA
 bool configPrecacheRes = true;
 #endif
@@ -168,7 +167,6 @@ static const struct ConfigOption options[] = {
     {.name = "key_freeze",           .type = CONFIG_TYPE_BIND, .uintValue = configKeyFreeze},
     {.name = "key_anim_play",        .type = CONFIG_TYPE_BIND, .uintValue = configKeyPlayAnim},
     {.name = "key_anim_pause",       .type = CONFIG_TYPE_BIND, .uintValue = configKeyLoopAnim},
-    {.name = "key_show_menu",        .type = CONFIG_TYPE_BIND, .uintValue = configKeyShowMenu},
     {.name = "editor_theme",         .type = CONFIG_TYPE_UINT, .uintValue = &configEditorTheme},
     {.name = "editor_fast_apply",    .type = CONFIG_TYPE_BOOL, .uintValue = &configEditorFastApply},
     {.name = "editor_auto_model_cc", .type = CONFIG_TYPE_BOOL, .uintValue = &configEditorAutoModelCc},

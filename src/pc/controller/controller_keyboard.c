@@ -85,7 +85,6 @@ static void keyboard_bindkeys(void) {
     keyboard_add_binds(U_JPAD, configKeyFreeze);
     keyboard_add_binds(L_JPAD, configKeyPlayAnim);
     keyboard_add_binds(R_JPAD, configKeyLoopAnim);
-    keyboard_add_binds(D_JPAD, configKeyShowMenu);
 }
 
 static void keyboard_init(void) {

@@ -870,13 +870,11 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
                 OVERRIDE_COLOR(CC_OVERALLS_BOTTOM, COLOR_SHADE);
                 OVERRIDE_COLOR(CC_LEG_TOP,         COLOR_SHADE);
                 OVERRIDE_COLOR(CC_LEG_BOTTOM,      COLOR_SHADE);
-
-                else if (chroma_floor && use_color_background) {
-                    r = chromaColor.red[1];
-                    g = chromaColor.green[1];
-                    b = chromaColor.blue[1];
-                }
             }
+
+            if (chroma_floor && use_color_background) {
+                saturn_get_transparent_color(&r, &g, &b);
+            } 
 
             override_index = 0;
             
@@ -1907,6 +1905,7 @@ struct GfxRenderingAPI *gfx_get_current_rendering_api(void) {
 }
 
 void gfx_start_frame(void) {
+    saturn_imgui_init_transparency();
     gfx_wapi->handle_events();
     if (!saturn_imgui_get_viewport(&gfx_current_dimensions.width, &gfx_current_dimensions.height))
         gfx_wapi->get_dimensions(&gfx_current_dimensions.width, &gfx_current_dimensions.height);

@@ -283,8 +283,6 @@ void ssettings_imgui_update() {
                 SaturnKeyBind("Play", configKeyPlayAnim, "bPlayA", 3*24);
                 ImGui::SameLine(); imgui_bundled_help_marker("Press again to pause the playing animation.");
                 SaturnKeyBind("Loop", configKeyLoopAnim, "bLoopA", 3*25);
-                ImGui::Text("Other");
-                SaturnKeyBind("Menu", configKeyShowMenu, "bShowMenu", 3*27);
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();

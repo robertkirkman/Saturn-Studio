@@ -71,6 +71,7 @@ extern "C" {
 #include "game/level_update.h"
 #include "engine/level_script.h"
 #include "game/object_list_processor.h"
+#include "pc/pngutils.h"
 }
 
 using namespace std;
@@ -82,7 +83,6 @@ Array<PackData *> &iDynosPacks = DynOS_Gfx_GetPacks();
 // Variables
 
 int currentMenu = 0;
-bool showMenu = true;
 bool showStatusBars = true;
 
 bool windowStats = true;
@@ -373,23 +373,82 @@ void imgui_update_theme() {
     style->ScaleAllSizes(SCALE);
 }
 
+int selected_video_format = 0;
+int videores[] = { 1280, 720 };
+bool capturing_video = false;
+
 bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
     if (width == nullptr) width = &w;
     if (height == nullptr) height = &h;
-    if (showMenu && (game_viewport[2] != -1 && game_viewport[3] != -1)) {
+    if (capturing_video) {
+        *width = videores[0];
+        *height = videores[1];
+        return true;
+    }
+    if (game_viewport[2] != -1 && game_viewport[3] != -1) {
         *width = game_viewport[2];
         *height = game_viewport[3];
         return true;
     }
-    else SDL_GetWindowSize(window, width, height);
+    SDL_GetWindowSize(window, width, height);
     return false;
 }
 
 void* framebuffer;
+unsigned char transparent_color[3];
 
-void saturn_imgui_set_frame_buffer(void* fb) {
+void saturn_capture_screenshot() {
+    if (!capturing_video) return;
+    capturing_video = false;
+    int fb_size = (int)videores[0] * (int)videores[1] * 4;
+    unsigned char* image = (unsigned char*)malloc(fb_size);
+    unsigned char* flipped = (unsigned char*)malloc(fb_size);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)framebuffer);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    for (int y = 0; y < videores[1]; y++) {
+        for (int x = 0; x < videores[0]; x++) {
+            int i = (y * videores[0] + x) * 4;
+            int j = ((videores[1] - y - 1) * videores[0] + x) * 4;
+            if (
+                transparent_color[0] == image[i + 0] &&
+                transparent_color[1] == image[i + 1] &&
+                transparent_color[2] == image[i + 2]
+            ) image[i + 3] = 0;
+            flipped[j + 0] = image[i + 0];
+            flipped[j + 1] = image[i + 1];
+            flipped[j + 2] = image[i + 2];
+            flipped[j + 3] = image[i + 3];
+        }
+    }
+    pngutils_write_png("screenshot.png", (int)videores[0], (int)videores[1], 4, flipped, 0);
+    free(image);
+    free(flipped);
+}
+
+void saturn_imgui_init_transparency() {
+    for (int i = 0; i < 3; i++) {
+        transparent_color[i] = rand();
+    }
+}
+
+void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
     framebuffer = fb;
+    if (do_capture) saturn_capture_screenshot();
+}
+
+void saturn_get_transparent_color(int* r, int* g, int* b) {
+    if (capturing_video) {
+        if (r) *r = transparent_color[0];
+        if (g) *g = transparent_color[1];
+        if (b) *b = transparent_color[2];
+    }
+    else {
+        if (r) *r = chromaColor.red[1];
+        if (g) *g = chromaColor.green[1];
+        if (b) *b = chromaColor.blue[1];
+    }
 }
 
 // Set up ImGui
@@ -474,6 +533,47 @@ void saturn_load_themes() {
     }
 }
 
+bool mario_menu_do_open = false;
+int game_focus_timer = 0;
+int mario_menu_index = -1;
+
+bool is_focused_on_game() {
+    return game_focus_timer++ >= 3;
+}
+
+void saturn_imgui_open_mario_menu(int index) {
+    mario_menu_do_open = true;
+    mario_menu_index = index;
+}
+
+bool is_ffmpeg_installed() {
+    std::string path = std::string(getenv("PATH"));
+#ifdef WINDOWS
+    char delimiter = ';';
+    std::string suffix = ".exe";
+#else
+    char delimiter = ':';
+    std::string suffix = "";
+#endif
+    std::vector<std::string> paths = {};
+    std::string word = "";
+    for (int i = 0; i < path.length(); i++) {
+        if (path[i] == delimiter) {
+            paths.push_back(word);
+            word = "";
+        }
+        else word += path[i];
+    }
+    paths.push_back(word);
+    for (std::string p : paths) {
+        std::filesystem::path fsPath = std::filesystem::path(p) / ("ffmpeg" + suffix);
+        if (std::filesystem::exists(fsPath)) return true;
+    }
+    return false;
+}
+
+bool ffmpeg_installed = true;
+
 void saturn_imgui_init() {
     saturn_load_themes();
     sdynos_imgui_init();
@@ -481,6 +581,8 @@ void saturn_imgui_init() {
     ssettings_imgui_init();
     
     saturn_load_project_list();
+
+    ffmpeg_installed = is_ffmpeg_installed();
 }
 
 void saturn_imgui_handle_events(SDL_Event * event) {
@@ -731,19 +833,6 @@ void saturn_keyframe_window() {
     k_previous_frame = k_current_frame;
 }
 
-bool mario_menu_do_open = false;
-int game_focus_timer = 0;
-int mario_menu_index = -1;
-
-bool is_focused_on_game() {
-    return game_focus_timer++ >= 3;
-}
-
-void saturn_imgui_open_mario_menu(int index) {
-    mario_menu_do_open = true;
-    mario_menu_index = index;
-}
-
 char saturnProjectFilename[257] = "Project";
 int current_project_id;
 
@@ -758,267 +847,300 @@ void saturn_imgui_update() {
 
     camera_savestate_mult = 1.f;
 
-    if (showMenu) {
-        ImGuiID dockspace = saturn_imgui_setup_dockspace();
-        if (ImGui::Begin("Machinima")) {
-            windowCcEditor = false;
+    ImGuiID dockspace = saturn_imgui_setup_dockspace();
+    if (ImGui::Begin("Machinima")) {
+        windowCcEditor = false;
 
-            if (ImGui::MenuItem(ICON_FK_WINDOW_MAXIMIZE " Recording Mode",      translate_bind_to_name(configKeyShowMenu[0]), showMenu)) showMenu = !showMenu;
-            ImGui::Separator();
+        if (ImGui::BeginMenu("Open Project")) {
+            ImGui::BeginChild("###menu_model_ccs", ImVec2(165, 75), true);
+            for (int n = 0; n < project_array.size(); n++) {
+                const bool is_selected = (current_project_id == n);
+                std::string spj_name = project_array[n].substr(0, project_array[n].size() - 4);
 
-            if (ImGui::BeginMenu("Open Project")) {
-                ImGui::BeginChild("###menu_model_ccs", ImVec2(165, 75), true);
-                for (int n = 0; n < project_array.size(); n++) {
-                    const bool is_selected = (current_project_id == n);
-                    std::string spj_name = project_array[n].substr(0, project_array[n].size() - 4);
+                if (ImGui::Selectable(spj_name.c_str(), is_selected)) {
+                    current_project_id = n;
+                    if (spj_name.length() <= 256);
+                        strcpy(saturnProjectFilename, spj_name.c_str());
+                    //saturn_load_project((char*)(spj_name + ".spj").c_str());
+                }
 
-                    if (ImGui::Selectable(spj_name.c_str(), is_selected)) {
-                        current_project_id = n;
-                        if (spj_name.length() <= 256);
-                            strcpy(saturnProjectFilename, spj_name.c_str());
-                        //saturn_load_project((char*)(spj_name + ".spj").c_str());
-                    }
-
-                    if (ImGui::BeginPopupContextItem()) {
-                        ImGui::Text("%s.spj", spj_name.c_str());
-                        imgui_bundled_tooltip(("/dynos/projects/" + spj_name + ".spj").c_str());
-                        if (spj_name != "autosave") {
-                            if (ImGui::SmallButton(ICON_FK_TRASH_O " Delete File")) {
-                                saturn_delete_file(project_dir + spj_name + ".spj");
-                                saturn_load_project_list();
-                                ImGui::CloseCurrentPopup();
-                            } ImGui::SameLine(); imgui_bundled_help_marker("WARNING: This action is irreversible!");
-                        }
-                        ImGui::Separator();
-                        ImGui::TextDisabled("%i project(s)", project_array.size());
-                        if (ImGui::Button(ICON_FK_UNDO " Refresh")) {
+                if (ImGui::BeginPopupContextItem()) {
+                    ImGui::Text("%s.spj", spj_name.c_str());
+                    imgui_bundled_tooltip(("/dynos/projects/" + spj_name + ".spj").c_str());
+                    if (spj_name != "autosave") {
+                        if (ImGui::SmallButton(ICON_FK_TRASH_O " Delete File")) {
+                            saturn_delete_file(project_dir + spj_name + ".spj");
                             saturn_load_project_list();
                             ImGui::CloseCurrentPopup();
-                        }
-                        ImGui::EndPopup();
+                        } ImGui::SameLine(); imgui_bundled_help_marker("WARNING: This action is irreversible!");
                     }
+                    ImGui::Separator();
+                    ImGui::TextDisabled("%i project(s)", project_array.size());
+                    if (ImGui::Button(ICON_FK_UNDO " Refresh")) {
+                        saturn_load_project_list();
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
                 }
-                ImGui::EndChild();
-                ImGui::PushItemWidth(125);
-                ImGui::InputText(".spj###project_file_input", saturnProjectFilename, 256);
-                ImGui::PopItemWidth();
-                if (ImGui::Button(ICON_FA_FILE " Open###project_file_open")) {
-                    saturn_load_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str());
-                }
-                ImGui::SameLine(70);
-                bool in_custom_level = gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3;
-                if (in_custom_level) ImGui::BeginDisabled();
-                if (ImGui::Button(ICON_FA_SAVE " Save###project_file_save")) {
-                    saturn_save_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str());
-                    saturn_load_project_list();
-                }
-                if (in_custom_level) ImGui::EndDisabled();
-                ImGui::SameLine();
-                imgui_bundled_help_marker("NOTE: Project files are currently EXPERIMENTAL and prone to crashing!");
-                if (in_custom_level) ImGui::Text("Saving in a custom\nlevel isn't supported");
-                ImGui::EndMenu();
             }
-            if (ImGui::MenuItem(ICON_FA_UNDO " Load Autosaved")) {
-                saturn_load_project("autosave.spj");
+            ImGui::EndChild();
+            ImGui::PushItemWidth(125);
+            ImGui::InputText(".spj###project_file_input", saturnProjectFilename, 256);
+            ImGui::PopItemWidth();
+            if (ImGui::Button(ICON_FA_FILE " Open###project_file_open")) {
+                saturn_load_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str());
             }
+            ImGui::SameLine(70);
+            bool in_custom_level = gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3;
+            if (in_custom_level) ImGui::BeginDisabled();
+            if (ImGui::Button(ICON_FA_SAVE " Save###project_file_save")) {
+                saturn_save_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str());
+                saturn_load_project_list();
+            }
+            if (in_custom_level) ImGui::EndDisabled();
+            ImGui::SameLine();
+            imgui_bundled_help_marker("NOTE: Project files are currently EXPERIMENTAL and prone to crashing!");
+            if (in_custom_level) ImGui::Text("Saving in a custom\nlevel isn't supported");
+            ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem(ICON_FA_UNDO " Load Autosaved")) {
+            saturn_load_project("autosave.spj");
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::CollapsingHeader("Camera")) {
+            windowCcEditor = false;
+
+            if (camera_frozen) {
+                saturn_keyframe_popout_next_line({ "k_c_camera_pos0", "k_c_camera_pos1", "k_c_camera_pos2", "k_c_camera_yaw", "k_c_camera_pitch", "k_c_camera_roll" });
+
+                if (ImGui::BeginMenu("Options###camera_options")) {
+                    camera_savestate_mult = 0.f;
+                    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+                    ImGui::BeginChild("###model_metadata", ImVec2(200, 90), true, ImGuiWindowFlags_NoScrollbar);
+                    ImGui::TextDisabled("pos %.f, %.f, %.f", gCamera->pos[0], gCamera->pos[1], gCamera->pos[2]);
+                    ImGui::TextDisabled("foc %.f, %.f, %.f", gCamera->focus[0], gCamera->focus[1], gCamera->focus[2]);
+                    if (ImGui::Button(ICON_FK_FILES_O " Copy###copy_camera")) {
+                        saturn_copy_camera(copy_relative);
+                        if (copy_relative) saturn_paste_camera();
+                        has_copy_camera = 1;
+                    } ImGui::SameLine();
+                    if (!has_copy_camera) ImGui::BeginDisabled();
+                    if (ImGui::Button(ICON_FK_CLIPBOARD " Paste###paste_camera")) {
+                        if (has_copy_camera) saturn_paste_camera();
+                    }
+                    /*ImGui::Checkbox("Loop###camera_paste_forever", &paste_forever);
+                    if (paste_forever) {
+                        saturn_paste_camera();
+                    }*/
+                    if (!has_copy_camera) ImGui::EndDisabled();
+                    ImGui::Checkbox("Relative to Mario###camera_copy_relative", &copy_relative);
+
+                    ImGui::EndChild();
+                    ImGui::PopStyleVar();
+
+                    ImGui::Text(ICON_FK_VIDEO_CAMERA " Speed");
+                    ImGui::PushItemWidth(150);
+                    ImGui::SliderFloat("Move", &camVelSpeed, 0.0f, 2.0f);
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camVelSpeed = 1.f; }
+                    ImGui::SliderFloat("Rotate", &camVelRSpeed, 0.0f, 2.0f);
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camVelRSpeed = 1.f; }
+                    ImGui::PopItemWidth();
+                    ImGui::EndMenu();
+                }
+            }
+            ImGui::Separator();
+            ImGui::PushItemWidth(100);
+            ImGui::SliderFloat("FOV", &camera_fov, 0.0f, 100.0f);
+            if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camera_fov = 50.f; }
+            imgui_bundled_tooltip("Controls the FOV of the in-game camera; Default is 50, or 40 in Project64.");
+            saturn_keyframe_popout("k_fov");
+            ImGui::SameLine(200); ImGui::TextDisabled("N/M");
+            ImGui::PopItemWidth();
+            ImGui::Checkbox("Smooth###fov_smooth", &camera_fov_smooth);
 
             ImGui::Separator();
-
-            if (ImGui::CollapsingHeader("Camera")) {
-                windowCcEditor = false;
-
-                if (camera_frozen) {
-                    saturn_keyframe_popout_next_line({ "k_c_camera_pos0", "k_c_camera_pos1", "k_c_camera_pos2", "k_c_camera_yaw", "k_c_camera_pitch", "k_c_camera_roll" });
-
-                    if (ImGui::BeginMenu("Options###camera_options")) {
-                        camera_savestate_mult = 0.f;
-                        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-                        ImGui::BeginChild("###model_metadata", ImVec2(200, 90), true, ImGuiWindowFlags_NoScrollbar);
-                        ImGui::TextDisabled("pos %.f, %.f, %.f", gCamera->pos[0], gCamera->pos[1], gCamera->pos[2]);
-                        ImGui::TextDisabled("foc %.f, %.f, %.f", gCamera->focus[0], gCamera->focus[1], gCamera->focus[2]);
-                        if (ImGui::Button(ICON_FK_FILES_O " Copy###copy_camera")) {
-                            saturn_copy_camera(copy_relative);
-                            if (copy_relative) saturn_paste_camera();
-                            has_copy_camera = 1;
-                        } ImGui::SameLine();
-                        if (!has_copy_camera) ImGui::BeginDisabled();
-                        if (ImGui::Button(ICON_FK_CLIPBOARD " Paste###paste_camera")) {
-                            if (has_copy_camera) saturn_paste_camera();
-                        }
-                        /*ImGui::Checkbox("Loop###camera_paste_forever", &paste_forever);
-                        if (paste_forever) {
-                            saturn_paste_camera();
-                        }*/
-                        if (!has_copy_camera) ImGui::EndDisabled();
-                        ImGui::Checkbox("Relative to Mario###camera_copy_relative", &copy_relative);
-
-                        ImGui::EndChild();
-                        ImGui::PopStyleVar();
-
-                        ImGui::Text(ICON_FK_VIDEO_CAMERA " Speed");
-                        ImGui::PushItemWidth(150);
-                        ImGui::SliderFloat("Move", &camVelSpeed, 0.0f, 2.0f);
-                        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camVelSpeed = 1.f; }
-                        ImGui::SliderFloat("Rotate", &camVelRSpeed, 0.0f, 2.0f);
-                        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camVelRSpeed = 1.f; }
-                        ImGui::PopItemWidth();
-                        ImGui::EndMenu();
-                    }
-                }
-                ImGui::Separator();
-                ImGui::PushItemWidth(100);
-                ImGui::SliderFloat("FOV", &camera_fov, 0.0f, 100.0f);
-                if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camera_fov = 50.f; }
-                imgui_bundled_tooltip("Controls the FOV of the in-game camera; Default is 50, or 40 in Project64.");
-                saturn_keyframe_popout("k_fov");
-                ImGui::SameLine(200); ImGui::TextDisabled("N/M");
-                ImGui::PopItemWidth();
-                ImGui::Checkbox("Smooth###fov_smooth", &camera_fov_smooth);
-
-                ImGui::Separator();
-                ImGui::PushItemWidth(100);
-                ImGui::SliderFloat("Follow", &camera_focus, 0.0f, 1.0f);
-                if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camera_focus = 1.f; }
-                saturn_keyframe_popout("k_focus");
-                ImGui::PopItemWidth();
-            }
-
-            /*if (ImGui::CollapsingHeader("Appearance")) {
-                sdynos_imgui_menu();
-            }*/
-
-            if (ImGui::CollapsingHeader("Options")) {
-                imgui_machinima_quick_options();
-            }
-
-            if (ImGui::CollapsingHeader("Autochroma")) {
-                if (ImGui::Checkbox("Enabled", &autoChroma)) {
-                    schroma_imgui_init();
-                    windowCcEditor = false;
-                    windowAnimPlayer = false;
-
-                    for (int i = 0; i < 960; i++) {
-                        gObjectPool[i].header.gfx.node.flags &= ~GRAPH_RENDER_INVISIBLE;
-                        if (autoChroma && !autoChromaObjects) gObjectPool[i].header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
-                    }
-                }
-                ImGui::Separator();
-                if (autoChroma) schroma_imgui_update();
-            }
-        } ImGui::End();
-
-        if (ImGui::Begin("Settings")) {
-            ssettings_imgui_update();
-        } ImGui::End();
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        if (ImGui::Begin("Game")) {
-            ImVec2 window_pos = ImGui::GetWindowPos();
-            ImVec2 window_size = ImGui::GetWindowSize();
-            window_pos.y += 20;
-            window_size.y -= 20;
-            game_viewport[0] = window_pos.x;
-            game_viewport[1] = window_pos.y;
-            game_viewport[2] = window_size.x;
-            game_viewport[3] = window_size.y;
-            if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
-            ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-            ImGui::PopStyleVar();
-            if (ImGui::BeginPopup("Mario Menu")) {
-                mario_menu_do_open = false;
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
-                if (ImGui::MenuItem(ICON_FK_TRASH " Remove")) {
-                    saturn_remove_actor(mario_menu_index);
-                }
-                ImGui::PopStyleColor();
-                sdynos_imgui_menu(mario_menu_index);
-                ImGui::EndPopup();
-            }
-            if (mario_menu_do_open) ImGui::OpenPopup("Mario Menu");
-            if (!ImGui::IsWindowHovered()) game_focus_timer = 0;
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        } ImGui::End();
-        ImGui::PopStyleVar();
-
-        saturn_keyframe_window();
-
-        ImGuiViewportP* viewport = (ImGuiViewportP*)(void*)ImGui::GetMainViewport();
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;
-        float height = ImGui::GetFrameHeight();
-
-        if (showStatusBars) {
-            if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, height, window_flags)) {
-                if (ImGui::BeginMenuBar()) {
-                    ImGui::Text(PLATFORM_ICON);
-                    if (configFps60) ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
-                    else ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate / 2, 1000.0f / (ImGui::GetIO().Framerate / 2));
-                    ImGui::Text("     ");
-#ifdef GIT_BRANCH
-#ifdef GIT_HASH
-                    ImGui::TextDisabled(ICON_FK_GITHUB " " GIT_BRANCH " " GIT_HASH);
-#endif
-#endif
-                    if (gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3) {
-                        ImGui::SameLine(ImGui::GetWindowWidth() - 280);
-                        ImGui::Text("Saving in custom level isn't supported");
-                    }
-                    else {
-                        ImGui::SameLine(ImGui::GetWindowWidth() - 140);
-                        ImGui::Text("Autosaving in %ds", autosaveDelay / 30);
-                    }
-                    ImGui::EndMenuBar();
-                }
-                ImGui::End();
-            }
+            ImGui::PushItemWidth(100);
+            ImGui::SliderFloat("Follow", &camera_focus, 0.0f, 1.0f);
+            if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) { camera_focus = 1.f; }
+            saturn_keyframe_popout("k_focus");
+            ImGui::PopItemWidth();
         }
 
-        /*if (windowStats) {
-            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-            ImGuiWindowFlags stats_flags = imgui_bundled_window_corner(2, 0, 0, 0.64f);
-            ImGui::Begin("Stats", &windowStats, stats_flags);
-
-#ifdef DISCORDRPC
-            if (has_discord_init && gCurUser.username != "") {
-                if (gCurUser.username == NULL || gCurUser.username == "") {
-                    ImGui::Text(ICON_FK_DISCORD " Loading...");
-                } else {
-                    std::string disc = gCurUser.discriminator;
-                    if (disc == "0") ImGui::Text(ICON_FK_DISCORD " @%s", gCurUser.username);
-                    else ImGui::Text(ICON_FK_DISCORD " %s#%s", gCurUser.username, gCurUser.discriminator);
-                }
-                ImGui::Separator();
-            }
-#endif
-            ImGui::Text(ICON_FK_FOLDER_OPEN " %i model pack(s)", model_list.size());
-            ImGui::Text(ICON_FK_FILE_TEXT " %i color code(s)", color_code_list.size());
-            ImGui::TextDisabled(ICON_FK_PICTURE_O " %i textures loaded", preloaded_textures_count);
-
-            ImGui::End();
-            ImGui::PopStyleColor();
-        }
-        if (windowCcEditor && support_color_codes && current_model.ColorCodeSupport) {
-            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-            ImGui::Begin("Color Code Editor", &windowCcEditor);
-            OpenCCEditor();
-            ImGui::End();
-            ImGui::PopStyleColor();
-
-#ifdef DISCORDRPC
-            discord_state = "In-Game // Editing a CC";
-#endif
-        }
-        if (windowAnimPlayer && mario_exists) {
-            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-            ImGui::Begin("Animation Mixtape", &windowAnimPlayer);
-            imgui_machinima_animation_player();
-            ImGui::End();
-            ImGui::PopStyleColor();
+        /*if (ImGui::CollapsingHeader("Appearance")) {
+            sdynos_imgui_menu();
         }*/
 
-        //ImGui::ShowDemoWindow();
+        if (ImGui::CollapsingHeader("Options")) {
+            imgui_machinima_quick_options();
+        }
 
-        saturn_imgui_create_dockspace_layout(dockspace);
+        if (ImGui::CollapsingHeader("Autochroma")) {
+            if (ImGui::Checkbox("Enabled", &autoChroma)) {
+                schroma_imgui_init();
+                windowCcEditor = false;
+                windowAnimPlayer = false;
+
+                for (int i = 0; i < 960; i++) {
+                    gObjectPool[i].header.gfx.node.flags &= ~GRAPH_RENDER_INVISIBLE;
+                    if (autoChroma && !autoChromaObjects) gObjectPool[i].header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
+                }
+            }
+            ImGui::Separator();
+            if (autoChroma) schroma_imgui_update();
+        }
+
+        if (ImGui::CollapsingHeader("Recording")) {
+            if (!ffmpeg_installed) {
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f);
+                if (ImGui::BeginChild("###no_ffmpeg", ImVec2(0, 48), true, ImGuiWindowFlags_NoScrollbar)) {
+                    ImGui::Text("FFmpeg isn't installed, so no video");
+                    ImGui::Text("recording features are available.");
+                    ImGui::EndChild();
+                }
+                ImGui::PopStyleVar();
+            }
+            ImGui::InputInt2("Resolution", videores);
+            if (!ffmpeg_installed) ImGui::BeginDisabled();
+            const char* video_formats[] = { ".webm", ".mp4" };
+            if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format])) {
+                for (int i = 0; i < 2; i++) {
+                    bool is_selected = selected_video_format == i;
+                    if (ImGui::Selectable(video_formats[i], is_selected)) selected_video_format = i;
+                    if (is_selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+            if (selected_video_format != 0) {
+                ImGui::Text(ICON_FK_EXCLAMATION_TRIANGLE " This video format doesn't");
+                ImGui::Text("support transparency");
+            }
+            if (!ffmpeg_installed) ImGui::EndDisabled();
+            ImGui::Separator();
+            if (ImGui::Button("Capture Screenshot")) {
+                capturing_video = true;
+            }
+            ImGui::SameLine();
+            if (!ffmpeg_installed) ImGui::BeginDisabled();
+            if (ImGui::Button("Render Video")) {
+
+            }
+            if (!ffmpeg_installed) ImGui::EndDisabled();
+        }
+    } ImGui::End();
+
+    if (ImGui::Begin("Settings")) {
+        ssettings_imgui_update();
+    } ImGui::End();
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    if (ImGui::Begin("Game")) {
+        ImVec2 window_pos = ImGui::GetWindowPos();
+        ImVec2 window_size = ImGui::GetWindowSize();
+        window_pos.y += 20;
+        window_size.y -= 20;
+        game_viewport[0] = window_pos.x;
+        game_viewport[1] = window_pos.y;
+        game_viewport[2] = window_size.x;
+        game_viewport[3] = window_size.y;
+        if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
+        ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        ImGui::PopStyleVar();
+        if (ImGui::BeginPopup("Mario Menu")) {
+            mario_menu_do_open = false;
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
+            if (ImGui::MenuItem(ICON_FK_TRASH " Remove")) {
+                saturn_remove_actor(mario_menu_index);
+            }
+            ImGui::PopStyleColor();
+            sdynos_imgui_menu(mario_menu_index);
+            ImGui::EndPopup();
+        }
+        if (mario_menu_do_open) ImGui::OpenPopup("Mario Menu");
+        if (!ImGui::IsWindowHovered()) game_focus_timer = 0;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    } ImGui::End();
+    ImGui::PopStyleVar();
+
+    saturn_keyframe_window();
+
+    ImGuiViewportP* viewport = (ImGuiViewportP*)(void*)ImGui::GetMainViewport();
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar;
+    float height = ImGui::GetFrameHeight();
+
+    if (showStatusBars) {
+        if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, height, window_flags)) {
+            if (ImGui::BeginMenuBar()) {
+                ImGui::Text(PLATFORM_ICON);
+                if (configFps60) ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                else ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate / 2, 1000.0f / (ImGui::GetIO().Framerate / 2));
+                ImGui::Text("     ");
+#ifdef GIT_BRANCH
+#ifdef GIT_HASH
+                ImGui::TextDisabled(ICON_FK_GITHUB " " GIT_BRANCH " " GIT_HASH);
+#endif
+#endif
+                if (gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3) {
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 280);
+                    ImGui::Text("Saving in custom level isn't supported");
+                }
+                else {
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 140);
+                    ImGui::Text("Autosaving in %ds", autosaveDelay / 30);
+                }
+                ImGui::EndMenuBar();
+            }
+            ImGui::End();
+        }
     }
+
+    /*if (windowStats) {
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+        ImGuiWindowFlags stats_flags = imgui_bundled_window_corner(2, 0, 0, 0.64f);
+        ImGui::Begin("Stats", &windowStats, stats_flags);
+
+#ifdef DISCORDRPC
+        if (has_discord_init && gCurUser.username != "") {
+            if (gCurUser.username == NULL || gCurUser.username == "") {
+                ImGui::Text(ICON_FK_DISCORD " Loading...");
+            } else {
+                std::string disc = gCurUser.discriminator;
+                if (disc == "0") ImGui::Text(ICON_FK_DISCORD " @%s", gCurUser.username);
+                else ImGui::Text(ICON_FK_DISCORD " %s#%s", gCurUser.username, gCurUser.discriminator);
+            }
+            ImGui::Separator();
+        }
+#endif
+        ImGui::Text(ICON_FK_FOLDER_OPEN " %i model pack(s)", model_list.size());
+        ImGui::Text(ICON_FK_FILE_TEXT " %i color code(s)", color_code_list.size());
+        ImGui::TextDisabled(ICON_FK_PICTURE_O " %i textures loaded", preloaded_textures_count);
+
+        ImGui::End();
+        ImGui::PopStyleColor();
+    }
+    if (windowCcEditor && support_color_codes && current_model.ColorCodeSupport) {
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+        ImGui::Begin("Color Code Editor", &windowCcEditor);
+        OpenCCEditor();
+        ImGui::End();
+        ImGui::PopStyleColor();
+
+#ifdef DISCORDRPC
+        discord_state = "In-Game // Editing a CC";
+#endif
+    }
+    if (windowAnimPlayer && mario_exists) {
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+        ImGui::Begin("Animation Mixtape", &windowAnimPlayer);
+        imgui_machinima_animation_player();
+        ImGui::End();
+        ImGui::PopStyleColor();
+    }*/
+
+    //ImGui::ShowDemoWindow();
+
+    saturn_imgui_create_dockspace_layout(dockspace);
 
     is_cc_editing = windowCcEditor & support_color_codes & current_model.ColorCodeSupport;
 
