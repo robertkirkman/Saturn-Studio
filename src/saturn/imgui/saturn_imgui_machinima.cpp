@@ -80,6 +80,14 @@ s16 levelList[] = {
     LEVEL_SL, LEVEL_WDW, LEVEL_TTM, LEVEL_THI,
     LEVEL_TTC, LEVEL_WMOTR, LEVEL_RR, LEVEL_BITS
 };
+int areaList[] = {
+    1, 1, 3, 1, 1,
+    1, 1, 1, 2, 2,
+    1, 1, 1, 1, 2,
+    2, 1, 2, 1,
+    2, 2, 2, 2,
+    1, 1, 1, 1
+};
 
 int current_level_sel = 0;
 void warp_to(s16 destLevel, s16 destArea = 0x01, s16 destWarpNode = 0x0A) {
@@ -286,6 +294,7 @@ void smachinima_imgui_init() {
 }
 
 bool enabled_acts[6];
+int current_warp_area = 1;
 
 void imgui_machinima_quick_options() {
     if (ImGui::MenuItem(ICON_FK_CLOCK_O " Limit FPS",      "F4", limit_fps)) {
@@ -300,8 +309,10 @@ void imgui_machinima_quick_options() {
             for (int n = 0; n < IM_ARRAYSIZE(levelList); n++) {
                 const bool is_selected = (current_slevel_index == n);
 
-                if (ImGui::Selectable(saturn_get_stage_name(levelList[n]), is_selected))
+                if (ImGui::Selectable(saturn_get_stage_name(levelList[n]), is_selected)) {
                     current_slevel_index = n;
+                    current_warp_area = 1;
+                }
 
                 // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                 if (is_selected)
@@ -309,11 +320,21 @@ void imgui_machinima_quick_options() {
             }
             ImGui::EndCombo();
         }
+        if (ImGui::BeginCombo("###level_area", ("Area " + std::to_string(current_warp_area)).c_str())) {
+            for (int i = 1; i <= areaList[current_slevel_index]; i++) {
+                bool is_selected = (current_warp_area == i);
+                if (ImGui::Selectable(("Area " + std::to_string(i)).c_str())) {
+                    current_warp_area = i;
+                }
+                if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
 
         if (ImGui::Button("Warp to Level")) {
             autoChroma = false;
 
-            warp_to_level(current_slevel_index, (s32)currentChromaArea, 1);
+            warp_to_level(current_slevel_index, current_warp_area, 1);
             // Erase existing timelines
             k_frame_keys.clear();
         }
