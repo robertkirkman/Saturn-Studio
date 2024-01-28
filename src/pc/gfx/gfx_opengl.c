@@ -699,10 +699,13 @@ static void gfx_opengl_start_frame(void) {
     }
 
     glDisable(GL_SCISSOR_TEST);
-    //glDepthMask(GL_TRUE); // Must be set to clear Z-buffer
+    glDepthMask(GL_TRUE); // Must be set to clear Z-buffer
     //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_SCISSOR_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 static void gfx_opengl_end_frame(void) {
