@@ -396,7 +396,6 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
 }
 
 void* framebuffer;
-unsigned char transparent_color[3];
 
 void saturn_capture_screenshot() {
     if (!capturing_video) return;
@@ -411,16 +410,6 @@ void saturn_capture_screenshot() {
         for (int x = 0; x < videores[0]; x++) {
             int i = (y * videores[0] + x) * 4;
             int j = ((videores[1] - y - 1) * videores[0] + x) * 4;
-            if (
-                transparent_color[0] == image[i + 0] &&
-                transparent_color[1] == image[i + 1] &&
-                transparent_color[2] == image[i + 2]
-            ) {
-                image[i + 0] = 0;
-                image[i + 1] = 0;
-                image[i + 2] = 0;
-                image[i + 3] = 0;
-            }
             flipped[j + 0] = image[i + 0];
             flipped[j + 1] = image[i + 1];
             flipped[j + 2] = image[i + 2];
@@ -432,28 +421,13 @@ void saturn_capture_screenshot() {
     free(flipped);
 }
 
-void saturn_imgui_init_transparency() {
-    for (int i = 0; i < 3; i++) {
-        transparent_color[i] = rand();
-    }
+bool saturn_imgui_is_capturing_video() {
+    return capturing_video;
 }
 
 void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
     framebuffer = fb;
     if (do_capture) saturn_capture_screenshot();
-}
-
-void saturn_get_transparent_color(int* r, int* g, int* b) {
-    if (capturing_video) {
-        if (r) *r = transparent_color[0];
-        if (g) *g = transparent_color[1];
-        if (b) *b = transparent_color[2];
-    }
-    else {
-        if (r) *r = chromaColor.red[1];
-        if (g) *g = chromaColor.green[1];
-        if (b) *b = chromaColor.blue[1];
-    }
 }
 
 // Set up ImGui

@@ -15,6 +15,7 @@
 #include "pc/configfile.h"
 #include "object_list_processor.h"
 #include "behavior_data.h"
+#include "saturn/imgui/saturn_imgui.h"
 
 /**
  * This file contains the code that processes the scene graph for rendering.
@@ -678,6 +679,8 @@ static void geo_process_generated_list(struct GraphNodeGenerated *node) {
 static void geo_process_background(struct GraphNodeBackground *node) {
     Gfx *list = NULL;
     Gfx *listInterpolated = NULL;
+
+    if (saturn_imgui_is_capturing_video()) return;
 
     if (node->fnNode.func != NULL) {
         Vec3f posCopy;
