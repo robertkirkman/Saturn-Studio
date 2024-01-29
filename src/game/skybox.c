@@ -382,7 +382,7 @@ Gfx *create_skybox_facing_camera(s8 player, s8 background, f32 fov,
     f32 cameraFaceZ = focZ - posZ;
     s8 colorIndex = 1;
 
-    if (saturn_imgui_is_capturing_video()) return NULL;
+    if (saturn_imgui_is_capturing_transparent_video()) return NULL;
 
     if ((gCurrLevelNum == LEVEL_SA && colorIndex == 1 || autoChroma) && use_color_background) {
         sSkyboxColors[colorIndex][0] = chromaColor.red[1];

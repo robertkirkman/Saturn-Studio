@@ -376,6 +376,7 @@ void imgui_update_theme() {
 int selected_video_format = 0;
 int videores[] = { 1920, 1080 };
 bool capturing_video = false;
+bool transparency_enabled = true;
 
 bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
@@ -421,8 +422,8 @@ void saturn_capture_screenshot() {
     free(flipped);
 }
 
-bool saturn_imgui_is_capturing_video() {
-    return capturing_video;
+bool saturn_imgui_is_capturing_transparent_video() {
+    return capturing_video && transparency_enabled;
 }
 
 void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
@@ -983,8 +984,8 @@ void saturn_imgui_update() {
             if (!ffmpeg_installed) {
                 ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f);
                 if (ImGui::BeginChild("###no_ffmpeg", ImVec2(0, 48), true, ImGuiWindowFlags_NoScrollbar)) {
-                    ImGui::Text("FFmpeg isn't installed, so no video");
-                    ImGui::Text("recording features are available.");
+                    ImGui::Text("FFmpeg isn't installed, so some");
+                    ImGui::Text("video formats aren't supported.");
                     ImGui::EndChild();
                 }
                 ImGui::PopStyleVar();
@@ -998,31 +999,30 @@ void saturn_imgui_update() {
                 ImGui::EndCombo();
             }
             ImGui::InputInt2("Resolution", videores);
-            if (!ffmpeg_installed) ImGui::BeginDisabled();
-            const char* video_formats[] = { ".webm", ".mp4" };
+            const char* video_formats[] = { ".png sequence", ".webm", ".mp4" };
             if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format])) {
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < 3; i++) {
+                    if (!ffmpeg_installed && i != 0) ImGui::BeginDisabled();
                     bool is_selected = selected_video_format == i;
                     if (ImGui::Selectable(video_formats[i], is_selected)) selected_video_format = i;
                     if (is_selected) ImGui::SetItemDefaultFocus();
+                    if (!ffmpeg_installed && i != 0) ImGui::EndDisabled();
                 }
                 ImGui::EndCombo();
             }
-            if (selected_video_format != 0) {
+            ImGui::Checkbox("Transparency", &transparency_enabled);
+            if (selected_video_format >= 2 && transparency_enabled) {
                 ImGui::Text(ICON_FK_EXCLAMATION_TRIANGLE " This video format doesn't");
                 ImGui::Text("support transparency");
             }
-            if (!ffmpeg_installed) ImGui::EndDisabled();
             ImGui::Separator();
             if (ImGui::Button("Capture Screenshot")) {
                 capturing_video = true;
             }
             ImGui::SameLine();
-            if (!ffmpeg_installed) ImGui::BeginDisabled();
             if (ImGui::Button("Render Video")) {
 
             }
-            if (!ffmpeg_installed) ImGui::EndDisabled();
         }
     } ImGui::End();
 

@@ -680,7 +680,7 @@ static void geo_process_background(struct GraphNodeBackground *node) {
     Gfx *list = NULL;
     Gfx *listInterpolated = NULL;
 
-    if (saturn_imgui_is_capturing_video()) return;
+    if (saturn_imgui_is_capturing_transparent_video()) return;
 
     if (node->fnNode.func != NULL) {
         Vec3f posCopy;
