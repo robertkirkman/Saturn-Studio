@@ -9,9 +9,14 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 
 ### Features of the Studio version
 
-- A different UI, closer to Moon edition
-- Multiple Mario support
-- Input recording/playback
-- Recording transparent .webm videos directly in the editor
-- Capturing transparent screenshots
-- Mouse-based camera controls
+- [x] A different UI, closer to Moon edition
+- [ ] Multiple Mario support
+  - [x] Models
+  - [x] Colorcodes
+  - [ ] Animations
+  - [ ] Keyframing
+  - [x] Misc settings
+- [ ] Input recording/playback
+- [ ] Recording transparent .webm videos directly in the editor
+- [x] Capturing transparent screenshots
+- [x] Mouse-based camera controlss
