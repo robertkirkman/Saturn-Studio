@@ -563,6 +563,7 @@ void saturn_imgui_init() {
     saturn_load_project_list();
 
     ffmpeg_installed = is_ffmpeg_installed();
+    if (ffmpeg_installed) selected_video_format = 1;
 }
 
 void saturn_imgui_handle_events(SDL_Event * event) {
