@@ -329,8 +329,11 @@ void saturn_update() {
             if (!saturn_keyframe_apply(entry.first, k_current_frame)) end = false;
         }
         if (end) {
-            if (k_loop) k_current_frame = 0;
-            else keyframe_playing = false;
+            if (saturn_imgui_is_capturing_video()) saturn_imgui_stop_capture();
+            else {
+                if (k_loop) k_current_frame = 0;
+                keyframe_playing = false;
+            }
         }
 
         if (timeline_has_id("k_angle"))

@@ -28,6 +28,7 @@
 #include "icons/IconsFontAwesome5.h"
 #include "saturn/filesystem/saturn_projectfile.h"
 #include "saturn/saturn_json.h"
+#include "saturn/saturn_video_renderer.h"
 
 #include <SDL2/SDL.h>
 
@@ -377,6 +378,7 @@ int selected_video_format = 0;
 int videores[] = { 1920, 1080 };
 bool capturing_video = false;
 bool transparency_enabled = true;
+bool stop_capture = false;
 
 bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
@@ -417,13 +419,30 @@ void saturn_capture_screenshot() {
             flipped[j + 3] = image[i + 3];
         }
     }
-    pngutils_write_png("screenshot.png", (int)videores[0], (int)videores[1], 4, flipped, 0);
+    if (keyframe_playing) {
+        capturing_video = true;
+        video_renderer_render(flipped);
+        if (stop_capture) {
+            capturing_video = false;
+            stop_capture = false;
+            video_renderer_finalize();
+        }
+    }
+    else pngutils_write_png("screenshot.png", (int)videores[0], (int)videores[1], 4, flipped, 0);
     free(image);
     free(flipped);
 }
 
+bool saturn_imgui_is_capturing_video() {
+    return capturing_video;
+}
+
+void saturn_imgui_stop_capture() {
+    stop_capture = true;
+}
+
 bool saturn_imgui_is_capturing_transparent_video() {
-    return capturing_video && transparency_enabled;
+    return capturing_video && transparency_enabled && selected_video_format < 2;
 }
 
 void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
@@ -563,7 +582,7 @@ void saturn_imgui_init() {
     saturn_load_project_list();
 
     ffmpeg_installed = is_ffmpeg_installed();
-    if (ffmpeg_installed) selected_video_format = 1;
+    saturn_set_video_renderer(selected_video_format);
 }
 
 void saturn_imgui_handle_events(SDL_Event * event) {
@@ -1026,27 +1045,37 @@ void saturn_imgui_update() {
             ImGui::InputInt2("Resolution", videores);
             const char* video_formats[] = { ".png sequence", ".webm", ".mp4" };
             if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format])) {
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < IM_ARRAYSIZE(video_formats); i++) {
                     if (!ffmpeg_installed && i != 0) ImGui::BeginDisabled();
                     bool is_selected = selected_video_format == i;
-                    if (ImGui::Selectable(video_formats[i], is_selected)) selected_video_format = i;
+                    if (ImGui::Selectable(video_formats[i], is_selected)) {
+                        selected_video_format = i;
+                        saturn_set_video_renderer(i);
+                    }
                     if (is_selected) ImGui::SetItemDefaultFocus();
                     if (!ffmpeg_installed && i != 0) ImGui::EndDisabled();
                 }
                 ImGui::EndCombo();
             }
-            ImGui::Checkbox("Transparency", &transparency_enabled);
-            if (selected_video_format >= 2 && transparency_enabled) {
+            bool transparency_supported = selected_video_format < 2;
+            bool transparency_checkbox = transparency_enabled && transparency_supported;
+            if (!transparency_supported) ImGui::BeginDisabled();
+            if (ImGui::Checkbox("Transparency", &transparency_checkbox)) transparency_enabled = !transparency_enabled;
+            if (!transparency_supported) ImGui::EndDisabled();
+            if (!transparency_supported) {
                 ImGui::Text(ICON_FK_EXCLAMATION_TRIANGLE " This video format doesn't");
                 ImGui::Text("support transparency");
             }
             ImGui::Separator();
             if (ImGui::Button("Capture Screenshot")) {
                 capturing_video = true;
+                keyframe_playing = false;
             }
             ImGui::SameLine();
             if (ImGui::Button("Render Video")) {
-
+                capturing_video = true;
+                saturn_play_keyframe();
+                video_renderer_init(videores[0], videores[1]);
             }
         }
     } ImGui::End();

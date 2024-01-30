@@ -69,6 +69,8 @@ extern float game_viewport[4];
 extern "C" {
 #endif
     bool saturn_imgui_is_capturing_transparent_video();
+    bool saturn_imgui_is_capturing_video();
+    void saturn_imgui_stop_capture();
     bool saturn_imgui_get_viewport(int*, int*);
     void saturn_imgui_set_frame_buffer(void* fb, bool do_capture);
     void saturn_imgui_init_backend(SDL_Window *, SDL_GLContext);
