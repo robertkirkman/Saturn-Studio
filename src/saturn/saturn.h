@@ -163,6 +163,7 @@ struct KeyframeTimeline {
     int numValues;
     char behavior;
     bool eventPlace;
+    int marioIndex;
 };
 
 #define KFBEH_DEFAULT 0
@@ -195,6 +196,7 @@ extern Vec3f stored_mario_pos;
 extern Vec3s stored_mario_angle;
 extern void saturn_copy_camera(bool);
 extern void saturn_paste_camera(void);
+extern void* saturn_keyframe_get_timeline_ptr(KeyframeTimeline&);
 extern bool saturn_keyframe_apply(std::string, int);
 extern bool saturn_keyframe_matches(std::string, int);
 

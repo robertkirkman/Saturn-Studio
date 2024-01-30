@@ -37,6 +37,10 @@ void reassign_actor_indexes() {
     }
 }
 
+void update_actor_keyframes() {
+    
+}
+
 MarioActor* saturn_add_actor(MarioActor& actor) {
     MarioActor* new_actor = new MarioActor(actor);
     new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
@@ -62,6 +66,7 @@ void saturn_remove_actor(int index) {
     if (prev) prev->next = next;
     else gMarioActorList = next;
     reassign_actor_indexes();
+    update_actor_keyframes();
     obj_mark_for_deletion(actorptr->marioObj);
     delete actorptr;
 }

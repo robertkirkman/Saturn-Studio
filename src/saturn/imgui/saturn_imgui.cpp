@@ -703,23 +703,39 @@ void saturn_keyframe_window() {
     if (startFrame < 0) startFrame = 0;
     endFrame = endFrameText = startFrame + window_size.x / 6;
 
-    ImGui::Dummy(ImVec2(0, 0));
-    ImGui::SameLine(0.01); // 0 doesnt work
+    #define SEQUENCER { \
+        ImGui::Dummy(ImVec2(0, 0)); \
+        ImGui::SameLine(0.01); /* 0 doesnt work */ \
+        if (ImGui::BeginNeoSequencer("Sequencer###k_sequencer", (uint32_t*)&k_current_frame, (uint32_t*)&startFrame, (uint32_t*)&endFrame, ImVec2(window_size.x, window_size.y), ImGuiNeoSequencerFlags_HideZoom)) { \
+            for (auto& entry : k_frame_keys) { \
+                if (entry.second.first.marioIndex != mario_index) continue; \
+                std::string name = entry.second.first.name; \
+                if (ImGui::BeginNeoTimeline(name.c_str(), entry.second.second)) ImGui::EndNeoTimeLine(); \
+            } \
+            ImGui::EndNeoSequencer(); \
+        } \
+    }
 
-    // Sequencer
-    if (ImGui::BeginNeoSequencer("Sequencer###k_sequencer", (uint32_t*)&k_current_frame, (uint32_t*)&startFrame, (uint32_t*)&endFrame, ImVec2(window_size.x, window_size.y), ImGuiNeoSequencerFlags_HideZoom)) {
-        for (auto& entry : k_frame_keys) {
-            std::string name = entry.second.first.name;
-            if (ImGui::BeginNeoTimeline(name.c_str(), entry.second.second)) {
-                ImGui::EndNeoTimeLine();
-            }
+    int mario_index = -1;
+
+    if (ImGui::BeginTabBar("###sequencers")) {
+        if (ImGui::BeginTabItem("Environment")) {
+            SEQUENCER;
+            ImGui::EndTabItem();
         }
-        ImGui::EndNeoSequencer();
+        if (ImGui::BeginTabItem("Mario")) {
+            mario_index = mario_menu_index;
+            if (mario_menu_index == -1) ImGui::Text("No Mario is selected");
+            else SEQUENCER;
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
     }
 
     // Keyframes
     if (!keyframe_playing) {
         for (auto& entry : k_frame_keys) {
+            if (entry.second.first.marioIndex != mario_index) continue;
             KeyframeTimeline timeline = entry.second.first;
             std::vector<Keyframe>* keyframes = &entry.second.second;
 
@@ -738,8 +754,15 @@ void saturn_keyframe_window() {
                 if (create_new) saturn_create_keyframe(entry.first, curve);
                 else {
                     Keyframe* keyframe = &(*keyframes)[keyframeIndex];
-                    if (timeline.type == KFTYPE_BOOL) (*keyframe).value[0] = *(bool*)timeline.dest;
-                    if (timeline.type == KFTYPE_FLOAT) (*keyframe).value[0] = *(float*)timeline.dest;
+                    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+                    if (timeline.type == KFTYPE_BOOL) (*keyframe).value[0] = *(bool*)ptr;
+                    if (timeline.type == KFTYPE_FLOAT) {
+                        float* values = (float*)ptr;
+                        for (int i = 0; i < timeline.numValues; i++) {
+                            (*keyframe).value[i] = *values;
+                            values++;
+                        }
+                    }
                     if (timeline.type == KFTYPE_ANIM) {
                         AnimationState* anim_state = (AnimationState*)timeline.dest;
                         (*keyframe).value[0] = anim_state->custom;
@@ -755,10 +778,11 @@ void saturn_keyframe_window() {
                         }
                     }
                     if (timeline.type == KFTYPE_COLOR) {
-                        float* color = (float*)timeline.dest;
-                        (*keyframe).value[0] = color[0];
-                        (*keyframe).value[1] = color[1];
-                        (*keyframe).value[2] = color[2];
+                        int* values = (int*)ptr;
+                        for (int i = 0; i < 6; i++) {
+                            (*keyframe).value[i] = *values;
+                            values++;
+                        }
                     }
                     if (timeline.behavior != KFBEH_DEFAULT) (*keyframe).curve = InterpolationCurve::WAIT;
                 }
@@ -1167,6 +1191,13 @@ void saturn_imgui_update() {
     ========================
 */
 
+std::string saturn_keyframe_get_mario_timeline_id(std::string base, int mario) {
+    if (mario == -1) return base;
+    char data[base.size() + 8];
+    sprintf(data, "%s%c%07d", base.c_str(), '_', mario);
+    return data;
+}
+
 void saturn_keyframe_context_popout(Keyframe keyframe) {
     if (keyframe_playing || k_context_popout_open) return;
     k_context_popout_open = true;
@@ -1243,10 +1274,17 @@ void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
     keyframe.curve = curve;
     keyframe.timelineID = id;
     KeyframeTimeline timeline = k_frame_keys[id].first;
-    if (timeline.type == KFTYPE_BOOL) keyframe.value.push_back(*(bool*)timeline.dest);
-    if (timeline.type == KFTYPE_FLOAT) keyframe.value.push_back(*(float*)timeline.dest);
+    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+    if (timeline.type == KFTYPE_BOOL) keyframe.value.push_back(*(bool*)ptr);
+    if (timeline.type == KFTYPE_FLOAT) {
+        float* values = (float*)ptr;
+        for (int i = 0; i < timeline.numValues; i++) {
+            keyframe.value.push_back(*values);
+            values++;
+        }
+    }
     if (timeline.type == KFTYPE_ANIM) {
-        AnimationState* anim_state = (AnimationState*)timeline.dest;
+        AnimationState* anim_state = (AnimationState*)ptr;
         keyframe.value.push_back(anim_state->custom);
         keyframe.value.push_back(anim_state->loop);
         keyframe.value.push_back(anim_state->hang);
@@ -1254,16 +1292,17 @@ void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
         keyframe.value.push_back(anim_state->id);
     }
     if (timeline.type == KFTYPE_EXPRESSION) {
-        Model* model = (Model*)timeline.dest;
+        Model* model = (Model*)ptr;
         for (int i = 0; i < model->Expressions.size(); i++) {
             keyframe.value.push_back(model->Expressions[i].CurrentIndex);
         }
     }
     if (timeline.type == KFTYPE_COLOR) {
-        float* color = (float*)timeline.dest;
-        keyframe.value.push_back(color[0]);
-        keyframe.value.push_back(color[1]);
-        keyframe.value.push_back(color[2]);
+        int* values = (int*)ptr;
+        for (int i = 0; i < 6; i++) {
+            keyframe.value.push_back(*values);
+            values++;
+        }
     }
     keyframe.curve = curve;
     k_frame_keys[id].second.push_back(keyframe);
@@ -1287,7 +1326,8 @@ void saturn_keyframe_popout(std::vector<std::string> ids) {
 void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
     if (ids.size() == 0) return;
     if (timelineDataTable.find(ids[0]) == timelineDataTable.end()) return;
-    bool contains = saturn_timeline_exists(ids[0].c_str());
+    auto timeline_metadata = timelineDataTable[ids[0]];
+    bool contains = saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id(ids[0], get<6>(timeline_metadata) ? mario_menu_index : -1).c_str());
     std::string button_label = std::string(contains ? ICON_FK_TRASH : ICON_FK_LINK) + "###kb_" + ids[0];
     bool event_button = false;
     if (ImGui::Button(button_label.c_str())) {
@@ -1295,7 +1335,7 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
         for (std::string id : ids) {
             if (contains) k_frame_keys.erase(id);
             else {
-                auto [ptr, type, behavior, name, precision, num_values] = timelineDataTable[id];
+                auto [ptr, type, behavior, name, precision, num_values, is_mario] = timelineDataTable[id];
                 KeyframeTimeline timeline = KeyframeTimeline();
                 timeline.dest = ptr;
                 timeline.type = type;
@@ -1303,16 +1343,20 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
                 timeline.name = name;
                 timeline.precision = precision;
                 timeline.numValues = num_values;
+                timeline.marioIndex = is_mario ? mario_menu_index : -1;
                 k_current_frame = 0;
                 startFrame = 0;
-                k_frame_keys.insert({ id, { timeline, {} } });
-                if (behavior != KFBEH_EVENT) saturn_create_keyframe(id, behavior == KFBEH_FORCE_WAIT ? InterpolationCurve::WAIT : InterpolationCurve::LINEAR);
+                std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, is_mario ? mario_menu_index : -1);
+                k_frame_keys.insert({ timeline_id, { timeline, {} } });
+                if (behavior != KFBEH_EVENT) saturn_create_keyframe(timeline_id, behavior == KFBEH_FORCE_WAIT ? InterpolationCurve::WAIT : InterpolationCurve::LINEAR);
             }
         }
     }
     for (std::string id : ids) {
-        if (saturn_timeline_exists(id.c_str())) {
-            if (k_frame_keys[id].first.behavior == KFBEH_EVENT) event_button = true;
+        timeline_metadata = timelineDataTable[id];
+        std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, get<6>(timeline_metadata) ? mario_menu_index : -1);
+        if (saturn_timeline_exists(timeline_id.c_str())) {
+            if (k_frame_keys[timeline_id].first.behavior == KFBEH_EVENT) event_button = true;
         }
     }
     imgui_bundled_tooltip(contains ? "Remove" : "Animate");
@@ -1320,8 +1364,10 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_PLUS "###kb_ev_place")) {
             for (std::string id : ids) {
-                if (!saturn_timeline_exists(id.c_str())) continue;
-                k_frame_keys[id].first.eventPlace = true;
+                timeline_metadata = timelineDataTable[id];
+                std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, get<6>(timeline_metadata) ? mario_menu_index : -1);
+                if (!saturn_timeline_exists(timeline_id.c_str())) continue;
+                k_frame_keys[timeline_id].first.eventPlace = true;
             }
         }
         imgui_bundled_tooltip("Place Keyframe");

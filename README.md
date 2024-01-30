@@ -14,7 +14,7 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
   - [x] Models
   - [x] Colorcodes
   - [ ] Animations
-  - [ ] Keyframing
+  - [x] Keyframing
   - [x] Misc settings
 - [ ] Input recording/playback
 - [ ] Recording transparent .webm videos directly in the editor

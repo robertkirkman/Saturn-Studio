@@ -174,7 +174,8 @@ void OpenModelSelector(MarioActor* actor) {
 
                 std::string packLabelId = model.FolderName + "###s_model_pack_" + std::to_string(i);
                 if (ImGui::Selectable(packLabelId.c_str(), &is_selected)) {
-                    if (saturn_timeline_exists("k_mario_expr")) k_frame_keys.erase("k_mario_expr");
+                    std::string timeline = saturn_keyframe_get_mario_timeline_id("k_mario_expr", saturn_actor_indexof(actor));
+                    if (saturn_timeline_exists(timeline.c_str())) k_frame_keys.erase(timeline);
                     
                     // Select model
                     actor->model = model;

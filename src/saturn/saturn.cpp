@@ -18,6 +18,7 @@
 #include "saturn/filesystem/saturn_locationfile.h"
 #include "data/dynos.cpp.h"
 #include "saturn/filesystem/saturn_animfile.h"
+#include "saturn/saturn_colors.h"
 #include "saturn/saturn_rom_extract.h"
 #include "saturn/saturn_timelines.h"
 #include "saturn/saturn_actors.h"
@@ -251,8 +252,11 @@ void saturn_update() {
             (mouse_state.y - mouse_state.y_orig) * (mouse_state.y - mouse_state.y_orig)
         );
     else mouse_state.update_camera = false;
-    cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
-    cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
+
+    if (!saturn_disable_sm64_input()) {
+        cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
+        cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
+    }
 
     if (!keyframe_playing && !camera_frozen) {
         gLakituState.focHSpeed = camera_focus * camera_savestate_mult * 0.8f;
@@ -458,6 +462,12 @@ void saturn_update() {
     }
 }
 
+void* saturn_keyframe_get_timeline_ptr(KeyframeTimeline& timeline) {
+    if (timeline.marioIndex == -1) return timeline.dest;
+    return (char*)saturn_get_actor(timeline.marioIndex) + (size_t)timeline.dest;
+    // cast to char since its 1 byte long
+}
+
 float saturn_keyframe_setup_interpolation(std::string id, int frame, int* keyframe, bool* last) {
     KeyframeTimeline timeline = k_frame_keys[id].first;
     std::vector<Keyframe> keyframes = k_frame_keys[id].second;
@@ -531,12 +541,21 @@ bool saturn_keyframe_apply(std::string id, int frame) {
             values.push_back((keyframes[keyframe + 1].value[i] - keyframes[keyframe].value[i]) * x + keyframes[keyframe].value[i]);
         }    
     }
-    if (timeline.type == KFTYPE_BOOL) *(bool*)timeline.dest = values[0] >= 1;
-    if (timeline.type == KFTYPE_FLOAT) *(float*)timeline.dest = values[0];
+    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+    if (timeline.type == KFTYPE_BOOL) *(bool*)ptr = values[0] >= 1;
+    if (timeline.type == KFTYPE_FLOAT) {
+        float* vals = (float*)ptr;
+        for (int i = 0; i < timeline.numValues; i++) {
+            *vals = values[i];
+            vals++;
+        }
+    }
     if (timeline.type == KFTYPE_COLOR) {
-        ((float*)timeline.dest)[0] = values[0];
-        ((float*)timeline.dest)[1] = values[1];
-        ((float*)timeline.dest)[2] = values[2];
+        int* colors = (int*)ptr;
+        for (int i = 0; i < 6; i++) {
+            *colors = values[i];
+            colors++;
+        }
     }
 
     return last;
@@ -563,13 +582,15 @@ bool saturn_keyframe_matches(std::string id, int frame) {
             expectedValues.push_back((keyframes[keyframe + 1].value[i] - keyframes[keyframe].value[i]) * x + keyframes[keyframe].value[i]);
         }
     }
+
+    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
     if (timeline.type == KFTYPE_BOOL) {
-        if (*(bool*)timeline.dest != 0 != expectedValues[0] >= 1) return false;
+        if (*(bool*)ptr != 0 != expectedValues[0] >= 1) return false;
         return true;
     }
     if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLOR) {
-        for (int i = 0; i < (timeline.type == KFTYPE_FLOAT ? 1 : 3); i++) {
-            float value = ((float*)timeline.dest)[i];
+        for (int i = 0; i < timeline.numValues; i++) {
+            float value = ((float*)ptr)[i];
             float distance = abs(value - expectedValues[i]);
             if (distance > pow(10, timeline.precision)) {
                 if (id.find("cam") != string::npos) return !is_camera_moving;

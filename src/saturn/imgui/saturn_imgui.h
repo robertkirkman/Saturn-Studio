@@ -34,6 +34,8 @@ extern void saturn_keyframe_popout_next_line(std::vector<std::string> id);
 extern bool is_focused_on_game();
 extern void saturn_imgui_open_mario_menu(int index);
 
+extern std::string saturn_keyframe_get_mario_timeline_id(std::string base, int mario);
+
 template <typename T>
 extern void saturn_keyframe_popout(const T &edit_value, s32 data_type, std::string, std::string);
 
