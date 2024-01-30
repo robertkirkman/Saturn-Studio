@@ -1075,6 +1075,11 @@ void saturn_imgui_update() {
                 saturn_remove_actor(mario_menu_index);
             }
             ImGui::PopStyleColor();
+            if (ImGui::MenuItem(ICON_FK_EYE " Look at")) {
+                MarioActor* actor = saturn_get_actor(mario_menu_index);
+                vec3f_set(gCamera->focus, actor->x, actor->y + 100, actor->z);
+                vec3f_set_dist_and_angle(gCamera->focus, gCamera->pos, 200, 0, actor->angle);
+            }
             sdynos_imgui_menu(mario_menu_index);
             ImGui::EndPopup();
         }
