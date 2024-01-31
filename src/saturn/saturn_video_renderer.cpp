@@ -33,14 +33,14 @@ void webm_init(int w, int h) {
     video_width = w;
     video_height = h;
     std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v libvpx-vp9 -pix_fmt yuva420p video.webm";
-    ffmpeg = popen(cmd.c_str(), "w");
+    ffmpeg = popen(cmd.c_str(), "wb");
 }
 
 void mp4_init(int w, int h) {
     video_width = w;
     video_height = h;
     std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v h264 -pix_fmt yuv420p video.mp4";
-    ffmpeg = popen(cmd.c_str(), "w");
+    ffmpeg = popen(cmd.c_str(), "wb");
 }
 
 void ffmpeg_render(unsigned char* data) {
