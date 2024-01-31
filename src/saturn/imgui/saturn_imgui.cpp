@@ -547,7 +547,7 @@ void saturn_imgui_open_mario_menu(int index) {
 
 bool is_ffmpeg_installed() {
     std::string path = std::string(getenv("PATH"));
-#ifdef WINDOWS
+#ifdef _WIN32
     char delimiter = ';';
     std::string suffix = ".exe";
 #else
