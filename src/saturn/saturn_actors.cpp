@@ -1,5 +1,6 @@
 #include "saturn_actors.h"
 #include "game/object_helpers.h"
+#include "mario_animation_ids.h"
 #include "saturn/saturn_models.h"
 
 extern "C" {
@@ -10,9 +11,29 @@ extern "C" {
 #include "game/memory.h"
 }
 
+#define gMarioAnims mario_animation_data
+#include "assets/mario_anim_data.c"
+#undef gMarioAnims
+
 #define o gCurrentObject
 
 MarioActor* gMarioActorList = nullptr;
+
+struct Animation* load_animation(MarioActor* actor, int index) {
+    struct Animation* anim = (struct Animation*)((u8*)&mario_animation_data + mario_animation_data.entries[index].offset);
+    actor->anim.index = anim->index;
+    actor->anim.values = anim->values;
+    actor->anim.flags = anim->flags;
+    actor->anim.length = anim->length;
+    actor->anim.unk02 = anim->unk02;
+    actor->anim.unk04 = anim->unk04;
+    actor->anim.unk06 = anim->unk06;
+    actor->anim.unk08 = anim->unk08;
+    actor->anim.unk0A = anim->unk0A;
+    actor->anim.values = (const s16*)((u8*)anim + (uintptr_t)anim->values);
+    actor->anim.index  = (const u16*)((u8*)anim + (uintptr_t)anim->index );
+    return &actor->anim;
+}
 
 MarioActor* saturn_spawn_actor(float x, float y, float z) {
     MarioActor actor;
@@ -20,10 +41,7 @@ MarioActor* saturn_spawn_actor(float x, float y, float z) {
     actor.y = y;
     actor.z = z;
     actor.animstate.custom = false;
-    actor.animstate.hang = false;
-    actor.animstate.loop = true;
-    actor.animstate.speed = 1;
-    actor.animstate.id = MARIO_ANIM_FIRST_PERSON;
+    actor.animstate.id = MARIO_ANIM_A_POSE;
     actor.animstate.frame = 0;
     return saturn_add_actor(actor);
 }
@@ -119,30 +137,20 @@ void bhv_mario_actor_loop() {
         o->header.gfx.unk38.curAnim->unk02 = 0;
         o->header.gfx.unk38.curAnim->unk04 = 0;
         o->header.gfx.unk38.curAnim->unk06 = 0;
-        o->header.gfx.unk38.curAnim->unk08 = (s16)actor->animstate.customanim_length;
+        o->header.gfx.unk38.curAnim->unk08 = (s16)actor->animstate.length;
         o->header.gfx.unk38.curAnim->unk0A = actor->animstate.customanim_numindices / 6 - 1;
         o->header.gfx.unk38.curAnim->values = actor->animstate.customanim_values;
         o->header.gfx.unk38.curAnim->index = (const u16*)actor->animstate.customanim_indices;
         o->header.gfx.unk38.curAnim->length = 0;
     }
     else {
-        struct Animation* targetAnim = gMarioState->animation->targetAnim;
-        if (load_patchable_table(gMarioState->animation, actor->animstate.id)) {
-            targetAnim->values = (const s16*)VIRTUAL_TO_PHYSICAL((u8*)targetAnim + (uintptr_t)targetAnim->values);
-            targetAnim->index  = (const u16*)VIRTUAL_TO_PHYSICAL((u8*)targetAnim + (uintptr_t)targetAnim->index );
-        }
         o->header.gfx.unk38.animID = actor->animstate.id;
-        o->header.gfx.unk38.curAnim = targetAnim;
-        o->header.gfx.unk38.animAccel = 0;
-        o->header.gfx.unk38.animYTrans = 0;
-    }
-    int length = o->header.gfx.unk38.curAnim->unk08 - 1;
-    actor->animstate.frame += actor->animstate.speed;
-    if (actor->animstate.frame >= length) {
-        if (actor->animstate.loop) actor->animstate.frame -= length;
-        else actor->animstate.frame = length - 1;
+        o->header.gfx.unk38.curAnim = load_animation(actor, actor->animstate.id);
+        o->header.gfx.unk38.curAnim->flags = 4; // prevent the anim to get a mind on its own
+        actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
     }
     o->header.gfx.unk38.animYTrans = 0xBD;
+    std::cout << o->header.gfx.unk38.animFrame << std::endl;
     o->header.gfx.unk38.animFrame = actor->animstate.frame;
 }
 

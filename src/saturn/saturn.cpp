@@ -70,9 +70,6 @@ bool is_anim_paused = false;
 int paused_anim_frame;
 struct AnimationState current_animation = {
     .custom = false,
-    .hang = false,
-    .loop = false,
-    .speed = 1,
     .id = MarioAnimID::MARIO_ANIM_RUNNING,
 };
 
@@ -213,9 +210,6 @@ void saturn_update() {
                     is_anim_paused = !is_anim_paused;
                 }
             }
-            if (gPlayer1Controller->buttonPressed & R_JPAD) {
-                current_animation.loop = !current_animation.loop;
-            }
         }
     }
 
@@ -332,7 +326,7 @@ void saturn_update() {
             if (saturn_imgui_is_capturing_video()) saturn_imgui_stop_capture();
             else {
                 if (k_loop) k_current_frame = 0;
-                keyframe_playing = false;
+                else keyframe_playing = false;
             }
         }
 
@@ -359,7 +353,7 @@ void saturn_update() {
 
     // Animations
 
-    if (mario_exists) {
+    /*if (mario_exists) {
         if (is_anim_paused) {
             gMarioState->marioObj->header.gfx.unk38.animFrame = current_anim_frame;
             gMarioState->marioObj->header.gfx.unk38.animFrameAccelAssist = current_anim_frame;
@@ -386,10 +380,10 @@ void saturn_update() {
                 }
             }
 
-            /*if (selected_animation != gMarioState->marioObj->header.gfx.unk38.animID) {
+            if (selected_animation != gMarioState->marioObj->header.gfx.unk38.animID) {
                 is_anim_playing = false;
                 is_anim_paused = false;
-            }*/
+            }
 
             current_anim_id = (int)gMarioState->marioObj->header.gfx.unk38.animID;
             if (gMarioState->action == ACT_IDLE || gMarioState->action == ACT_FIRST_PERSON || gMarioState->action == ACT_DEBUG_FREE_MOVE) {
@@ -402,7 +396,7 @@ void saturn_update() {
 
             if (using_chainer && is_anim_playing) saturn_run_chainer();
         }
-    }
+    }*/
 
     if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game) {
         Vec3f dir, hit;
@@ -514,10 +508,7 @@ bool saturn_keyframe_apply(std::string id, int frame) {
         if (timeline.type == KFTYPE_ANIM) {
             AnimationState* dest = (AnimationState*)timeline.dest;
             dest->custom = keyframes[idx].value[0] >= 1;
-            dest->loop = keyframes[idx].value[1] >= 1;
-            dest->hang = keyframes[idx].value[2] >= 1;
-            dest->speed = keyframes[idx].value[3];
-            dest->id = keyframes[idx].value[4];
+            dest->id = keyframes[idx].value[1];
             is_anim_playing = false;
             is_anim_paused = false;
             using_chainer = false;

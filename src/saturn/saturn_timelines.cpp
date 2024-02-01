@@ -6,7 +6,7 @@
 
 #define SATURN_KFENTRY_BOOL(id, variable, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_BOOL, KFBEH_FORCE_WAIT, name, 0, 1, mario } })
 #define SATURN_KFENTRY_FLOAT(id, variable, values, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_FLOAT, KFBEH_DEFAULT, name, -3, values, mario } })
-#define SATURN_KFENTRY_ANIM(id, name) timelineDataTable.insert({ id, { &current_animation, KFTYPE_ANIM, KFBEH_EVENT, name, 0, 5, true } })
+#define SATURN_KFENTRY_ANIM(id, name) timelineDataTable.insert({ id, { &current_animation, KFTYPE_ANIM, KFBEH_EVENT, name, 0, 2, true } })
 #define SATURN_KFENTRY_EXPRESSION(id, name) timelineDataTable.insert({ id, { &current_model, KFTYPE_EXPRESSION, KFBEH_EVENT, name, 0, 1, true } })
 #define SATURN_KFENTRY_COLOR(id, variable, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_COLOR, KFBEH_DEFAULT, name, 0, 6, mario } })
 
@@ -51,5 +51,6 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_COLOR("k_leg_top", CC_ENTRY(CC_LEG_TOP), "Leg (Top)", true);
     SATURN_KFENTRY_COLOR("k_leg_bottom", CC_ENTRY(CC_LEG_BOTTOM), "Leg (Bottom)", true);
     SATURN_KFENTRY_ANIM("k_mario_anim", "Animation");
+    SATURN_KFENTRY_FLOAT("k_mario_anim_frame", MARIO_ENTRY(animstate.frame), 1, "Anim Frame", true);
     SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");
 }

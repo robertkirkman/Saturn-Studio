@@ -602,6 +602,8 @@ else
 
 endif
 
+CFLAGS += -Wno-error=narrowing -Wno-narrowing
+
 
 # Saturn Enable filesystem library and C++17
 CXXFLAGS := -std=c++17

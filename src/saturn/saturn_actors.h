@@ -43,6 +43,7 @@ public:
     bool custom_eyes = false;
     Model model = Model();
     ColorCode colorcode;
+    struct Animation anim;
     struct AnimationState animstate;
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;

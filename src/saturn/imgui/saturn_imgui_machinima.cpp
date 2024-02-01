@@ -11,6 +11,7 @@
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
 #include "saturn/saturn.h"
+#include "saturn/saturn_actors.h"
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_animation_ids.h"
 #include "saturn/saturn_animations.h"
@@ -544,8 +545,90 @@ void imgui_machinima_quick_options() {
 }
 
 static char animSearchTerm[128];
+static bool selected_groups[8] = { true, true, true, true, true, true, true, true };
 
-void imgui_machinima_animation_player() {
+bool case_insensitive_contains(std::string base, std::string substr) {
+    std::string lower_b = base;
+    std::string lower_s = substr;
+    std::transform(base.begin(), base.end(), lower_b.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    std::transform(substr.begin(), substr.end(), lower_s.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    return lower_b.find(lower_s) != std::string::npos;
+}
+
+std::vector<int> get_sorted_anim_list() {
+    std::vector<int> anim_list = {};
+    std::vector<int> fav_anim_list = {};
+    for (int i = 0; i < 8; i++) {
+        if (!selected_groups[i]) continue;
+        for (const auto& entry : sanim_maps[i]) {
+            if (!case_insensitive_contains(entry.first.second, animSearchTerm)) continue;
+            bool contains = std::find(favorite_anims.begin(), favorite_anims.end(), entry.second) != favorite_anims.end();
+            if (contains) fav_anim_list.push_back(entry.second);
+            else anim_list.push_back(entry.second);
+        }
+    }
+    std::reverse(fav_anim_list.begin(), fav_anim_list.end());
+    for (int fav : fav_anim_list) {
+        anim_list.insert(anim_list.begin(), fav);
+    }
+    return anim_list;
+}
+
+void imgui_machinima_animation_player(MarioActor* actor) {
+    if (ImGui::BeginTabBar("###anim_tab_bar")) {
+        if (ImGui::BeginTabItem("SM64")) {
+            ImGui::PushItemWidth(316);
+            ImGui::InputTextWithHint("###anim_search", ICON_FK_SEARCH " Search...", animSearchTerm, 128);
+            if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
+                std::vector<int> anim_order = get_sorted_anim_list();
+                for (int i : anim_order) {
+                    const bool is_selected = i == actor->animstate.id;
+                    auto position = std::find(favorite_anims.begin(), favorite_anims.end(), i);
+                    bool contains = position != favorite_anims.end();
+                    if (ImGui::SmallButton((std::string(contains ? ICON_FK_STAR : ICON_FK_STAR_O) + "###anim_fav_" + std::to_string(i)).c_str())) {
+                        if (contains) favorite_anims.erase(position);
+                        else favorite_anims.push_back(i);
+                        saturn_save_favorite_anims();
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Selectable(saturn_animations_list[i], is_selected)) {
+                        actor->animstate.id = i;
+                        actor->animstate.custom = false;
+                    }
+                }
+                ImGui::EndChild();
+            }
+            ImGui::PopItemWidth();
+            ImGui::Checkbox("Movement",      &selected_groups[0]); ImGui::SameLine();
+            ImGui::Checkbox("Actions",       &selected_groups[1]); ImGui::SameLine();
+            ImGui::Checkbox("Automatic",     &selected_groups[2]);
+            ImGui::Checkbox("Damage/Deaths", &selected_groups[3]); ImGui::SameLine();
+            ImGui::Checkbox("Cutscenes",     &selected_groups[4]);
+            ImGui::Checkbox("Water",         &selected_groups[5]); ImGui::SameLine();
+            ImGui::Checkbox("Climbing",      &selected_groups[6]); ImGui::SameLine();
+            ImGui::Checkbox("Object",        &selected_groups[7]);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Custom")) {
+            ImGui::PushItemWidth(316);
+            ImGui::InputTextWithHint("###anim_search", ICON_FK_SEARCH " Search...", animSearchTerm, 128);
+            if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
+                ImGui::EndChild();
+            }
+            ImGui::PopItemWidth();
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::Separator();
+    ImGui::SliderFloat("Frame", &actor->animstate.frame, 0, actor->animstate.length, "%.0f");
+    saturn_keyframe_popout("k_mario_anim_frame");
+    saturn_keyframe_popout_next_line("k_mario_anim");
+}
+
+/*void imgui_machinima_animation_player() {
     selected_animation = (MarioAnimID)current_sanim_id;
     
     if (is_anim_playing || keyframe_playing)
@@ -848,4 +931,4 @@ void imgui_machinima_animation_player() {
     }
     if (keyframe_playing) ImGui::EndDisabled();
     saturn_keyframe_popout_next_line("k_mario_anim");
-}
+}*/

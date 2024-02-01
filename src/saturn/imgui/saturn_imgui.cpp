@@ -754,7 +754,6 @@ void saturn_keyframe_window() {
     // Keyframes
     if (!keyframe_playing) {
         for (auto& entry : k_frame_keys) {
-            if (entry.second.first.marioIndex != mario_index) continue;
             KeyframeTimeline timeline = entry.second.first;
             std::vector<Keyframe>* keyframes = &entry.second.second;
 
@@ -785,10 +784,7 @@ void saturn_keyframe_window() {
                     if (timeline.type == KFTYPE_ANIM) {
                         AnimationState* anim_state = (AnimationState*)timeline.dest;
                         (*keyframe).value[0] = anim_state->custom;
-                        (*keyframe).value[1] = anim_state->loop;
-                        (*keyframe).value[2] = anim_state->hang;
-                        (*keyframe).value[3] = anim_state->speed;
-                        (*keyframe).value[4] = anim_state->id;
+                        (*keyframe).value[1] = anim_state->id;
                     }
                     if (timeline.type == KFTYPE_EXPRESSION) {
                         Model* model = (Model*)timeline.dest;
@@ -1256,19 +1252,10 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
     if (timeline.type == KFTYPE_ANIM) {
         std::string anim_name;
         bool anim_custom = keyframe.value[0] >= 1;
-        bool anim_loop = keyframe.value[1] >= 1;
-        bool anim_hang = keyframe.value[2] >= 1;
-        float anim_speed = keyframe.value[3];
-        int anim_id = keyframe.value[4];
+        int anim_id = keyframe.value[1];
         if (anim_custom) anim_name = canim_array[anim_id];
         else anim_name = saturn_animations_list[anim_id];
         ImGui::Text(anim_name.c_str());
-        ImGui::Checkbox("Looping###kf_content_looping", &anim_loop);
-        ImGui::Checkbox("Hanging###kf_content_hanging", &anim_hang);
-        char buf[64];
-        snprintf(buf, 64, "%.2f", anim_speed);
-        buf[63] = 0;
-        ImGui::Text(("Speed: " + std::string(buf)).c_str());
     }
     if (timeline.type == KFTYPE_EXPRESSION) {
         for (int i = 0; i < keyframe.value.size(); i++) {
@@ -1320,9 +1307,6 @@ void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
     if (timeline.type == KFTYPE_ANIM) {
         AnimationState* anim_state = (AnimationState*)ptr;
         keyframe.value.push_back(anim_state->custom);
-        keyframe.value.push_back(anim_state->loop);
-        keyframe.value.push_back(anim_state->hang);
-        keyframe.value.push_back(anim_state->speed);
         keyframe.value.push_back(anim_state->id);
     }
     if (timeline.type == KFTYPE_EXPRESSION) {

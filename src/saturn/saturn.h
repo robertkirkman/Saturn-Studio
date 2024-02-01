@@ -44,12 +44,9 @@ extern float spin_mult;
 
 struct AnimationState {
     bool custom;
-    bool hang;
-    bool loop;
-    float speed;
     int id;
     float frame;
-    int customanim_length;
+    int length;
     int customanim_numindices;
     s16* customanim_indices;
     s16* customanim_values;

@@ -28,6 +28,7 @@
 #include "saturn_imgui.h"
 #include "saturn_imgui_cc_editor.h"
 #include "saturn_imgui_expressions.h"
+#include "saturn_imgui_machinima.h"
 #include "pc/controller/controller_keyboard.h"
 #include "data/dynos.cpp.h"
 #include <SDL2/SDL.h>
@@ -293,10 +294,9 @@ void sdynos_imgui_menu(int index) {
     }
 
     // Animation Mixtape
-    if (ImGui::MenuItem(ICON_FK_FILM " Animation Mixtape###menu_anim_player", NULL, windowAnimPlayer, mario_exists)) {
-        windowCcEditor = false;
-        windowChromaKey = false;
-        windowAnimPlayer = !windowAnimPlayer;
+    if (ImGui::BeginMenu(ICON_FK_FILM " Animation Mixtape###menu_anim_player")) {
+        imgui_machinima_animation_player(actor);
+        ImGui::EndMenu();
     }
 
     ImGui::Separator();
