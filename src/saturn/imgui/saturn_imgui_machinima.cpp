@@ -111,7 +111,7 @@ void anim_play_button() {
     current_anim_frame = 0;
     is_anim_playing = true;
     if (current_animation.custom) {
-        saturn_read_mcomp_animation(anim_preview_name);
+        saturn_read_mcomp_animation(nullptr, anim_preview_name);
         saturn_play_animation(MarioAnimID(current_animation.id));
         saturn_play_custom_animation();
     } else {
@@ -584,7 +584,7 @@ void imgui_machinima_animation_player(MarioActor* actor) {
             if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
                 std::vector<int> anim_order = get_sorted_anim_list();
                 for (int i : anim_order) {
-                    const bool is_selected = i == actor->animstate.id;
+                    const bool is_selected = i == actor->animstate.id && !actor->animstate.custom;
                     auto position = std::find(favorite_anims.begin(), favorite_anims.end(), i);
                     bool contains = position != favorite_anims.end();
                     if (ImGui::SmallButton((std::string(contains ? ICON_FK_STAR : ICON_FK_STAR_O) + "###anim_fav_" + std::to_string(i)).c_str())) {
@@ -615,6 +615,15 @@ void imgui_machinima_animation_player(MarioActor* actor) {
             ImGui::PushItemWidth(316);
             ImGui::InputTextWithHint("###anim_search", ICON_FK_SEARCH " Search...", animSearchTerm, 128);
             if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
+                for (int i = 0; i < canim_array.size(); i++) {
+                    if (!case_insensitive_contains(canim_array[i], animSearchTerm)) continue;
+                    const bool is_selected = i == actor->animstate.id && actor->animstate.custom;
+                    if (ImGui::Selectable(canim_array[i].c_str(), is_selected)) {
+                        actor->animstate.id = i;
+                        actor->animstate.custom = true;
+                        saturn_read_mcomp_animation(actor, canim_array[i]);
+                    }
+                }
                 ImGui::EndChild();
             }
             ImGui::PopItemWidth();

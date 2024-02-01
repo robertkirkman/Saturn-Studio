@@ -33,6 +33,7 @@ namespace fs = std::filesystem;
 #include "pc/fs/fs.h"
 
 #include "saturn/saturn_json.h"
+#include "saturn/saturn_actors.h"
 
 std::vector<string> canim_array;
 std::string current_anim_dir_path;
@@ -336,15 +337,15 @@ void run_hex_array(Json::Value array, std::vector<s16>* dest) {
     }
 }
 
-void saturn_read_mcomp_animation(string json_path) {
+void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
     // Load the json file
-    std::ifstream file(current_anim_dir_path + json_path + ".json");
+    std::ifstream file(current_anim_dir_path + json_path);
     if (!file.good()) { return; }
 
     // Check if we should enable chainer
     // This is only the case if we have a followup animation
     // i.e. specialist.json, specialist_1.json
-    if (!using_chainer) {
+    /*if (!using_chainer) {
         std::ifstream file_c(current_anim_dir_path + json_path + "_1.json");
         if (file_c.good() && chainer_index == 0) {
             using_chainer = true;
@@ -370,27 +371,27 @@ void saturn_read_mcomp_animation(string json_path) {
             is_anim_paused = false;
             return;
         }
-    }
+    }*/
 
     // Begin reading
     Json::Value root;
     root << file;
 
-    current_canim_name = root["name"].asString();
-    current_canim_author = root["author"].asString();
+    actor->animstate.customanim_name = root["name"].asString();
+    actor->animstate.customanim_author = root["author"].asString();
     if (root.isMember("extra_bone")) {
-        if (root["extra_bone"].asString() == "true") current_canim_has_extra = true;
-        if (root["extra_bone"].asString() == "false") current_canim_has_extra = false;
-    } else { current_canim_has_extra = false; }
+        if (root["extra_bone"].asString() == "true") actor->animstate.customanim_extra = true;
+        if (root["extra_bone"].asString() == "false") actor->animstate.customanim_extra = false;
+    } else { actor->animstate.customanim_extra = false; }
     // A mess
     if (root["looping"].asString() == "true") current_canim_looping = true;
     if (root["looping"].asString() == "false") current_canim_looping = false;
-    current_canim_length = root["length"].asInt();
+    actor->animstate.length = root["length"].asInt();
     current_canim_nodes = root["nodes"].asInt();
-    current_canim_indices.clear();
-    current_canim_values.clear();
-    run_hex_array(root["values"], (std::vector<s16>*)&current_canim_values);
-    run_hex_array(root["indices"], (std::vector<s16>*)&current_canim_indices);
+    actor->animstate.customanim_indices.clear();
+    actor->animstate.customanim_values.clear();
+    run_hex_array(root["values"], (std::vector<s16>*)&actor->animstate.customanim_values);
+    run_hex_array(root["indices"], (std::vector<s16>*)&actor->animstate.customanim_indices);
 
     return;
 }

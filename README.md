@@ -10,10 +10,10 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 ### Features of the Studio version
 
 - [x] A different UI, closer to Moon edition
-- [ ] Multiple Mario support
+- [x] Multiple Mario support
   - [x] Models
   - [x] Colorcodes
-  - [ ] Animations
+  - [x] Animations
   - [x] Keyframing
   - [x] Misc settings
 - [ ] Input recording/playback

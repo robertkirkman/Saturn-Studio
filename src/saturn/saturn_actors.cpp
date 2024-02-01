@@ -133,15 +133,15 @@ void bhv_mario_actor_loop() {
     o->oFaceAngleYaw = actor->angle;
     vec3f_set(o->header.gfx.scale, actor->xScale, actor->yScale, actor->zScale);
     if (actor->animstate.custom) {
-        o->header.gfx.unk38.curAnim->flags = 0;
+        o->header.gfx.unk38.curAnim->flags = 4;
         o->header.gfx.unk38.curAnim->unk02 = 0;
         o->header.gfx.unk38.curAnim->unk04 = 0;
         o->header.gfx.unk38.curAnim->unk06 = 0;
         o->header.gfx.unk38.curAnim->unk08 = (s16)actor->animstate.length;
-        o->header.gfx.unk38.curAnim->unk0A = actor->animstate.customanim_numindices / 6 - 1;
-        o->header.gfx.unk38.curAnim->values = actor->animstate.customanim_values;
-        o->header.gfx.unk38.curAnim->index = (const u16*)actor->animstate.customanim_indices;
-        o->header.gfx.unk38.curAnim->length = 0;
+        o->header.gfx.unk38.curAnim->unk0A = actor->animstate.customanim_indices.size() / 6 - 1;
+        o->header.gfx.unk38.curAnim->values = actor->animstate.customanim_values.data();
+        o->header.gfx.unk38.curAnim->index = (const u16*)actor->animstate.customanim_indices.data();
+        o->header.gfx.unk38.curAnim->length = (s16)actor->animstate.length;
     }
     else {
         o->header.gfx.unk38.animID = actor->animstate.id;
@@ -150,7 +150,6 @@ void bhv_mario_actor_loop() {
         actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
     }
     o->header.gfx.unk38.animYTrans = 0xBD;
-    std::cout << o->header.gfx.unk38.animFrame << std::endl;
     o->header.gfx.unk38.animFrame = actor->animstate.frame;
 }
 
@@ -198,6 +197,12 @@ float saturn_actor_get_alpha() {
     if (actor == nullptr) return 255;
     if (actor->powerup_state & 1) return actor->alpha;
     return 255;
+}
+
+bool saturn_actor_has_custom_anim_extra() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (actor == nullptr) return false;
+    return actor->animstate.custom && actor->animstate.customanim_extra;
 }
 
 int saturn_actor_get_support_flags(int marioIndex) {

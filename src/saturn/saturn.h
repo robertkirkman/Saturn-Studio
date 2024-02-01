@@ -48,8 +48,15 @@ struct AnimationState {
     float frame;
     int length;
     int customanim_numindices;
-    s16* customanim_indices;
-    s16* customanim_values;
+    bool customanim_extra;
+#ifdef __cplusplus
+    std::vector<s16> customanim_indices;
+    std::vector<s16> customanim_values;
+    std::string customanim_name;
+    std::string customanim_author;
+#else
+    u8 padding[32 * 2 + 24 * 2]; // std::vector has 32 bytes, std::string has 24 bytes
+#endif
 };
 
 struct MouseState {
