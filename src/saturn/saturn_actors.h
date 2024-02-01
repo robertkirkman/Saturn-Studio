@@ -39,7 +39,7 @@ public:
     int selected_model = -1;
     int cc_index = 0;
     bool cc_support = true;
-    bool spark_support = false;
+    bool spark_support = true;
     bool custom_eyes = false;
     Model model = Model();
     ColorCode colorcode;
