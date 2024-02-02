@@ -379,9 +379,11 @@ CXX_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
 GODDARD_C_FILES := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
 
-DUMMY != (mkdir -p build/us_pc/assets && $(PYTHON) tools/mario_anims_converter.py > $(BUILD_DIR)/assets/mario_anim_data.c) || echo FAIL
-ifeq ($(DUMMY),FAIL)
-  $(error Failed to convert anims)
+ifeq ("$(wildcard $(BUILD_DIR)/assets/mario_anim_data.c)","")
+  DUMMY != (mkdir -p $(BUILD_DIR)/assets && $(PYTHON) tools/mario_anims_converter.py > $(BUILD_DIR)/assets/mario_anim_data.c) || echo FAIL
+  ifeq ($(DUMMY),FAIL)
+    $(error Failed to convert anims)
+  endif
 endif
 
 GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c

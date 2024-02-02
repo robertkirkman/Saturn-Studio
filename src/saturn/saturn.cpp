@@ -252,6 +252,7 @@ void saturn_update() {
     if (!saturn_disable_sm64_input()) {
         cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
         cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
+        mouse_state.scrollwheel_modifier = 1.00f;
         if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LSHIFT]) mouse_state.scrollwheel_modifier = 0.25f;
         if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LCTRL ]) mouse_state.scrollwheel_modifier = 2.00f;
     }
