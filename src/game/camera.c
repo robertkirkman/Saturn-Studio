@@ -3217,7 +3217,7 @@ void update_camera(struct Camera *c) {
                     if (mouse_state.x_diff != 0 || mouse_state.y_diff != 0) is_camera_moving = true;
                 }
                 if (mouse_state.scrollwheel != 0) is_camera_moving = true;
-                vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * camVelSpeed, pitch, yaw);
+                vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, pitch, yaw);
                 vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
 
                 if (cameraRollLeft) gLakituState.roll += camVelRSpeed * 512;

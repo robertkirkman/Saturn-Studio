@@ -1,5 +1,7 @@
 #include "saturn.h"
 
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_scancode.h>
 #include <string>
 #include <iostream>
 #include <algorithm>
@@ -250,7 +252,10 @@ void saturn_update() {
     if (!saturn_disable_sm64_input()) {
         cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
         cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
+        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LSHIFT]) mouse_state.scrollwheel_modifier = 0.25f;
+        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LCTRL ]) mouse_state.scrollwheel_modifier = 2.00f;
     }
+    else mouse_state.scrollwheel_modifier = 1.f;
 
     if (!keyframe_playing && !camera_frozen) {
         gLakituState.focHSpeed = camera_focus * camera_savestate_mult * 0.8f;
