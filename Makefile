@@ -379,6 +379,11 @@ CXX_FILES := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 S_FILES := $(foreach dir,$(ASM_DIRS),$(wildcard $(dir)/*.s))
 GODDARD_C_FILES := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
 
+DUMMY != (mkdir -p build/us_pc/assets && $(PYTHON) tools/mario_anims_converter.py > $(BUILD_DIR)/assets/mario_anim_data.c) || echo FAIL
+ifeq ($(DUMMY),FAIL)
+  $(error Failed to convert anims)
+endif
+
 GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c
 #  $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
 
@@ -1004,9 +1009,6 @@ $(BUILD_DIR)/levels/scripts.o: $(BUILD_DIR)/include/level_headers.h
 
 $(BUILD_DIR)/include/level_headers.h: levels/level_headers.h.in
 	$(CPP) -I . levels/level_headers.h.in | $(PYTHON) tools/output_level_headers.py > $(BUILD_DIR)/include/level_headers.h
-
-$(BUILD_DIR)/assets/mario_anim_data.c: $(wildcard assets/anims/*.inc.c)
-	$(PYTHON) tools/mario_anims_converter.py > $@
 
 #$(BUILD_DIR)/assets/demo_data.c: assets/demo_data.json $(wildcard assets/demos/*.bin)
 #	$(PYTHON) tools/demo_data_converter.py assets/demo_data.json $(VERSION_CFLAGS) > $@
