@@ -3196,34 +3196,6 @@ void update_camera(struct Camera *c) {
 
         if (machinimaMode) {
             if (!machinimaKeyframing && !machinimaCopying) {
-                f32 dist;
-                s16 pitch, yaw;
-                vec3f_get_dist_and_angle(c->pos, c->focus, &dist, &pitch, &yaw);
-                if (mouse_state.update_camera) {
-                    Vec3f offset;
-                    vec3f_set(offset, 0, 0, 0);
-                    if (mouse_state.held & MOUSEBTN_MASK_L) {
-                        offset[0] += sins(yaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-                        offset[2] += coss(yaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-                        offset[1] += coss(pitch) * mouse_state.y_diff * camVelSpeed;
-                        offset[0] += sins(pitch) * coss(yaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
-                        offset[2] -= sins(pitch) * sins(yaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
-                    }
-                    if (mouse_state.held & MOUSEBTN_MASK_R) {
-                        yaw   += mouse_state.x_diff * 20 * camVelRSpeed;
-                        pitch += mouse_state.y_diff * 20 * camVelRSpeed;
-                    }
-                    vec3f_add(c->pos, offset);
-                    if (mouse_state.x_diff != 0 || mouse_state.y_diff != 0) is_camera_moving = true;
-                }
-                if (mouse_state.scrollwheel != 0) is_camera_moving = true;
-                vec3f_set_dist_and_angle(c->pos, c->pos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, pitch, yaw);
-                vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
-
-                if (cameraRollLeft) gLakituState.roll += camVelRSpeed * 512;
-                if (cameraRollRight) gLakituState.roll -= camVelRSpeed * 512;
-                if (cameraRollLeft || cameraRollRight) is_camera_moving = true;
-
                 c->pos[1] += camVelY;
                 c->focus[1] += camVelY;
                 camVelY = approach_f32_symmetric(camVelY, 0.f, 2.f);

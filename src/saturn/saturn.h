@@ -106,8 +106,6 @@ extern bool autoChroma;
 extern bool autoChromaLevel;
 extern bool autoChromaObjects;
 
-extern bool should_update_cam_from_keyframes;
-
 extern u8 activatedToads;
 
 extern u8 godmode_temp_off;

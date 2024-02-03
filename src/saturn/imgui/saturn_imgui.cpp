@@ -734,6 +734,10 @@ void saturn_keyframe_window() {
                             if (ImGui::Button(ICON_FK_FAST_BACKWARD)) k_current_frame = startFrame = 0;
                                 ImGui::SameLine();
                                 ImGui::Checkbox("Loop###k_t_loop", &k_loop);
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(48);
+                                ImGui::InputInt("Frame", &k_current_frame, 0);
+                                ImGui::PopItemWidth();
 
     ImVec2 window_size = ImGui::GetWindowSize();
             
@@ -848,31 +852,6 @@ void saturn_keyframe_window() {
                 //apply_cc_from_editor();
             }
         }
-    }
-
-    if (camera_frozen) {
-        if (keyframe_playing || k_current_frame != k_previous_frame) {
-            should_update_cam_from_keyframes = false;
-            vec3f_copy(gCamera->pos, freezecamPos);
-            vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
-            gLakituState.roll = freezecamRoll;
-        }
-        else {
-            float dist;
-            s16 yaw;
-            s16 pitch;
-            vec3f_copy(freezecamPos, gCamera->pos);
-            vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
-            freezecamYaw = (float)yaw;
-            freezecamPitch = (float)pitch;
-            freezecamRoll = (float)gLakituState.roll;
-        }
-        vec3f_copy(gLakituState.pos, gCamera->pos);
-        vec3f_copy(gLakituState.focus, gCamera->focus);
-        vec3f_copy(gLakituState.goalPos, gCamera->pos);
-        vec3f_copy(gLakituState.goalFocus, gCamera->focus);
-        gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
-        gLakituState.yaw = gCamera->yaw;
     }
 
     k_previous_frame = k_current_frame;

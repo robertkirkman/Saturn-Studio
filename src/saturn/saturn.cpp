@@ -102,8 +102,6 @@ int k_curr_curve_type = 0;
 
 int k_current_anim = -1;
 
-bool should_update_cam_from_keyframes = false;
-
 std::map<std::string, std::pair<KeyframeTimeline, std::vector<Keyframe>>> k_frame_keys = {};
 
 int k_last_passed_index = 0;
@@ -330,10 +328,7 @@ void saturn_update() {
         }
         if (end) {
             if (saturn_imgui_is_capturing_video()) saturn_imgui_stop_capture();
-            else {
-                if (k_loop) k_current_frame = 0;
-                else keyframe_playing = false;
-            }
+            else if (k_loop) k_current_frame = 0;
         }
 
         if (timeline_has_id("k_angle"))
@@ -341,20 +336,43 @@ void saturn_update() {
 
         schroma_imgui_init();
 
-        if (!end) k_current_frame++;
+        k_current_frame++;
     }
 
-    if (camera_frozen && keyframe_playing) {
-        should_update_cam_from_keyframes = false;
+    // Camera
+
+    f32 dist;
+    if (mouse_state.update_camera) {
+        Vec3f offset;
+        vec3f_set(offset, 0, 0, 0);
+        if (mouse_state.held & MOUSEBTN_MASK_L) {
+            offset[0] += sins(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
+            offset[2] += coss(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
+            offset[1] += coss(freezecamPitch) * mouse_state.y_diff * camVelSpeed;
+            offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
+            offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
+        }
+        if (mouse_state.held & MOUSEBTN_MASK_R) {
+            freezecamYaw   += mouse_state.x_diff * 20 * camVelRSpeed;
+            freezecamPitch += mouse_state.y_diff * 20 * camVelRSpeed;
+        }
+        vec3f_add(freezecamPos, offset);
+    }
+    vec3f_set_dist_and_angle(freezecamPos, freezecamPos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, freezecamPitch, freezecamYaw);
+
+    if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
+    if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;
+
+    if (gCamera) {
         vec3f_copy(gCamera->pos, freezecamPos);
         vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
-        gLakituState.roll = freezecamRoll;
         vec3f_copy(gLakituState.pos, gCamera->pos);
         vec3f_copy(gLakituState.focus, gCamera->focus);
         vec3f_copy(gLakituState.goalPos, gCamera->pos);
         vec3f_copy(gLakituState.goalFocus, gCamera->focus);
         gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
         gLakituState.yaw = gCamera->yaw;
+        gLakituState.roll = freezecamRoll;
     }
 
     // Animations
@@ -592,10 +610,7 @@ bool saturn_keyframe_matches(std::string id, int frame) {
         for (int i = 0; i < timeline.numValues; i++) {
             float value = ((float*)ptr)[i];
             float distance = abs(value - expectedValues[i]);
-            if (distance > pow(10, timeline.precision)) {
-                if (id.find("cam") != string::npos) return !is_camera_moving;
-                else return false;
-            }
+            if (distance > pow(10, timeline.precision)) return false;
         }
     }
 
