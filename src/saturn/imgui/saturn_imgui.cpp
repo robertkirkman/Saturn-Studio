@@ -380,6 +380,8 @@ bool capturing_video = false;
 bool transparency_enabled = true;
 bool stop_capture = false;
 
+const float ANTIALIAS_MODIFIER = 1.f;
+
 bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
     if (width == nullptr) width = &w;
@@ -390,8 +392,8 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
         return true;
     }
     if (game_viewport[2] != -1 && game_viewport[3] != -1) {
-        *width = game_viewport[2];
-        *height = game_viewport[3];
+        *width  = game_viewport[2] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
+        *height = game_viewport[3] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
         return true;
     }
     SDL_GetWindowSize(window, width, height);
