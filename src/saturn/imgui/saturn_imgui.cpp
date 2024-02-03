@@ -467,7 +467,7 @@ void saturn_imgui_stop_capture() {
 }
 
 bool saturn_imgui_is_capturing_transparent_video() {
-    return capturing_video && transparency_enabled && selected_video_format < 2;
+    return capturing_video && transparency_enabled && (video_renderer_flags & VIDEO_RENDERER_FLAGS_TRANSPARECY);
 }
 
 void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
@@ -1038,22 +1038,23 @@ void saturn_imgui_update() {
                 ImGui::EndCombo();
             }
             ImGui::InputInt2("Resolution", videores);
-            const char* video_formats[] = { ".png sequence", ".webm", ".mp4" };
-            if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format])) {
-                for (int i = 0; i < IM_ARRAYSIZE(video_formats); i++) {
-                    if (!ffmpeg_installed && i != 0) ImGui::BeginDisabled();
+            std::vector<std::pair<int, std::string>> video_formats = video_renderer_get_formats();
+            if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format].second.c_str())) {
+                for (int i = 0; i < video_formats.size(); i++) {
+                    bool ffmpeg_required = video_formats[i].first & VIDEO_RENDERER_FLAGS_FFMPEG;
                     bool is_selected = selected_video_format == i;
-                    if (ImGui::Selectable(video_formats[i], is_selected)) {
+                    if (!ffmpeg_installed && ffmpeg_required) ImGui::BeginDisabled();
+                    if (ImGui::Selectable(video_formats[i].second.c_str(), is_selected)) {
                         selected_video_format = i;
                         saturn_set_video_renderer(i);
                     }
                     if (is_selected) ImGui::SetItemDefaultFocus();
-                    if (!ffmpeg_installed && i != 0) ImGui::EndDisabled();
+                    if (!ffmpeg_installed && ffmpeg_required) ImGui::EndDisabled();
                 }
                 ImGui::EndCombo();
             }
             ImGui::Checkbox("Anti-aliasing", &video_antialias);
-            bool transparency_supported = selected_video_format < 2;
+            bool transparency_supported = video_renderer_flags & VIDEO_RENDERER_FLAGS_TRANSPARECY;
             bool transparency_checkbox = transparency_enabled && transparency_supported;
             if (!transparency_supported) ImGui::BeginDisabled();
             if (ImGui::Checkbox("Transparency", &transparency_checkbox)) transparency_enabled = !transparency_enabled;
@@ -1063,7 +1064,7 @@ void saturn_imgui_update() {
                 ImGui::Text("support transparency");
             }
             ImGui::Separator();
-            if (ImGui::Button("Capture Screenshot")) {
+            if (ImGui::Button("Capture Screenshot (.png)")) {
                 capturing_video = true;
                 keyframe_playing = false;
             }

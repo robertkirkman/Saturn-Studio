@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <cstdio>
 #include <string>
+#include <utility>
+#include <vector>
 
 extern "C" {
 #include "pc/pngutils.h"
@@ -55,32 +57,46 @@ VideoRenderer renderer_pngseq = {
     pngseq_init,
     pngseq_render,
     pngseq_finalize,
+    VIDEO_RENDERER_FLAGS_TRANSPARECY,
 };
 
 VideoRenderer renderer_webm = {
     webm_init,
     ffmpeg_render,
     ffmpeg_finalize,
+    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY,
 };
 
 VideoRenderer renderer_mp4 = {
     mp4_init,
     ffmpeg_render,
     ffmpeg_finalize,
+    VIDEO_RENDERER_FLAGS_FFMPEG,
 };
 
-VideoRenderer video_renderers[] =  {
-    renderer_pngseq,
-    renderer_webm,
-    renderer_mp4,
+std::vector<std::pair<std::string, VideoRenderer>> video_renderers =  {
+    { ".png sequence", renderer_pngseq },
+    { ".webm",         renderer_webm   },
+    { ".mp4",          renderer_mp4    },
 };
 
 FUNC(video_renderer_init      FUNC_INIT    ) = nullptr;
 FUNC(video_renderer_render    FUNC_RENDER  ) = nullptr;
 FUNC(video_renderer_finalize  FUNC_FINALIZE) = nullptr;
+int  video_renderer_flags                    = VIDEO_RENDERER_FLAGS_NONE;
 
 void saturn_set_video_renderer(int index) {
-    video_renderer_init     = std::get<0>(video_renderers[index]);
-    video_renderer_render   = std::get<1>(video_renderers[index]);
-    video_renderer_finalize = std::get<2>(video_renderers[index]);
+    VideoRenderer video_renderer = video_renderers[index].second;
+    video_renderer_init     = std::get<0>(video_renderer);
+    video_renderer_render   = std::get<1>(video_renderer);
+    video_renderer_finalize = std::get<2>(video_renderer);
+    video_renderer_flags    = std::get<3>(video_renderer);
+}
+
+std::vector<std::pair<int, std::string>> video_renderer_get_formats() {
+    std::vector<std::pair<int, std::string>> formats = {};
+    for (int i = 0; i < video_renderers.size(); i++) {
+        formats.push_back({ std::get<3>(video_renderers[i].second), video_renderers[i].first });
+    }
+    return formats;
 }

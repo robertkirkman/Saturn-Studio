@@ -219,7 +219,6 @@ void saturn_update() {
     mouse_state.x = io.MousePos.x;
     mouse_state.y = io.MousePos.y;
     mouse_state.held = 0;
-    mouse_state.scrollwheel = 0;
     for (int i = 0; i < 5; i++) {
         mouse_state.held |= io.MouseDown[i] << i;
     }
@@ -359,6 +358,7 @@ void saturn_update() {
         vec3f_add(freezecamPos, offset);
     }
     vec3f_set_dist_and_angle(freezecamPos, freezecamPos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, freezecamPitch, freezecamYaw);
+    mouse_state.scrollwheel = 0;
 
     if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
     if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;
