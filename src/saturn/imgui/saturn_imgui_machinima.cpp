@@ -596,6 +596,7 @@ void imgui_machinima_animation_player(MarioActor* actor) {
                     if (ImGui::Selectable(saturn_animations_list[i], is_selected)) {
                         actor->animstate.id = i;
                         actor->animstate.custom = false;
+                        actor->animstate.frame = 0;
                     }
                 }
                 ImGui::EndChild();
@@ -621,6 +622,7 @@ void imgui_machinima_animation_player(MarioActor* actor) {
                     if (ImGui::Selectable(canim_array[i].c_str(), is_selected)) {
                         actor->animstate.id = i;
                         actor->animstate.custom = true;
+                        actor->animstate.frame = 0;
                         saturn_read_mcomp_animation(actor, canim_array[i]);
                     }
                 }
