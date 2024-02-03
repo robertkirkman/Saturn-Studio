@@ -379,6 +379,7 @@ int videores[] = { 1920, 1080 };
 bool capturing_video = false;
 bool transparency_enabled = true;
 bool stop_capture = false;
+bool video_antialias = true;
 
 const float ANTIALIAS_MODIFIER = 1.f;
 
@@ -415,10 +416,32 @@ void saturn_capture_screenshot() {
         for (int x = 0; x < videores[0]; x++) {
             int i = (y * videores[0] + x) * 4;
             int j = ((videores[1] - y - 1) * videores[0] + x) * 4;
-            flipped[j + 0] = image[i + 0];
-            flipped[j + 1] = image[i + 1];
-            flipped[j + 2] = image[i + 2];
-            flipped[j + 3] = image[i + 3];
+            int r = 0, g = 0, b = 0, a = 0;
+            if (video_antialias) {
+                int pixels = 0;
+                for (int X = x - 1; X <= x + 1; X++) {
+                    for (int Y = y - 1; Y <= y + 1; Y++) {
+                        if (X < 0 || Y < 0 || X >= videores[0] || Y >= videores[1]) continue;
+                        int I = (Y * videores[0] + X) * 4;
+                        r += image[I + 0];
+                        g += image[I + 1];
+                        b += image[I + 2];
+                        a += image[I + 3];
+                        pixels++;
+                    }
+                }
+                r /= pixels; g /= pixels; b /= pixels; a /= pixels;
+            }
+            else {
+                r = image[i + 0];
+                g = image[i + 1];
+                b = image[i + 2];
+                a = image[i + 3];
+            }
+            flipped[j + 0] = r;
+            flipped[j + 1] = g;
+            flipped[j + 2] = b;
+            flipped[j + 3] = a;
         }
     }
     if (keyframe_playing) {
@@ -1050,6 +1073,7 @@ void saturn_imgui_update() {
                 }
                 ImGui::EndCombo();
             }
+            ImGui::Checkbox("Anti-aliasing", &video_antialias);
             bool transparency_supported = selected_video_format < 2;
             bool transparency_checkbox = transparency_enabled && transparency_supported;
             if (!transparency_supported) ImGui::BeginDisabled();
