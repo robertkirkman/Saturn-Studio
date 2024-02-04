@@ -1,5 +1,6 @@
 #include "saturn_video_renderer.h"
 
+#include <cstring>
 #include <iostream>
 #include <filesystem>
 #include <cstdio>
@@ -35,14 +36,22 @@ void webm_init(int w, int h) {
     video_width = w;
     video_height = h;
     std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v libvpx-vp9 -pix_fmt yuva420p video.webm";
+#ifdef _WIN32
     ffmpeg = popen(cmd.c_str(), "wb");
+#else
+    ffmpeg = popen(cmd.c_str(), "w");
+#endif
 }
 
 void mp4_init(int w, int h) {
     video_width = w;
     video_height = h;
     std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v h264 -pix_fmt yuv420p video.mp4";
+#ifdef _WIN32
     ffmpeg = popen(cmd.c_str(), "wb");
+#else
+    ffmpeg = popen(cmd.c_str(), "w");
+#endif
 }
 
 void ffmpeg_render(unsigned char* data) {
