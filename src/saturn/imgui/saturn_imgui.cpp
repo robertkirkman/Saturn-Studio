@@ -7,6 +7,7 @@
 #include <map>
 #include <fstream>
 
+#include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn/imgui/saturn_imgui_cc_editor.h"
 #include "saturn/imgui/saturn_imgui_machinima.h"
@@ -890,38 +891,14 @@ void saturn_imgui_update() {
         windowCcEditor = false;
 
         if (ImGui::BeginMenu("Open Project")) {
-            ImGui::BeginChild("###menu_model_ccs", ImVec2(165, 75), true);
-            for (int n = 0; n < project_array.size(); n++) {
-                const bool is_selected = (current_project_id == n);
-                std::string spj_name = project_array[n].substr(0, project_array[n].size() - 4);
-
-                if (ImGui::Selectable(spj_name.c_str(), is_selected)) {
-                    current_project_id = n;
-                    if (spj_name.length() <= 256);
-                        strcpy(saturnProjectFilename, spj_name.c_str());
-                    //saturn_load_project((char*)(spj_name + ".spj").c_str());
-                }
-
-                if (ImGui::BeginPopupContextItem()) {
-                    ImGui::Text("%s.spj", spj_name.c_str());
-                    imgui_bundled_tooltip(("/dynos/projects/" + spj_name + ".spj").c_str());
-                    if (spj_name != "autosave") {
-                        if (ImGui::SmallButton(ICON_FK_TRASH_O " Delete File")) {
-                            saturn_delete_file(project_dir + spj_name + ".spj");
-                            saturn_load_project_list();
-                            ImGui::CloseCurrentPopup();
-                        } ImGui::SameLine(); imgui_bundled_help_marker("WARNING: This action is irreversible!");
-                    }
-                    ImGui::Separator();
-                    ImGui::TextDisabled("%i project(s)", project_array.size());
-                    if (ImGui::Button(ICON_FK_UNDO " Refresh")) {
-                        saturn_load_project_list();
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
-                }
+            saturn_file_browser_filter_extension("spj");
+            saturn_file_browser_scan_directory("dynos/projects");
+            if (saturn_file_browser_show("project")) {
+                std::string str = saturn_file_browser_get_selected().string();
+                str = str.substr(0, str.length() - 4); // trim the extension
+                if (str.length() <= 256) memcpy(saturnProjectFilename, str.c_str(), str.length() + 1);
+                saturnProjectFilename[256] = 0;
             }
-            ImGui::EndChild();
             ImGui::PushItemWidth(125);
             ImGui::InputText(".spj###project_file_input", saturnProjectFilename, 256);
             ImGui::PopItemWidth();

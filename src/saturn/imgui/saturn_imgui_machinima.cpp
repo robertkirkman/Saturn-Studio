@@ -18,6 +18,7 @@
 #include "saturn/saturn_obj_def.h"
 #include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn_imgui.h"
+#include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "saturn/imgui/saturn_imgui_chroma.h"
 #include "saturn/filesystem/saturn_locationfile.h"
 #include "saturn/filesystem/saturn_animfile.h"
@@ -614,19 +615,14 @@ void imgui_machinima_animation_player(MarioActor* actor) {
         }
         if (ImGui::BeginTabItem("Custom")) {
             ImGui::PushItemWidth(316);
-            ImGui::InputTextWithHint("###anim_search", ICON_FK_SEARCH " Search...", animSearchTerm, 128);
-            if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
-                for (int i = 0; i < canim_array.size(); i++) {
-                    if (!case_insensitive_contains(canim_array[i], animSearchTerm)) continue;
-                    const bool is_selected = i == actor->animstate.id && actor->animstate.custom;
-                    if (ImGui::Selectable(canim_array[i].c_str(), is_selected)) {
-                        actor->animstate.id = i;
-                        actor->animstate.custom = true;
-                        actor->animstate.frame = 0;
-                        saturn_read_mcomp_animation(actor, canim_array[i]);
-                    }
-                }
-                ImGui::EndChild();
+            saturn_file_browser_filter_extension("json");
+            saturn_file_browser_scan_directory("dynos/anims");
+            saturn_file_browser_height(120);
+            if (saturn_file_browser_show("animations")) {
+                actor->animstate.id = 0;
+                actor->animstate.custom = true;
+                actor->animstate.frame = 0;
+                saturn_read_mcomp_animation(actor, saturn_file_browser_get_selected().c_str());
             }
             ImGui::PopItemWidth();
             ImGui::EndTabItem();

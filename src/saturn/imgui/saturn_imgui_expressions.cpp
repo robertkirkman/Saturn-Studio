@@ -17,6 +17,7 @@
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_actors.h"
 #include "saturn_imgui.h"
+#include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "data/dynos.cpp.h"
 #include <SDL2/SDL.h>
 
@@ -186,8 +187,7 @@ void RecursiveSelector(Expression* expression, int depth, std::string parent_pat
 /* Creates a nested expression selection menu for a model; Contains dropdown OR checkbox widgets */
 void OpenExpressionSelector(MarioActor* actor) {
     if (!actor) return;
-    if (actor->custom_eyes) {
-        if (actor->model.Expressions.size() > 0 && actor->model.CustomEyeSupport)
+    if (actor->custom_eyes && actor->model.Expressions.size() > 0 && actor->model.CustomEyeSupport) {
         // Eye Selector
         ImGui::BeginChild(("###menu_eye_%s", actor->model.Expressions[0].Name.c_str()), ImVec2(200, 150), true);
         RecursiveSelector(&actor->model.Expressions[0], 0, actor->model.Expressions[0].FolderPath, 0);
