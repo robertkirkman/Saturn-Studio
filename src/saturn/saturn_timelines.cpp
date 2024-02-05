@@ -26,6 +26,9 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_scale", MARIO_ENTRY(xScale), 3, "Scale", true);
     SATURN_KFENTRY_BOOL("k_v_cap_emblem", MARIO_ENTRY(show_emblem), "M Cap Emblem", true);
     SATURN_KFENTRY_FLOAT("k_angle", MARIO_ENTRY(angle), 1, "Mario Angle", true);
+    SATURN_KFENTRY_FLOAT("k_mariopos_x", MARIO_ENTRY(x), 1, "Mario Pos X", true);
+    SATURN_KFENTRY_FLOAT("k_mariopos_y", MARIO_ENTRY(y), 1, "Mario Pos Y", true);
+    SATURN_KFENTRY_FLOAT("k_mariopos_z", MARIO_ENTRY(z), 1, "Mario Pos Z", true);
     SATURN_KFENTRY_BOOL("k_hud", &configHUD, "HUD", false);
     SATURN_KFENTRY_FLOAT("k_fov", &camera_fov, 1, "FOV", false);
     SATURN_KFENTRY_FLOAT("k_focus", &camera_focus, 1, "Follow", false);

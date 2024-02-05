@@ -452,6 +452,17 @@ void sdynos_imgui_menu(int index) {
 
     ImGui::Separator();
 
+    ImGui::PushItemWidth(50);
+    ImGui::DragFloat("###mariopos_x", &actor->x, 1.f, 0.f, 0.f, "X");
+    ImGui::SameLine();
+    ImGui::DragFloat("###mariopos_y", &actor->y, 1.f, 0.f, 0.f, "Y");
+    ImGui::SameLine();
+    ImGui::DragFloat("###mariopos_z", &actor->z, 1.f, 0.f, 0.f, "Z");
+    ImGui::PopItemWidth();
+    saturn_keyframe_popout({ "k_mariopos_x", "k_mariopos_y", "k_mariopos_z" });
+
+    ImGui::Separator();
+
     // Model Metadata
     if (!actor->model.Author.empty()) {
         string metaLabelText = (ICON_FK_USER " " + actor->model.Name);
