@@ -155,6 +155,7 @@ void bhv_mario_actor_loop() {
 
 void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive) {
     MarioActor* actor = saturn_get_actor(marioIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor == nullptr) return;
     *r = (*r * additive) + intensity * actor->colorcode[ccIndex].red[shadeIndex];
     *g = (*g * additive) + intensity * actor->colorcode[ccIndex].green[shadeIndex];
@@ -163,10 +164,11 @@ void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int 
 
 bool saturn_rotate_head(Vec3s rotation) {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor != nullptr) vec3s_set(rotation,
         actor->head_rot_x,
         actor->head_rot_y,
-        0
+        actor->head_rot_z
     );
     else vec3s_set(rotation, 0, 0, 0);
     return actor != nullptr;
@@ -174,6 +176,7 @@ bool saturn_rotate_head(Vec3s rotation) {
 
 s16 saturn_actor_geo_switch(u8 item) {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor == nullptr) return 0;
     switch (item) {
         case ACTOR_SWITCH_EYE:
@@ -194,6 +197,7 @@ s16 saturn_actor_geo_switch(u8 item) {
 
 float saturn_actor_get_alpha() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor == nullptr) return 255;
     if (actor->powerup_state & 1) return actor->alpha;
     return 255;
@@ -201,14 +205,23 @@ float saturn_actor_get_alpha() {
 
 bool saturn_actor_has_custom_anim_extra() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor == nullptr) return false;
     return actor->animstate.custom && actor->animstate.customanim_extra;
 }
 
 int saturn_actor_get_support_flags(int marioIndex) {
-    MarioActor* actor = saturn_get_actor(marioIndex);;
+    MarioActor* actor = saturn_get_actor(marioIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor == nullptr) return 0;
     return (actor->spark_support << 1) | actor->cc_support;
+}
+
+float saturn_actor_get_shadow_scale() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return 1.f;
+    return actor->shadow_scale;
 }
 
 struct ModelTexture {

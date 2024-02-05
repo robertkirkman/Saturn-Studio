@@ -935,6 +935,8 @@ static void geo_process_shadow(struct GraphNodeShadow *node) {
             shadowScale = node->shadowScale * gCurGraphNodeObject->scale[0];
         }
 
+        shadowScale *= saturn_actor_get_shadow_scale();
+
         objScale = 1.0f;
         if (gCurAnimEnabled != 0) {
             if (gCurAnimType == ANIM_TYPE_TRANSLATION

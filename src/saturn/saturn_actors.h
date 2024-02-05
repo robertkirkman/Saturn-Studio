@@ -31,11 +31,13 @@ public:
     float spin_speed = 1;
     int head_rot_x = 0;
     int head_rot_y = 0;
+    int head_rot_z = 0;
     int eye_state = 0;
     int cap_state = 0;
     int hand_state = 0;
     int powerup_state = 0;
     float alpha = 128;
+    float shadow_scale = 1.f;
     int selected_model = -1;
     int cc_index = 0;
     bool cc_support = true;
@@ -73,6 +75,7 @@ extern "C" {
     s16 saturn_actor_geo_switch(u8 item);
     float saturn_actor_get_alpha();
     bool saturn_actor_has_custom_anim_extra();
+    float saturn_actor_get_shadow_scale();
     int saturn_actor_get_support_flags(int marioIndex);
     void saturn_actor_add_model_texture(char* id, char* data, int w, int h);
     char* saturn_actor_get_model_texture(char* id, int* w, int* h);

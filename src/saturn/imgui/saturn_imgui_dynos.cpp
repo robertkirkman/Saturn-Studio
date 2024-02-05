@@ -406,7 +406,9 @@ void sdynos_imgui_menu(int index) {
             ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::Text(ICON_FK_SKATE " Walkpoint");
             ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::SliderFloat("###run_speed", &run_speed, 0.f, 127.f, "%.0f");
             imgui_bundled_tooltip("Controls the axis range for Mario's running input; Can be used to force walking (36) or tiptoe (25) animations.");
-
+            ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::Text("Shadow Scale");
+            ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::SliderFloat("###shadow_scale", &actor->shadow_scale, 0.f, 2.f);
+            saturn_keyframe_popout("k_shadow_scale");
             ImGui::TableSetColumnIndex(1);
             float angle = actor->angle / 32768.0f * 180;
 
@@ -428,9 +430,10 @@ void sdynos_imgui_menu(int index) {
             ImGui::PushItemWidth(75);
             ImGui::SliderFloat("Speed", &mario_headrot_speed, 0, 50, "%.1f");
             ImGui::PopItemWidth();
-            if (ImGui::BeginTable("headrot_table", 2)) {
+            if (ImGui::BeginTable("headrot_table", 3)) {
                 float fake_yaw = actor->head_rot_x * 360.f / 65536;
-                float fake_pitch = actor->head_rot_y * 360.f / 65536;
+                float fake_pitch = actor->head_rot_z * 360.f / 65536;
+                float fake_roll = actor->head_rot_y * 360.f / 65536;
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 if (ImGuiKnobs::Knob("Yaw", &fake_yaw, configCUpLimit ? -120.0f : -180.0f, configCUpLimit ? 120.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
@@ -438,11 +441,14 @@ void sdynos_imgui_menu(int index) {
                 }
                 ImGui::TableSetColumnIndex(1);
                 if (ImGuiKnobs::Knob("Pitch", &fake_pitch, configCUpLimit ? -45.0f : -180.0f, configCUpLimit ? 80.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    actor->head_rot_y = fake_pitch * 65536 / 360;
+                    actor->head_rot_z = fake_pitch * 65536 / 360;
+                }
+                ImGui::TableSetColumnIndex(2);
+                if (ImGuiKnobs::Knob("Roll", &fake_roll, configCUpLimit ? 0.f : -180.f, configCUpLimit ? 0.f : 180.f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
+                    actor->head_rot_y = fake_roll * 65536 / 360;
                 }
                 ImGui::EndTable();
             }
-            saturn_keyframe_popout("k_mario_headrot");
             ImGui::EndMenu();
         }
 
