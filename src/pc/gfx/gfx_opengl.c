@@ -711,7 +711,7 @@ static void gfx_opengl_start_frame(void) {
 static void gfx_opengl_end_frame(void) {
     if (frameBufferCreated) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        saturn_imgui_set_frame_buffer((void*)(intptr_t)rendertexture_id, frameBreak == 1);
+        saturn_imgui_set_frame_buffer((void*)(intptr_t)rendertexture_id, frameBreak == 0);
     }
     saturn_imgui_update();
     if (frameBufferCreated) {

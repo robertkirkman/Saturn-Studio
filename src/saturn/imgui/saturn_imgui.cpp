@@ -380,6 +380,8 @@ bool capturing_video = false;
 bool transparency_enabled = true;
 bool stop_capture = false;
 bool video_antialias = true;
+int video_timer = 0; // used for 1 frame delays on video captures
+                     // without this, its always 1 frame behind
 
 const float ANTIALIAS_MODIFIER = 1.f;
 
@@ -403,8 +405,11 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
 
 void* framebuffer;
 
+#define VIDEO_FRAME_DELAY 2
+
 void saturn_capture_screenshot() {
     if (!capturing_video) return;
+    if (video_timer-- > 0) return;
     capturing_video = false;
     int fb_size = (int)videores[0] * (int)videores[1] * 4;
     unsigned char* image = (unsigned char*)malloc(fb_size);
@@ -451,6 +456,7 @@ void saturn_capture_screenshot() {
             capturing_video = false;
             stop_capture = false;
             video_renderer_finalize();
+            keyframe_playing = false;
         }
     }
     else pngutils_write_png("screenshot.png", (int)videores[0], (int)videores[1], 4, flipped, 0);
@@ -611,6 +617,7 @@ void saturn_imgui_init() {
 }
 
 void saturn_imgui_handle_events(SDL_Event * event) {
+    if (saturn_imgui_is_capturing_video()) return;
     ImGui_ImplSDL2_ProcessEvent(event);
     switch (event->type){
         case SDL_KEYDOWN:
@@ -728,6 +735,8 @@ void saturn_keyframe_window() {
         saturn_keyframe_sort(keyframes);
         ImGui::EndPopup();
     }
+
+    bool keyframe_prev_playing = keyframe_playing;
     if (keyframe_playing) { if (ImGui::Button(ICON_FK_STOP))          keyframe_playing = false; }
     else                  { if (ImGui::Button(ICON_FK_PLAY))          keyframe_playing = true;  }
                                 ImGui::SameLine();
@@ -738,6 +747,11 @@ void saturn_keyframe_window() {
                                 ImGui::PushItemWidth(48);
                                 ImGui::InputInt("Frame", &k_current_frame, 0);
                                 ImGui::PopItemWidth();
+    if (!keyframe_playing && keyframe_prev_playing) {
+        for (auto& entry : k_frame_keys) {
+            saturn_keyframe_apply(entry.first, k_current_frame);
+        }
+    }
 
     ImVec2 window_size = ImGui::GetWindowSize();
             
@@ -1067,10 +1081,12 @@ void saturn_imgui_update() {
             if (ImGui::Button("Capture Screenshot (.png)")) {
                 capturing_video = true;
                 keyframe_playing = false;
+                video_timer = 0;
             }
             ImGui::SameLine();
             if (ImGui::Button("Render Video")) {
                 capturing_video = true;
+                video_timer = VIDEO_FRAME_DELAY;
                 saturn_play_keyframe();
                 video_renderer_init(videores[0], videores[1]);
             }
