@@ -622,7 +622,7 @@ void imgui_machinima_animation_player(MarioActor* actor) {
                 actor->animstate.id = 0;
                 actor->animstate.custom = true;
                 actor->animstate.frame = 0;
-                saturn_read_mcomp_animation(actor, saturn_file_browser_get_selected().c_str());
+                saturn_read_mcomp_animation(actor, saturn_file_browser_get_selected().string().c_str());
             }
             ImGui::PopItemWidth();
             ImGui::EndTabItem();
