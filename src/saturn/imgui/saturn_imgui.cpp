@@ -1081,7 +1081,7 @@ void saturn_imgui_update() {
             if (ImGui::Button("Capture Screenshot (.png)")) {
                 capturing_video = true;
                 keyframe_playing = false;
-                video_timer = 0;
+                video_timer = VIDEO_FRAME_DELAY;
             }
             ImGui::SameLine();
             if (ImGui::Button("Render Video")) {
