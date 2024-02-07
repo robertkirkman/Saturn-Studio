@@ -249,9 +249,12 @@ endif
 endif
 
 # Make tools if out of date
+NOTOOLS ?= 0
+ifeq ($(NOTOOLS),0)
 DUMMY != make -C tools -j1 >&2 || echo FAIL
 ifeq ($(DUMMY),FAIL)
   $(error Failed to build tools)
+endif
 endif
 
 endif
@@ -588,7 +591,7 @@ endif
 ifneq ($(SDL1_USED)$(SDL2_USED),00)
   BACKEND_CFLAGS += `$(SDLCONFIG) --cflags`
   ifeq ($(WINDOWS_BUILD),1)
-    BACKEND_LDFLAGS += `$(SDLCONFIG) --static-libs` -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion
+    BACKEND_LDFLAGS += `pkg-config --static --libs sdl2` -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion
   else
     BACKEND_LDFLAGS += `$(SDLCONFIG) --libs`
   endif
@@ -752,16 +755,20 @@ export LANG := C
 ####################### Other Tools #########################
 
 # N64 conversion tools
+EXEC_EXT ?=
+ifeq ($(WINDOWS_BUILD),1)
+  EXEC_EXT = .exe
+endif
 TOOLS_DIR = tools
-MIO0TOOL = $(TOOLS_DIR)/mio0
-N64CKSUM = $(TOOLS_DIR)/n64cksum
-N64GRAPHICS = $(TOOLS_DIR)/n64graphics
-N64GRAPHICS_CI = $(TOOLS_DIR)/n64graphics_ci
-TEXTCONV = $(TOOLS_DIR)/textconv
-AIFF_EXTRACT_CODEBOOK = $(TOOLS_DIR)/aiff_extract_codebook
-VADPCM_ENC = $(TOOLS_DIR)/vadpcm_enc
-EXTRACT_DATA_FOR_MIO = $(TOOLS_DIR)/extract_data_for_mio
-SKYCONV = $(TOOLS_DIR)/skyconv
+MIO0TOOL = $(TOOLS_DIR)/mio0$(EXEC_EXT)
+N64CKSUM = $(TOOLS_DIR)/n64cksum$(EXEC_EXT)
+N64GRAPHICS = $(TOOLS_DIR)/n64graphics$(EXEC_EXT)
+N64GRAPHICS_CI = $(TOOLS_DIR)/n64graphics_ci$(EXEC_EXT)
+TEXTCONV = $(TOOLS_DIR)/textconv$(EXEC_EXT)
+AIFF_EXTRACT_CODEBOOK = $(TOOLS_DIR)/aiff_extract_codebook$(EXEC_EXT)
+VADPCM_ENC = $(TOOLS_DIR)/vadpcm_enc$(EXEC_EXT)
+EXTRACT_DATA_FOR_MIO = $(TOOLS_DIR)/extract_data_for_mio$(EXEC_EXT)
+SKYCONV = $(TOOLS_DIR)/skyconv$(EXEC_EXT)
 EMULATOR = mupen64plus
 EMU_FLAGS = --noosd
 LOADER = loader64
