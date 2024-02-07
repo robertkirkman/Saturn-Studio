@@ -44,6 +44,9 @@ std::map<std::string, FormatTableEntry> format_table = {
 };
 
 #define EXTRACT_PATH std::filesystem::path(sys_user_path()) / "res"
+#define EXTRACT_ROM "sm64.z64"
+#define ROM_SIZE (8 * 1024 * 1024)
+#define ROM_CHECKSUM 890243328
 
 struct mio0_header {
     unsigned int dest_size;
@@ -312,7 +315,17 @@ int saturn_rom_status(std::filesystem::path extract_dest, std::vector<std::strin
         }
     }
     if (!needs_extract) return ROM_OK;
-    if (!std::filesystem::exists("sm64.z64") && needs_rom) return ROM_MISSING;
+    if (!std::filesystem::exists(EXTRACT_ROM) && needs_rom) return ROM_MISSING;
+    if (std::filesystem::file_size(EXTRACT_ROM) != ROM_SIZE) return ROM_INVALID;
+    std::ifstream stream = std::ifstream(EXTRACT_ROM, std::ios::binary);
+    unsigned char* data = (unsigned char*)malloc(ROM_SIZE);
+    stream.read((char*)data, ROM_SIZE);
+    stream.close();
+    long long int checksum;
+    for (int i = 0; i < ROM_SIZE; i++) {
+        checksum += data[i];
+    }
+    if (checksum != ROM_CHECKSUM) return ROM_INVALID;
     return ROM_NEED_EXTRACT;
 }
 
@@ -323,17 +336,17 @@ int saturn_extract_rom(int type) {
 
     if (status == ROM_OK) return ROM_OK;
     if (status == ROM_MISSING) {
-        pfd::message("Missing ROM","Cannot find sm64.z64\n\nPlease place an unmodified, US Super Mario 64 ROM next to the .exe and name it \"sm64.z64\"", pfd::choice::ok);
+        pfd::message("Missing ROM","Cannot find " EXTRACT_ROM "\n\nPlease place an unmodified, US Super Mario 64 ROM next to the .exe and name it \"" EXTRACT_ROM "\"", pfd::choice::ok);
         return ROM_MISSING;
     }
     if (status == ROM_INVALID) {
-        pfd::message("Invalid ROM", "Couldn't verify sm64.z64\n\nThe file may be corrupted, extended, or from the wrong region. Use an unmodified US version of SM64", pfd::choice::ok);
+        pfd::message("Invalid ROM", "Couldn't verify " EXTRACT_ROM "\n\nThe file may be corrupted, extended, or from the wrong region. Use an unmodified US version of SM64.", pfd::choice::ok);
         return ROM_INVALID;
     }
     extraction_progress = 0;
-    std::ifstream stream = std::ifstream("sm64.z64", std::ios::binary);
-    unsigned char* data = (unsigned char*)malloc(1024 * 1024 * 8);
-    stream.read((char*)data, 1024 * 1024 * 8);
+    std::ifstream stream = std::ifstream(EXTRACT_ROM, std::ios::binary);
+    unsigned char* data = (unsigned char*)malloc(ROM_SIZE);
+    stream.read((char*)data, ROM_SIZE);
     stream.close();
     std::map<int, unsigned char*> mio0 = {};
     for (const auto& asset : assets) {
