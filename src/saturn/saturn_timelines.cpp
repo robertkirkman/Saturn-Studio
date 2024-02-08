@@ -13,7 +13,9 @@
 std::map<std::string, std::tuple<void*, KeyframeType, char, std::string, int, int, bool>> timelineDataTable = {};
 
 #define MARIO_ENTRY(var) (void*)offsetof(MarioActor, var)
-#define CC_ENTRY(index) (void*)(offsetof(MarioActor, colorcode) + index * sizeof(struct ColorTemplate))
+#define ARR_ENTRY(arr, index) (void*)(offsetof(MarioActor, arr) + index * sizeof(((MarioActor*)0)->arr))
+#define CC_ENTRY(index) ARR_ENTRY(colorcode, index)
+#define BONE_ENTRY(index) ARR_ENTRY(bones, index)
 
 // { id, { variable_ptr, type, behavior, name, precision, num_values, is_mario } }
 void saturn_fill_data_table() {
@@ -57,8 +59,19 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_ANIM("k_mario_anim", "Animation");
     SATURN_KFENTRY_FLOAT("k_mario_anim_frame", MARIO_ENTRY(animstate.frame), 1, "Anim Frame", true);
     SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");
-    for (int i = 0; i < 20; i++) {
-        std::string num = std::to_string(i + 1);
-        SATURN_KFENTRY_FLOAT("k_mariobone_" + num, (void*)(offsetof(MarioActor, bones) + i * sizeof(Vec3f)), 3, "Anim Bone " + num, true);
-    }
+    SATURN_KFENTRY_FLOAT("k_mariobone_1", BONE_ENTRY(0), 3, "Root", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_3", BONE_ENTRY(2), 3, "Torso", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_4", BONE_ENTRY(3), 3, "Head", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_6", BONE_ENTRY(5), 3, "Upper Left Arm", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_7", BONE_ENTRY(6), 3, "Lower Left Arm", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_8", BONE_ENTRY(7), 3, "Left Hand", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_10", BONE_ENTRY(9), 3, "Upper Right Arm", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_11", BONE_ENTRY(10), 3, "Lower Right Arm", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_12", BONE_ENTRY(11), 3, "Right Hand", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_14", BONE_ENTRY(13), 3, "Upper Left Leg", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_15", BONE_ENTRY(14), 3, "Lower Left Leg", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_16", BONE_ENTRY(15), 3, "Left Foot", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_18", BONE_ENTRY(17), 3, "Upper Right Leg", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_19", BONE_ENTRY(18), 3, "Lower Right Leg", true);
+    SATURN_KFENTRY_FLOAT("k_mariobone_20", BONE_ENTRY(19), 3, "Right Foot", true);
 }

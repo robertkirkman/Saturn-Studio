@@ -631,28 +631,42 @@ void imgui_machinima_animation_player(MarioActor* actor) {
         if (ImGui::BeginTabItem("Custom")) {
             actor->custom_bone = true;
             int currbone = 0;
-#define BONE_ENTRY(name) ImGui::DragFloat3(name, actor->bones[currbone++]); saturn_keyframe_popout("k_mariobone_" + std::to_string(currbone));
-            BONE_ENTRY("Bone 1");
-            BONE_ENTRY("Bone 2");
-            BONE_ENTRY("Bone 3");
-            BONE_ENTRY("Bone 4");
-            BONE_ENTRY("Bone 5");
-            BONE_ENTRY("Bone 6");
-            BONE_ENTRY("Bone 7");
-            BONE_ENTRY("Bone 8");
-            BONE_ENTRY("Bone 9");
-            BONE_ENTRY("Bone 10");
-            BONE_ENTRY("Bone 11");
-            BONE_ENTRY("Bone 12");
-            BONE_ENTRY("Bone 13");
-            BONE_ENTRY("Bone 14");
-            BONE_ENTRY("Bone 15");
-            BONE_ENTRY("Bone 16");
-            BONE_ENTRY("Bone 17");
-            BONE_ENTRY("Bone 18");
-            BONE_ENTRY("Bone 19");
-            BONE_ENTRY("Bone 20");
+#define SHOW if (true)
+#define HIDE if (false)
+#define BONE_ENTRY(name) {                                                     \
+                ImGui::TableSetColumnIndex(0);                                  \
+                ImGui::DragFloat3(name, actor->bones[currbone++]);               \
+                ImGui::TableSetColumnIndex(1);                                    \
+                saturn_keyframe_popout("k_mariobone_" + std::to_string(currbone)); \
+                ImGui::TableNextRow();                                              \
+            } else { currbone++; }
+            if (ImGui::BeginTable("Bone Editor", 2)) {
+                ImGui::TableNextRow();
+                SHOW BONE_ENTRY("Root"           ); // Bone 1
+                HIDE BONE_ENTRY("Bone 2"         ); // Bone 1 Duplicatee
+                SHOW BONE_ENTRY("Torso"          ); // Bone 3
+                SHOW BONE_ENTRY("Head"           ); // Bone 4
+                HIDE BONE_ENTRY("Bone 5"         ); // Bone 6 Duplicate
+                SHOW BONE_ENTRY("Upper Left Arm" ); // Bone 6
+                SHOW BONE_ENTRY("Lower Left Arm" ); // Bone 7
+                SHOW BONE_ENTRY("Left Hand"      ); // Bone 8
+                HIDE BONE_ENTRY("Bone 9"         ); // Bone 10 Duplicate
+                SHOW BONE_ENTRY("Upper Right Arm"); // Bone 10
+                SHOW BONE_ENTRY("Lower Right Arm"); // Bone 11
+                SHOW BONE_ENTRY("Right Hand"     ); // Bone 12
+                HIDE BONE_ENTRY("Bone 13"        ); // Bone 14 Duplicate
+                SHOW BONE_ENTRY("Upper Left Leg" ); // Bone 14
+                SHOW BONE_ENTRY("Lower Left Leg" ); // Bone 15
+                SHOW BONE_ENTRY("Left Foot"      ); // Bone 16
+                HIDE BONE_ENTRY("Bone 17"        ); // Bone 18 Duplicate
+                SHOW BONE_ENTRY("Upper Right Leg"); // Bone 18
+                SHOW BONE_ENTRY("Lower Right Leg"); // Bone 19
+                SHOW BONE_ENTRY("Right Foot"     ); // Bone 20
+                ImGui::EndTable();
+            }
 #undef BONE_ENTRY
+#undef HIDE
+#undef SHOW
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
