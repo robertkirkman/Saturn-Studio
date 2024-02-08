@@ -578,6 +578,7 @@ std::vector<int> get_sorted_anim_list() {
 }
 
 void imgui_machinima_animation_player(MarioActor* actor) {
+    actor->custom_bone = false;
     if (ImGui::BeginTabBar("###anim_tab_bar")) {
         if (ImGui::BeginTabItem("SM64")) {
             ImGui::PushItemWidth(316);
@@ -613,7 +614,7 @@ void imgui_machinima_animation_player(MarioActor* actor) {
             ImGui::Checkbox("Object",        &selected_groups[7]);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Custom")) {
+        if (ImGui::BeginTabItem("MComp")) {
             ImGui::PushItemWidth(316);
             saturn_file_browser_filter_extension("json");
             saturn_file_browser_scan_directory("dynos/anims");
@@ -627,8 +628,36 @@ void imgui_machinima_animation_player(MarioActor* actor) {
             ImGui::PopItemWidth();
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Custom")) {
+            actor->custom_bone = true;
+            int currbone = 0;
+#define BONE_ENTRY(name) ImGui::DragFloat3(name, actor->bones[currbone++]); saturn_keyframe_popout("k_mariobone_" + std::to_string(currbone));
+            BONE_ENTRY("Bone 1");
+            BONE_ENTRY("Bone 2");
+            BONE_ENTRY("Bone 3");
+            BONE_ENTRY("Bone 4");
+            BONE_ENTRY("Bone 5");
+            BONE_ENTRY("Bone 6");
+            BONE_ENTRY("Bone 7");
+            BONE_ENTRY("Bone 8");
+            BONE_ENTRY("Bone 9");
+            BONE_ENTRY("Bone 10");
+            BONE_ENTRY("Bone 11");
+            BONE_ENTRY("Bone 12");
+            BONE_ENTRY("Bone 13");
+            BONE_ENTRY("Bone 14");
+            BONE_ENTRY("Bone 15");
+            BONE_ENTRY("Bone 16");
+            BONE_ENTRY("Bone 17");
+            BONE_ENTRY("Bone 18");
+            BONE_ENTRY("Bone 19");
+            BONE_ENTRY("Bone 20");
+#undef BONE_ENTRY
+            ImGui::EndTabItem();
+        }
         ImGui::EndTabBar();
     }
+    if (actor->custom_bone) return;
     ImGui::Separator();
     ImGui::SliderFloat("Frame", &actor->animstate.frame, 0, actor->animstate.length, "%.0f");
     saturn_keyframe_popout("k_mario_anim_frame");

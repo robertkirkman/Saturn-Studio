@@ -224,6 +224,38 @@ float saturn_actor_get_shadow_scale() {
     return actor->shadow_scale;
 }
 
+void saturn_actor_bone_override_begin() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return;
+    actor->custom_bone_iter = 0;
+}
+
+bool saturn_actor_bone_should_override() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return false;
+    return actor->custom_bone;
+}
+
+void saturn_actor_bone_iterate() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return;
+    actor->custom_bone_iter++;
+}
+
+void saturn_actor_bone_do_override(Vec3s rotation) {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return;
+    vec3s_set(rotation,
+        actor->bones[actor->custom_bone_iter][0] / 360.f * 65536,
+        actor->bones[actor->custom_bone_iter][1] / 360.f * 65536,
+        actor->bones[actor->custom_bone_iter][2] / 360.f * 65536
+    );
+}
+
 struct ModelTexture {
     struct ModelTexture* next;
     char* id;

@@ -774,9 +774,15 @@ static void anim_process(Vec3f translation, Vec3s rotation, u8 *animType, s16 an
     }
 
     if (*animType == ANIM_TYPE_ROTATION) {
-        rotation[0] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
-        rotation[1] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
-        rotation[2] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
+        if (saturn_actor_bone_should_override()) {
+            saturn_actor_bone_do_override(rotation);
+            *animAttribute += 6;
+        }
+        else {
+            rotation[0] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
+            rotation[1] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
+            rotation[2] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
+        }
     }
 }
 
@@ -805,6 +811,7 @@ static void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
         anim_process(translationInterpolated, rotationInterpolated, &animType, gPrevAnimFrame, &animAttribute);
 
     anim_process(translation, rotation, &gCurAnimType, gCurrAnimFrame, &gCurrAnimAttribute);
+    saturn_actor_bone_iterate();
     interpolate_vectors(translationInterpolated, translationInterpolated, translation);
     interpolate_angles(rotationInterpolated, rotationInterpolated, rotation);
 
@@ -1130,6 +1137,8 @@ static void geo_process_object(struct Object *node) {
     Vec3f scaleInterpolated;
 
     gCurrentObject = node;
+
+    saturn_actor_bone_override_begin();
 
     if (node->header.gfx.unk18 == gCurGraphNodeRoot->areaIndex) {
         if (node->header.gfx.throwMatrix != NULL) {

@@ -57,4 +57,8 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_ANIM("k_mario_anim", "Animation");
     SATURN_KFENTRY_FLOAT("k_mario_anim_frame", MARIO_ENTRY(animstate.frame), 1, "Anim Frame", true);
     SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");
+    for (int i = 0; i < 20; i++) {
+        std::string num = std::to_string(i + 1);
+        SATURN_KFENTRY_FLOAT("k_mariobone_" + num, (void*)(offsetof(MarioActor, bones) + i * sizeof(Vec3f)), 3, "Anim Bone " + num, true);
+    }
 }

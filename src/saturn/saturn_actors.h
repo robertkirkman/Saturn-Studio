@@ -43,6 +43,10 @@ public:
     bool cc_support = true;
     bool spark_support = true;
     bool custom_eyes = false;
+    bool custom_bone = false;
+    int custom_bone_iter = 0;
+    Vec3f bones[20];
+    int bone_counter = 0;
     Model model = Model();
     ColorCode colorcode;
     struct Animation anim;
@@ -54,6 +58,7 @@ public:
         u64 ptr = (u64)this;
         PasteGameShark(GameSharkCode().GameShark, colorcode);
         marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
+        memset(bones, 0, sizeof(bones));
     }
 };
 
@@ -76,6 +81,10 @@ extern "C" {
     float saturn_actor_get_alpha();
     bool saturn_actor_has_custom_anim_extra();
     float saturn_actor_get_shadow_scale();
+    void saturn_actor_bone_override_begin();
+    bool saturn_actor_bone_should_override();
+    void saturn_actor_bone_iterate();
+    void saturn_actor_bone_do_override(Vec3s rotation);
     int saturn_actor_get_support_flags(int marioIndex);
     void saturn_actor_add_model_texture(char* id, char* data, int w, int h);
     char* saturn_actor_get_model_texture(char* id, int* w, int* h);
