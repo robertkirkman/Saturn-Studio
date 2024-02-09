@@ -788,7 +788,8 @@ void saturn_keyframe_window() {
         }
         if (ImGui::BeginTabItem("Mario")) {
             mario_index = mario_menu_index;
-            if (mario_menu_index == -1) ImGui::Text("No Mario is selected");
+            if (!saturn_get_actor(mario_index)) mario_index = mario_menu_index = -1;
+            if (mario_index == -1) ImGui::Text("No Mario is selected");
             else SEQUENCER;
             ImGui::EndTabItem();
         }
@@ -1096,8 +1097,14 @@ void saturn_imgui_update() {
             ImGui::PopStyleColor();
             if (ImGui::MenuItem(ICON_FK_EYE " Look at")) {
                 MarioActor* actor = saturn_get_actor(mario_menu_index);
-                vec3f_set(gCamera->focus, actor->x, actor->y + 100, actor->z);
-                vec3f_set_dist_and_angle(gCamera->focus, gCamera->pos, 200, 0, actor->angle);
+                Vec3f mpos;
+                float dist;
+                s16 pitch, yaw;
+                vec3f_set(mpos, actor->x, actor->y + 100, actor->z);
+                vec3f_set_dist_and_angle(mpos, freezecamPos, 200, 0, actor->angle);
+                vec3f_get_dist_and_angle(freezecamPos, mpos, &dist, &pitch, &yaw);
+                freezecamPitch = pitch;
+                freezecamYaw = yaw;
             }
             sdynos_imgui_menu(mario_menu_index);
             ImGui::EndPopup();
@@ -1345,7 +1352,11 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
     if (ImGui::Button(button_label.c_str())) {
         k_popout_open = true;
         for (std::string id : ids) {
-            if (contains) k_frame_keys.erase(id);
+            if (contains) {
+                timeline_metadata = timelineDataTable[id];
+                int index = get<6>(timeline_metadata) ? mario_menu_index : -1;
+                k_frame_keys.erase(saturn_keyframe_get_mario_timeline_id(id, index));
+            }
             else {
                 auto [ptr, type, behavior, name, precision, num_values, is_mario] = timelineDataTable[id];
                 KeyframeTimeline timeline = KeyframeTimeline();

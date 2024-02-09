@@ -46,20 +46,7 @@ MarioActor* saturn_spawn_actor(float x, float y, float z) {
     return saturn_add_actor(actor);
 }
 
-void reassign_actor_indexes() {
-    MarioActor* actor = gMarioActorList;
-    int i = 0;
-    while (actor) {
-        actor->marioObj->oMarioActorIndex = i++;
-        actor = actor->next;
-    }
-}
-
-void update_actor_keyframes() {
-    
-}
-
-MarioActor* saturn_add_actor(MarioActor& actor) {
+MarioActor* saturn_add_new_actor(MarioActor& actor) {
     MarioActor* new_actor = new MarioActor(actor);
     new_actor->marioObj->oMarioActorIndex = saturn_actor_sizeof();
     if (gMarioActorList) {
@@ -72,21 +59,37 @@ MarioActor* saturn_add_actor(MarioActor& actor) {
     return new_actor;
 }
 
+MarioActor* saturn_try_replace_actor(MarioActor& actor) {
+    MarioActor* curr = gMarioActorList;
+    while (curr) {
+        if (!curr->exists) break;
+        curr = curr->next;
+    }
+    if (!curr) return nullptr;
+    MarioActor* prev = curr->prev;
+    MarioActor* next = curr->next;
+    memcpy(curr, &actor, sizeof(MarioActor));
+    curr->prev = prev;
+    curr->next = next;
+    return curr;
+}
+
+MarioActor* saturn_add_actor(MarioActor& actor) {
+    MarioActor* new_actor = saturn_try_replace_actor(actor);
+    if (new_actor) return new_actor;
+    return saturn_add_new_actor(actor);
+}
+
 void saturn_remove_actor(int index) {
     MarioActor* actorptr = gMarioActorList;
     for (int i = 0; i < index; i++) {
         if (!actorptr) return;
         actorptr = actorptr->next;
     }
-    MarioActor* prev = actorptr->prev;
-    MarioActor* next = actorptr->next;
-    if (next) next->prev = prev;
-    if (prev) prev->next = next;
-    else gMarioActorList = next;
-    reassign_actor_indexes();
-    update_actor_keyframes();
+    if (!actorptr) return;
+    if (!actorptr->exists) return;
+    actorptr->exists = false;
     obj_mark_for_deletion(actorptr->marioObj);
-    delete actorptr;
 }
 
 MarioActor* saturn_get_actor(int index) {
@@ -95,6 +98,8 @@ MarioActor* saturn_get_actor(int index) {
         if (!actorptr) return nullptr;
         actorptr = actorptr->next;
     }
+    if (!actorptr) return nullptr;
+    if (!actorptr->exists) return nullptr;
     return actorptr;
 }
 
@@ -165,13 +170,19 @@ void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int 
 bool saturn_rotate_head(Vec3s rotation) {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (o->behavior != bhvMarioActor) actor = nullptr;
-    if (actor != nullptr) vec3s_set(rotation,
-        actor->head_rot_x,
-        actor->head_rot_y,
-        actor->head_rot_z
-    );
-    else vec3s_set(rotation, 0, 0, 0);
-    return actor != nullptr;
+    if (actor != nullptr) {
+        if (actor->custom_bone_iter != 3) actor = nullptr;
+        if (actor != nullptr) {
+            vec3s_set(rotation,
+                actor->head_rot_x,
+                actor->head_rot_y,
+                actor->head_rot_z
+            );
+            return true;
+        }
+    }
+    vec3s_set(rotation, 0, 0, 0);
+    return false;
 }
 
 s16 saturn_actor_geo_switch(u8 item) {

@@ -46,7 +46,6 @@ public:
     bool custom_bone = false;
     int custom_bone_iter = 0;
     Vec3f bones[20];
-    int bone_counter = 0;
     Model model = Model();
     ColorCode colorcode;
     struct Animation anim;
@@ -54,6 +53,7 @@ public:
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;
     struct Object* marioObj = nullptr;
+    bool exists = true;
     MarioActor() {
         u64 ptr = (u64)this;
         PasteGameShark(GameSharkCode().GameShark, colorcode);
