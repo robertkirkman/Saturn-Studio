@@ -503,4 +503,13 @@ void sdynos_imgui_menu(int index) {
             current_model.Expressions.size() > 0)
                 saturn_keyframe_popout_next_line("k_mario_expr");*/
     }
+
+    ImGui::Separator();
+    ImGui::Text(ICON_FK_LINE_CHART " Timeline Controls");
+    ImGui::PushItemWidth(100);
+    ImGui::DragInt("Position", &k_current_frame, 0.35f, 0);
+    ImGui::PopItemWidth();
+    if (ImGui::Button("Switch to Mario tab")) {
+        request_mario_tab = true;
+    }
 }

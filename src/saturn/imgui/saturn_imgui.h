@@ -66,6 +66,8 @@ extern bool k_context_popout_open;
 
 extern float game_viewport[4];
 
+extern bool request_mario_tab;
+
 extern "C" {
 #endif
     bool saturn_imgui_is_capturing_transparent_video();

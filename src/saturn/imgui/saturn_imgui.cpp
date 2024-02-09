@@ -117,6 +117,8 @@ std::vector<std::pair<std::string, std::string>> theme_list = {};
 
 float game_viewport[4] = { 0, 0, -1, -1 };
 
+bool request_mario_tab = false;
+
 #include "saturn/saturn_timelines.h"
 
 // Bundled Components
@@ -737,6 +739,8 @@ void saturn_keyframe_window() {
         ImGui::EndPopup();
     }
 
+    if (k_current_frame < 0) k_current_frame = 0;
+
     bool keyframe_prev_playing = keyframe_playing;
     if (keyframe_playing) { if (ImGui::Button(ICON_FK_STOP))          keyframe_playing = false; }
     else                  { if (ImGui::Button(ICON_FK_PLAY))          keyframe_playing = true;  }
@@ -786,7 +790,7 @@ void saturn_keyframe_window() {
             SEQUENCER;
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Mario")) {
+        if (ImGui::BeginTabItem("Mario", nullptr, ImGuiTabItemFlags_SetSelected * request_mario_tab)) {
             mario_index = mario_menu_index;
             if (!saturn_get_actor(mario_index)) mario_index = mario_menu_index = -1;
             if (mario_index == -1) ImGui::Text("No Mario is selected");
@@ -795,6 +799,7 @@ void saturn_keyframe_window() {
         }
         ImGui::EndTabBar();
     }
+    request_mario_tab = false;
 
     // Keyframes
     if (!keyframe_playing) {
