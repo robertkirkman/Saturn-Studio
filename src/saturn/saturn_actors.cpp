@@ -1,6 +1,7 @@
 #include "saturn_actors.h"
 #include "game/object_helpers.h"
 #include "mario_animation_ids.h"
+#include "saturn/saturn.h"
 #include "saturn/saturn_models.h"
 
 extern "C" {
@@ -18,6 +19,17 @@ extern "C" {
 #define o gCurrentObject
 
 MarioActor* gMarioActorList = nullptr;
+
+void delete_mario_actor_timelines(int index) {
+    std::vector<std::string> ids = {};
+    for (auto& timeline : k_frame_keys) {
+        if (timeline.second.first.marioIndex != index) continue;
+        ids.push_back(timeline.first);
+    }
+    for (std::string id : ids) {
+        k_frame_keys.erase(id);
+    }
+}
 
 struct Animation* load_animation(MarioActor* actor, int index) {
     struct Animation* anim = (struct Animation*)((u8*)&mario_animation_data + mario_animation_data.entries[index].offset);
@@ -89,6 +101,7 @@ void saturn_remove_actor(int index) {
     if (!actorptr) return;
     if (!actorptr->exists) return;
     actorptr->exists = false;
+    delete_mario_actor_timelines(index);
     obj_mark_for_deletion(actorptr->marioObj);
 }
 
