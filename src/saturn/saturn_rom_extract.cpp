@@ -9,6 +9,8 @@
 #include <fstream>
 #include <cmath>
 
+#include <openssl/sha.h>
+
 #include "saturn/libs/portable-file-dialogs.h"
 
 extern "C" {
@@ -46,7 +48,14 @@ std::map<std::string, FormatTableEntry> format_table = {
 #define EXTRACT_PATH std::filesystem::path(sys_user_path()) / "res"
 #define EXTRACT_ROM "sm64.z64"
 #define ROM_SIZE (8 * 1024 * 1024)
-#define ROM_CHECKSUM 890243328
+
+const unsigned char rom_checksum[] = {
+    0x9b, 0xef, 0x11, 0x28,
+    0x71, 0x7f, 0x95, 0x81,
+    0x71, 0xa4, 0xaf, 0xac,
+    0x3e, 0xd7, 0x8e, 0xe2,
+    0xbb, 0x4e, 0x86, 0xce,
+};
 
 struct mio0_header {
     unsigned int dest_size;
@@ -321,11 +330,12 @@ int saturn_rom_status(std::filesystem::path extract_dest, std::vector<std::strin
     unsigned char* data = (unsigned char*)malloc(ROM_SIZE);
     stream.read((char*)data, ROM_SIZE);
     stream.close();
-    long long int checksum;
-    for (int i = 0; i < ROM_SIZE; i++) {
-        checksum += data[i];
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    SHA1(data, ROM_SIZE, hash);
+    for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+        if (hash[i] != rom_checksum[i]) return ROM_INVALID;
     }
-    if (checksum != ROM_CHECKSUM) return ROM_INVALID;
+    printf("\n");
     return ROM_NEED_EXTRACT;
 }
 

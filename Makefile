@@ -612,6 +612,8 @@ ifneq ($(SDL1_USED)$(SDL2_USED),00)
   endif
 endif
 
+BACKEND_LDFLAGS += -lssl -lcrypto
+
 ifeq ($(WINDOWS_BUILD),1)
   CC_CHECK := $(CC) -fsyntax-only -fsigned-char $(BACKEND_CFLAGS) $(INCLUDE_CFLAGS) -Wall -Wextra -Wno-format-security $(VERSION_CFLAGS) $(GRUCODE_CFLAGS)
   CFLAGS := $(OPT_FLAGS) $(INCLUDE_CFLAGS) $(BACKEND_CFLAGS) $(VERSION_CFLAGS) $(GRUCODE_CFLAGS) -fno-strict-aliasing -fwrapv -fdiagnostics-color
