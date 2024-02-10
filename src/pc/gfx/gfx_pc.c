@@ -26,6 +26,7 @@
 #include "../configfile.h"
 #include "../fs/fs.h"
 
+#include "saturn/saturn.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_textures.h"
 #include "saturn/saturn_actors.h"
@@ -965,20 +966,23 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
         d->w = w;
         
         if (rsp.geometry_mode & G_FOG) {
-            if (fabsf(w) < 0.001f) {
-                // To avoid division by zero
-                w = 0.001f;
+            if (enable_fog) {
+                if (fabsf(w) < 0.001f) {
+                    // To avoid division by zero
+                    w = 0.001f;
+                }
+                
+                float winv = 1.0f / w;
+                if (winv < 0.0f) {
+                    winv = 32767.0f;
+                }
+                
+                float fog_z = z * winv * rsp.fog_mul + rsp.fog_offset;
+                if (fog_z < 0) fog_z = 0;
+                if (fog_z > 255) fog_z = 255;
+                d->color.a = fog_z; // Use alpha variable to store fog factor
             }
-            
-            float winv = 1.0f / w;
-            if (winv < 0.0f) {
-                winv = 32767.0f;
-            }
-            
-            float fog_z = z * winv * rsp.fog_mul + rsp.fog_offset;
-            if (fog_z < 0) fog_z = 0;
-            if (fog_z > 255) fog_z = 255;
-            d->color.a = fog_z; // Use alpha variable to store fog factor
+            else d->color.a = 0;
         } else {
             d->color.a = v->cn[3];
         }

@@ -29,9 +29,9 @@ public:
     bool show_emblem = true;
     bool spinning = false;
     float spin_speed = 1;
-    int head_rot_x = 0;
-    int head_rot_y = 0;
-    int head_rot_z = 0;
+    float head_rot_x = 0;
+    float head_rot_y = 0;
+    float head_rot_z = 0;
     int eye_state = 0;
     int cap_state = 0;
     int hand_state = 0;

@@ -20,6 +20,7 @@
 #include "saturn/filesystem/saturn_locationfile.h"
 #include "data/dynos.cpp.h"
 #include "saturn/filesystem/saturn_animfile.h"
+#include "saturn/saturn_animations.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_rom_extract.h"
 #include "saturn/saturn_timelines.h"
@@ -54,6 +55,7 @@ bool enable_head_rotations = false;
 bool enable_shadows = false;
 bool enable_dust_particles = false;
 bool enable_torso_rotation = true;
+bool enable_fog = true;
 float run_speed = 127.0f;
 bool can_fall_asleep = false;
 int saturnModelState = 0;
@@ -333,8 +335,6 @@ void saturn_update() {
         if (timeline_has_id("k_angle"))
             gMarioState->faceAngle[1] = (s16)(this_face_angle * 182.04f);
 
-        schroma_imgui_init();
-
         k_current_frame++;
     }
 
@@ -519,35 +519,7 @@ bool saturn_keyframe_apply(std::string id, int frame) {
     KeyframeTimeline timeline = k_frame_keys[id].first;
     std::vector<Keyframe> keyframes = k_frame_keys[id].second;
 
-    if (timeline.behavior == KFBEH_EVENT) {
-        if (!keyframe_playing) return true;
-        int idx = -1;
-        for (int i = 0; i < keyframes.size(); i++) {
-            if (keyframes[i].position == frame) {
-                idx = i;
-                break;
-            }
-        }
-        if (idx == -1) return keyframes.size() == 0;
-        if (timeline.type == KFTYPE_ANIM) {
-            AnimationState* dest = (AnimationState*)timeline.dest;
-            dest->custom = keyframes[idx].value[0] >= 1;
-            dest->id = keyframes[idx].value[1];
-            is_anim_playing = false;
-            is_anim_paused = false;
-            using_chainer = false;
-            chainer_index = 0;
-            anim_play_button();
-        }
-        if (timeline.type == KFTYPE_EXPRESSION) {
-            Model* dest = (Model*)timeline.dest;
-            for (int i = 0; i < keyframes[idx].value.size(); i++) {
-                dest->Expressions[i].CurrentIndex = keyframes[idx].value[i];
-            }
-        }
-        return idx + 1 == keyframes.size();
-    }
-
+    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
     std::vector<float> values;
     bool last = true;
     if (keyframes.size() == 1) values = keyframes[0].value;
@@ -559,9 +531,9 @@ bool saturn_keyframe_apply(std::string id, int frame) {
             values.push_back((keyframes[keyframe + 1].value[i] - keyframes[keyframe].value[i]) * x + keyframes[keyframe].value[i]);
         }    
     }
-    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+
     if (timeline.type == KFTYPE_BOOL) *(bool*)ptr = values[0] >= 1;
-    if (timeline.type == KFTYPE_FLOAT) {
+    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
         float* vals = (float*)ptr;
         for (int i = 0; i < timeline.numValues; i++) {
             *vals = values[i];
@@ -575,6 +547,20 @@ bool saturn_keyframe_apply(std::string id, int frame) {
             colors++;
         }
     }
+    if (timeline.type == KFTYPE_ANIM) {
+        AnimationState* dest = (AnimationState*)ptr;
+        dest->custom = values[0] >= 1;
+        dest->id = values[1];
+    }
+    if (timeline.type == KFTYPE_EXPRESSION) {
+        Model* dest = (Model*)ptr;
+        for (int i = 0; i < values.size(); i++) {
+            dest->Expressions[i].CurrentIndex = values[i];
+        }
+    }
+    if (timeline.type == KFTYPE_SWITCH) {
+        *((int*)ptr) = values[0];
+    }
 
     return last;
 }
@@ -583,12 +569,6 @@ bool saturn_keyframe_apply(std::string id, int frame) {
 bool saturn_keyframe_matches(std::string id, int frame) {
     KeyframeTimeline& timeline = k_frame_keys[id].first;
     std::vector<Keyframe> keyframes = k_frame_keys[id].second;
-
-    if (timeline.behavior == KFBEH_EVENT) {
-        bool place = timeline.eventPlace;
-        timeline.eventPlace = false;
-        return !place;
-    }
 
     std::vector<float> expectedValues;
     if (keyframes.size() == 1) expectedValues = keyframes[0].value;
@@ -606,12 +586,32 @@ bool saturn_keyframe_matches(std::string id, int frame) {
         if (*(bool*)ptr != 0 != expectedValues[0] >= 1) return false;
         return true;
     }
-    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLOR) {
+    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
         for (int i = 0; i < timeline.numValues; i++) {
             float value = ((float*)ptr)[i];
             float distance = abs(value - expectedValues[i]);
             if (distance > pow(10, timeline.precision)) return false;
         }
+    }
+    if (timeline.type == KFTYPE_COLOR) {
+        for (int i = 0; i < 6; i++) {
+            int value = ((int*)ptr)[i];
+            if (value != (int)expectedValues[i]) return false;
+        }
+    }
+    if (timeline.type == KFTYPE_ANIM) {
+        AnimationState* anim_state = (AnimationState*)ptr;
+        if (anim_state->custom != (expectedValues[0] >= 1)) return false;
+        if (anim_state->id != ((int)expectedValues[1])) return false;
+    }
+    if (timeline.type == KFTYPE_EXPRESSION) {
+        Model* model = (Model*)ptr;
+        for (int i = 0; i < model->Expressions.size(); i++) {
+            if (model->Expressions[i].CurrentIndex != (int)expectedValues[i]) return false;
+        }
+    }
+    if (timeline.type == KFTYPE_SWITCH) {
+        return *((int*)ptr) == (int)expectedValues[0];
     }
 
     return true;

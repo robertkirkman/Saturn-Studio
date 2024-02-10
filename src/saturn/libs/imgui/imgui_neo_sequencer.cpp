@@ -43,6 +43,8 @@ namespace ImGui {
 		ImVec4 CurrentFrameColor; // Color of current frame, we have to save it because we render on EndNeoSequencer, but process at BeginneoSequencer
 
 		bool HoldingZoomSlider = false;
+
+		bool ShouldMoveFrame = false;
 	};
 
 	static ImGuiNeoSequencerStyle style; // NOLINT(cert-err58-cpp)
@@ -120,7 +122,7 @@ namespace ImGui {
 		}
 
 		if (context.HoldingCurrentFrame) {
-			if (IsMouseDragging(ImGuiMouseButton_Left, 0.0f)) {
+			if (context.ShouldMoveFrame) {
 				const auto mousePosX = GetMousePos().x;
 				const auto v = mousePosX - timelineXRange.x;// Subtract min
 
@@ -505,6 +507,13 @@ namespace ImGui {
 
 		context.StartValuesCursor = context.TopBarStartCursor + ImVec2{ 0, context.TopBarSize.y + style.TopBarSpacing };
 		context.ValuesCursor = context.StartValuesCursor;
+
+		ImRect toprect = { context.TopBarStartCursor, context.TopBarStartCursor + context.TopBarSize };
+		ImGuiIO& io = GetIO();
+		if (IsMouseDragging(ImGuiMouseButton_Left, 0.0f)) {
+			if (IsWindowHovered()) context.ShouldMoveFrame = true;
+		}
+		else context.ShouldMoveFrame = false;
 
 		processCurrentFrame(frame, context);
 

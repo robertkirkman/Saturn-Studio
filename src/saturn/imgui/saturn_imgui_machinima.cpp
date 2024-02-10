@@ -392,6 +392,8 @@ void imgui_machinima_quick_options() {
     saturn_keyframe_popout("k_shadows");
     ImGui::Checkbox("Invulnerability", (bool*)&enable_immunity);
     imgui_bundled_tooltip("If enabled, Mario will be invulnerable to most enemies and hazards.");
+    ImGui::Checkbox("Fog", &enable_fog);
+    imgui_bundled_tooltip("Toggles the fog, useful for near-clipping shots");
     int previous_time_freeze_state = time_freeze_state;
     ImGui::PushItemWidth(150);
     ImGui::Combo("Time Freeze", &time_freeze_state, "Unfrozen\0Mario-exclusive\0Everything\0");

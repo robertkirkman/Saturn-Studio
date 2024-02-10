@@ -1,4 +1,5 @@
 #include "saturn/saturn_timelines.h"
+#include "saturn/saturn.h"
 
 #define DEFAULT 0
 #define FORCE_WAIT 1
@@ -6,11 +7,19 @@
 
 #define SATURN_KFENTRY_BOOL(id, variable, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_BOOL, KFBEH_FORCE_WAIT, name, 0, 1, mario } })
 #define SATURN_KFENTRY_FLOAT(id, variable, values, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_FLOAT, KFBEH_DEFAULT, name, -3, values, mario } })
-#define SATURN_KFENTRY_ANIM(id, name) timelineDataTable.insert({ id, { &current_animation, KFTYPE_ANIM, KFBEH_EVENT, name, 0, 2, true } })
-#define SATURN_KFENTRY_EXPRESSION(id, name) timelineDataTable.insert({ id, { &current_model, KFTYPE_EXPRESSION, KFBEH_EVENT, name, 0, 1, true } })
+#define SATURN_KFENTRY_ANIM(id, name) timelineDataTable.insert({ id, { MARIO_ENTRY(animstate), KFTYPE_ANIM, KFBEH_FORCE_WAIT, name, 0, 2, true } })
+#define SATURN_KFENTRY_EXPRESSION(id, name) timelineDataTable.insert({ id, { MARIO_ENTRY(model), KFTYPE_EXPRESSION, KFBEH_FORCE_WAIT, name, 0, 1, true } })
 #define SATURN_KFENTRY_COLOR(id, variable, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_COLOR, KFBEH_DEFAULT, name, 0, 6, mario } })
+#define SATURN_KFENTRY_COLORF(id, variable, name, mario) timelineDataTable.insert({ id, { variable, KFTYPE_COLORF, KFBEH_DEFAULT, name, -3, 3, mario } })
+#define SATURN_KFENTRY_SWITCH(id, variable, name) timelineDataTable.insert({ id, { variable, KFTYPE_SWITCH, KFBEH_FORCE_WAIT, name, 0, 1, true } })
 
 std::map<std::string, std::tuple<void*, KeyframeType, char, std::string, int, int, bool>> timelineDataTable = {};
+std::map<std::string, std::vector<std::string>> kf_switch_names = {
+    { "k_switch_eyes", { "Blinking", "Open", "Half", "Closed", "Left", "Right", "Up", "Down", "Dead" } },
+    { "k_switch_hand", { "Fists", "Open", "Peace", "With Cap", "With Wing Cap", "Right Open" } },
+    { "k_switch_cap", { "Cap On", "Cap Off", "Wing Cap" } },
+    { "k_switch_powerup", { "Default", "Vanish", "Metal", "Metal & Vanish" } },
+};
 
 #define MARIO_ENTRY(var) (void*)offsetof(MarioActor, var)
 #define ARR_ENTRY(arr, index) (void*)(offsetof(MarioActor, arr) + index * sizeof(((MarioActor*)0)->arr))
@@ -32,6 +41,9 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_mariopos_y", MARIO_ENTRY(y), 1, "Mario Pos Y", true);
     SATURN_KFENTRY_FLOAT("k_mariopos_z", MARIO_ENTRY(z), 1, "Mario Pos Z", true);
     SATURN_KFENTRY_FLOAT("k_shadow_scale", MARIO_ENTRY(shadow_scale), 1, "Shadow Scale", true);
+    SATURN_KFENTRY_FLOAT("k_headrot_x", MARIO_ENTRY(head_rot_x), 1, "Head Rotation Yaw", true);
+    SATURN_KFENTRY_FLOAT("k_headrot_y", MARIO_ENTRY(head_rot_y), 1, "Head Rotation Roll", true);
+    SATURN_KFENTRY_FLOAT("k_headrot_z", MARIO_ENTRY(head_rot_z), 1, "Head Rotation Pitch", true);
     SATURN_KFENTRY_BOOL("k_hud", &configHUD, "HUD", false);
     SATURN_KFENTRY_FLOAT("k_fov", &camera_fov, 1, "FOV", false);
     SATURN_KFENTRY_FLOAT("k_focus", &camera_focus, 1, "Follow", false);
@@ -42,7 +54,7 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_c_camera_pitch", &freezecamPitch, 1, "Camera Pitch", false);
     SATURN_KFENTRY_FLOAT("k_c_camera_roll", &freezecamRoll, 1, "Camera Roll", false);
     SATURN_KFENTRY_FLOAT("k_gravity", &gravity, 1, "Gravity", false);
-    SATURN_KFENTRY_FLOAT("k_light_col", gLightingColor, 3, "Light Color", false);
+    SATURN_KFENTRY_COLORF("k_light_col", gLightingColor, "Light Color", false);
     SATURN_KFENTRY_COLOR("k_color", &chromaColor, "Skybox Color", false);
     SATURN_KFENTRY_COLOR("k_hat", CC_ENTRY(CC_HAT), "Hat", true);
     SATURN_KFENTRY_COLOR("k_overalls", CC_ENTRY(CC_OVERALLS), "Overalls", true);
@@ -59,6 +71,11 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_ANIM("k_mario_anim", "Animation");
     SATURN_KFENTRY_FLOAT("k_mario_anim_frame", MARIO_ENTRY(animstate.frame), 1, "Anim Frame", true);
     SATURN_KFENTRY_EXPRESSION("k_mario_expr", "Expression");
+    SATURN_KFENTRY_SWITCH("k_switch_eyes", MARIO_ENTRY(eye_state), "Eye Switch");
+    SATURN_KFENTRY_SWITCH("k_switch_hand", MARIO_ENTRY(hand_state), "Hand Switch");
+    SATURN_KFENTRY_SWITCH("k_switch_cap", MARIO_ENTRY(cap_state), "Cap Switch");
+    SATURN_KFENTRY_SWITCH("k_switch_powerup", MARIO_ENTRY(powerup_state), "Powerup Switch");
+    SATURN_KFENTRY_BOOL("k_customeyes", MARIO_ENTRY(custom_eyes), "Custom Eyes", true);
     SATURN_KFENTRY_FLOAT("k_mariobone_1", BONE_ENTRY(0), 3, "Root", true);
     SATURN_KFENTRY_FLOAT("k_mariobone_3", BONE_ENTRY(2), 3, "Torso", true);
     SATURN_KFENTRY_FLOAT("k_mariobone_4", BONE_ENTRY(3), 3, "Head", true);

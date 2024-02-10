@@ -35,6 +35,7 @@ extern bool enable_head_rotations;
 extern bool enable_shadows;
 extern bool enable_dust_particles;
 extern bool enable_torso_rotation;
+extern bool enable_fog;
 extern float run_speed;
 extern bool can_fall_asleep;
 extern int saturnModelState;
@@ -141,6 +142,8 @@ enum KeyframeType {
     KFTYPE_ANIM,
     KFTYPE_EXPRESSION,
     KFTYPE_COLOR,
+    KFTYPE_COLORF,
+    KFTYPE_SWITCH,
 };
 
 inline std::string curveNames[] = {
@@ -165,13 +168,11 @@ struct KeyframeTimeline {
     int precision;
     int numValues;
     char behavior;
-    bool eventPlace;
     int marioIndex;
 };
 
 #define KFBEH_DEFAULT 0
 #define KFBEH_FORCE_WAIT 1
-#define KFBEH_EVENT 2
 
 extern bool k_popout_open;
 extern bool k_popout_focused;

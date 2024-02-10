@@ -20,5 +20,6 @@ extern "C" {
 
 extern void saturn_fill_data_table();
 extern std::map<std::string, std::tuple<void*, KeyframeType, char, std::string, int, int, bool>> timelineDataTable;
+extern std::map<std::string, std::vector<std::string>> kf_switch_names;
 
 #endif

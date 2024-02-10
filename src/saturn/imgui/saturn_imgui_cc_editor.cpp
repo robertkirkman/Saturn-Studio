@@ -314,8 +314,11 @@ void OpenCCSelector(MarioActor* actor) {
     ImGui::EndChild();
 }
 
-void ColorPartBox(std::string name, const char* mainName, const char* shadeName, ImVec4* color, std::string id) {
+void ColorPartBox(std::string name, const char* mainName, const char* shadeName, ImVec4* color, std::string id, std::string kf_id) {
     if (name == "") return;
+
+    saturn_keyframe_popout_next_line(kf_id);
+    ImGui::SameLine();
 
     // MAIN Color Picker
     ImGui::ColorEdit4(mainName, (float*)&color[0], ImGuiColorEditFlags_NoAlpha |
@@ -340,18 +343,18 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
         }
         // Reset
         if (ImGui::Selectable(ICON_FK_UNDO " Reset")) {
-            if (mainName == "Hat, Main")                /*PasteGameShark("8107EC40 FF00\n8107EC42 0000")*/;
-            if (mainName == "Overalls, Main")           /*PasteGameShark("8107EC28 0000\n8107EC2A FF00")*/;
-            if (mainName == "Gloves, Main")             /*PasteGameShark("8107EC58 FFFF\n8107EC5A FF00")*/;
-            if (mainName == "Shoes, Main")              /*PasteGameShark("8107EC70 721C\n8107EC72 0E00")*/;
-            if (mainName == "Skin, Main")               /*PasteGameShark("8107EC88 FEC1\n8107EC8A 7900")*/;
-            if (mainName == "Hair, Main")               /*PasteGameShark("8107ECA0 7306\n8107ECA2 0000")*/;
-            if (mainName == "Shirt, Main")              /*PasteGameShark("8107ECB8 FFFF\n8107ECBA 0000")*/;
-            if (mainName == "Shoulders, Main")          /*PasteGameShark("8107ECD0 00FF\n8107ECD2 FF00")*/;
-            if (mainName == "Arms, Main")               /*PasteGameShark("8107ECE8 00FF\n8107ECEA 7F00")*/;
-            if (mainName == "Overalls (Bottom), Main")  /*PasteGameShark("8107ED00 FF00\n8107ED02 FF00")*/;
-            if (mainName == "Leg (Top), Main")          /*PasteGameShark("8107ED18 FF00\n8107ED1A 7F00")*/;
-            if (mainName == "Leg (Bottom), Main")       /*PasteGameShark("8107ED30 7F00\n8107ED32 FF00")*/;
+            if (mainName == "Hat, Main")                PasteGameShark("8107EC40 FF00\n8107EC42 0000", current_actor->colorcode);
+            if (mainName == "Overalls, Main")           PasteGameShark("8107EC28 0000\n8107EC2A FF00", current_actor->colorcode);
+            if (mainName == "Gloves, Main")             PasteGameShark("8107EC58 FFFF\n8107EC5A FF00", current_actor->colorcode);
+            if (mainName == "Shoes, Main")              PasteGameShark("8107EC70 721C\n8107EC72 0E00", current_actor->colorcode);
+            if (mainName == "Skin, Main")               PasteGameShark("8107EC88 FEC1\n8107EC8A 7900", current_actor->colorcode);
+            if (mainName == "Hair, Main")               PasteGameShark("8107ECA0 7306\n8107ECA2 0000", current_actor->colorcode);
+            if (mainName == "Shirt, Main")              PasteGameShark("8107ECB8 FFFF\n8107ECBA 0000", current_actor->colorcode);
+            if (mainName == "Shoulders, Main")          PasteGameShark("8107ECD0 00FF\n8107ECD2 FF00", current_actor->colorcode);
+            if (mainName == "Arms, Main")               PasteGameShark("8107ECE8 00FF\n8107ECEA 7F00", current_actor->colorcode);
+            if (mainName == "Overalls (Bottom), Main")  PasteGameShark("8107ED00 FF00\n8107ED02 FF00", current_actor->colorcode);
+            if (mainName == "Leg (Top), Main")          PasteGameShark("8107ED18 FF00\n8107ED1A 7F00", current_actor->colorcode);
+            if (mainName == "Leg (Bottom), Main")       PasteGameShark("8107ED30 7F00\n8107ED32 FF00", current_actor->colorcode);
             UpdateEditorFromPalette();
         }
         // Randomize
@@ -361,11 +364,6 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
             color[0].z = (rand() % 255) / 255.0f;
             UpdatePaletteFromEditor();
         }
-
-        // Keyframes
-        ImGui::Dummy(ImVec2(0, 15));
-        std::string id2 = "k_" + id + "_1";
-        saturn_keyframe_popout(id2);
 
         ImGui::EndPopup();
     } ImGui::SameLine();
@@ -415,11 +413,6 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
             color[1].z = (rand() % 127) / 255.0f;
             UpdatePaletteFromEditor();
         }
-
-        // Keyframes
-        ImGui::Dummy(ImVec2(0, 15));
-        std::string id3 = "k_" + id + "_2";
-        saturn_keyframe_popout(id3);
 
         ImGui::EndPopup();
     } ImGui::SameLine();
@@ -493,12 +486,12 @@ void OpenCCEditor(MarioActor* actor) {
     if (ImGui::BeginTabBar("###dynos_tabbar", ImGuiTabBarFlags_None)) {
         if (ImGui::BeginTabItem("Editor")) {
 
-            ColorPartBox(actor->model.Colors.Hat.c_str(), "Hat, Main", "Hat, Shade", uiColors[CC_HAT], "1/2###hat_half");
-            ColorPartBox(actor->model.Colors.Overalls.c_str(), "Overalls, Main", "Overalls, Shade", uiColors[CC_OVERALLS], "1/2###overalls_half");
-            ColorPartBox(actor->model.Colors.Gloves.c_str(), "Gloves, Main", "Gloves, Shade", uiColors[CC_GLOVES], "1/2###gloves_half");
-            ColorPartBox(actor->model.Colors.Shoes.c_str(), "Shoes, Main", "Shoes, Shade", uiColors[CC_SHOES], "1/2###shoes_half");
-            ColorPartBox(actor->model.Colors.Skin.c_str(), "Skin, Main", "Skin, Shade", uiColors[CC_SKIN], "1/2###skin_half");
-            ColorPartBox(actor->model.Colors.Hair.c_str(), "Hair, Main", "Hair, Shade", uiColors[CC_HAIR], "1/2###hair_half");
+            ColorPartBox(actor->model.Colors.Hat.c_str(), "Hat, Main", "Hat, Shade", uiColors[CC_HAT], "1/2###hat_half", "k_hat");
+            ColorPartBox(actor->model.Colors.Overalls.c_str(), "Overalls, Main", "Overalls, Shade", uiColors[CC_OVERALLS], "1/2###overalls_half", "k_overalls");
+            ColorPartBox(actor->model.Colors.Gloves.c_str(), "Gloves, Main", "Gloves, Shade", uiColors[CC_GLOVES], "1/2###gloves_half", "k_gloves");
+            ColorPartBox(actor->model.Colors.Shoes.c_str(), "Shoes, Main", "Shoes, Shade", uiColors[CC_SHOES], "1/2###shoes_half", "k_shoes");
+            ColorPartBox(actor->model.Colors.Skin.c_str(), "Skin, Main", "Skin, Shade", uiColors[CC_SKIN], "1/2###skin_half", "k_skin");
+            ColorPartBox(actor->model.Colors.Hair.c_str(), "Hair, Main", "Hair, Shade", uiColors[CC_HAIR], "1/2###hair_half", "k_hair");
 
             if (actor->model.SparkSupport) {
                 if (!actor->spark_support) ImGui::BeginDisabled();
@@ -507,12 +500,12 @@ void OpenCCEditor(MarioActor* actor) {
                         SparkilizeEditor();
                     } ImGui::SameLine(); imgui_bundled_help_marker("Automatically converts a regular CC to a SPARK CC; WARNING: This will overwrite your active color code.");
 
-                    ColorPartBox(actor->model.Colors.Shirt.c_str(), "Shirt, Main", "Shirt, Shade", uiColors[CC_SHIRT], "1/2###shirt_half");
-                    ColorPartBox(actor->model.Colors.Shoulders.c_str(), "Shoulders, Main", "Shoulders, Shade", uiColors[CC_SHOULDERS], "1/2###shoulders_half");
-                    ColorPartBox(actor->model.Colors.Arms.c_str(), "Arms, Main", "Arms, Shade", uiColors[CC_ARMS], "1/2###arms_half");
-                    ColorPartBox(actor->model.Colors.Pelvis.c_str(), "Overalls (Bottom), Main", "Overalls (Bottom), Shade", uiColors[CC_OVERALLS_BOTTOM], "1/2###overalls_bottom_half");
-                    ColorPartBox(actor->model.Colors.Thighs.c_str(), "Leg (Top), Main", "Leg (Top), Shade", uiColors[CC_LEG_TOP], "1/2###leg_top_half");
-                    ColorPartBox(actor->model.Colors.Calves.c_str(), "Leg (Bottom), Main", "Leg (Bottom), Shade", uiColors[CC_LEG_BOTTOM], "1/2###leg_bottom_half");
+                    ColorPartBox(actor->model.Colors.Shirt.c_str(), "Shirt, Main", "Shirt, Shade", uiColors[CC_SHIRT], "1/2###shirt_half", "k_shirt");
+                    ColorPartBox(actor->model.Colors.Shoulders.c_str(), "Shoulders, Main", "Shoulders, Shade", uiColors[CC_SHOULDERS], "1/2###shoulders_half", "k_shoulders");
+                    ColorPartBox(actor->model.Colors.Arms.c_str(), "Arms, Main", "Arms, Shade", uiColors[CC_ARMS], "1/2###arms_half", "k_arms");
+                    ColorPartBox(actor->model.Colors.Pelvis.c_str(), "Overalls (Bottom), Main", "Overalls (Bottom), Shade", uiColors[CC_OVERALLS_BOTTOM], "1/2###overalls_bottom_half", "k_overalls_bottom");
+                    ColorPartBox(actor->model.Colors.Thighs.c_str(), "Leg (Top), Main", "Leg (Top), Shade", uiColors[CC_LEG_TOP], "1/2###leg_top_half", "k_leg_top");
+                    ColorPartBox(actor->model.Colors.Calves.c_str(), "Leg (Bottom), Main", "Leg (Bottom), Shade", uiColors[CC_LEG_BOTTOM], "1/2###leg_bottom_half", "k_leg_bottom");
                 if (!actor->spark_support) ImGui::EndDisabled();
             }
             

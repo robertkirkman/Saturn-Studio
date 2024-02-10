@@ -72,7 +72,9 @@ void schroma_imgui_update() {
     saturn_keyframe_popout("k_skybox_mode");
 
     if (use_color_background) {
-        ImGui::ColorEdit4("Chroma Key Color", (float*)&uiChromaColor, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+        if (ImGui::ColorEdit4("Chroma Key Color", (float*)&uiChromaColor, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions)) {
+            set_chroma_color();
+        }
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
             ImGui::OpenPopup("###chromaColorPresets");
@@ -84,8 +86,6 @@ void schroma_imgui_update() {
             if (ImGui::Selectable("White")) uiChromaColor = ImVec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f);
             ImGui::EndPopup();
         }
-
-        set_chroma_color();
 
         ImGui::SameLine(); ImGui::Text("Color");
         saturn_keyframe_popout("k_color");

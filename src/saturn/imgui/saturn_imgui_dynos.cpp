@@ -319,18 +319,22 @@ void sdynos_imgui_menu(int index) {
     if (ImGui::BeginMenu("Customize...###menu_misc")) {
 
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-        ImGui::BeginChild("Misc.###misc_child", ImVec2(225, 175), true, ImGuiWindowFlags_None);
+        ImGui::BeginChild("Misc.###misc_child", ImVec2(275, 175), true, ImGuiWindowFlags_None);
         if (ImGui::BeginTabBar("###misc_tabbar", ImGuiTabBarFlags_None)) {
 
             if (ImGui::BeginTabItem("Switches###switches_scale")) {
                 const char* eyes[] = { "Blinking", "Open", "Half", "Closed", "Left", "Right", "Up", "Down", "Dead" };
                 ImGui::Combo("Eyes###eye_state", &actor->eye_state, eyes, IM_ARRAYSIZE(eyes));
+                saturn_keyframe_popout("k_switch_eyes");
                 const char* hands[] = { "Fists", "Open", "Peace", "With Cap", "With Wing Cap", "Right Open" };
                 ImGui::Combo("Hand###hand_state", &actor->hand_state, hands, IM_ARRAYSIZE(hands));
+                saturn_keyframe_popout("k_switch_hand");
                 const char* caps[] = { "Cap On", "Cap Off", "Wing Cap" }; // unused "wing cap off" not included
                 ImGui::Combo("Cap###cap_state", &actor->cap_state, caps, IM_ARRAYSIZE(caps));
+                saturn_keyframe_popout("k_switch_cap");
                 const char* powerups[] = { "Default", "Vanish", "Metal", "Metal & Vanish" };
                 ImGui::Combo("Powerup###powerup_state", &actor->powerup_state, powerups, IM_ARRAYSIZE(powerups));
+                saturn_keyframe_popout("k_switch_powerup");
                 if (actor->powerup_state & 1) ImGui::SliderFloat("Alpha", &actor->alpha, 0, 255);
                 if (AnyModelsEnabled()) ImGui::BeginDisabled();
                 ImGui::Checkbox("M Cap Emblem", &actor->show_emblem);
@@ -427,26 +431,23 @@ void sdynos_imgui_menu(int index) {
         }
         if (mario_exists) if (ImGui::BeginMenu("Head Rotations")) {
             ImGui::Text("C-Up Settings");
-            ImGui::PushItemWidth(75);
-            ImGui::SliderFloat("Speed", &mario_headrot_speed, 0, 50, "%.1f");
-            ImGui::PopItemWidth();
             if (ImGui::BeginTable("headrot_table", 3)) {
                 float fake_yaw = actor->head_rot_x * 360.f / 65536;
                 float fake_pitch = actor->head_rot_z * 360.f / 65536;
                 float fake_roll = actor->head_rot_y * 360.f / 65536;
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                if (ImGuiKnobs::Knob("Yaw", &fake_yaw, configCUpLimit ? -120.0f : -180.0f, configCUpLimit ? 120.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    actor->head_rot_x = fake_yaw * 65536 / 360;
-                }
+                ImGuiKnobs::Knob("Yaw", &fake_yaw, configCUpLimit ? -120.0f : -180.0f, configCUpLimit ? 120.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal);
                 ImGui::TableSetColumnIndex(1);
-                if (ImGuiKnobs::Knob("Pitch", &fake_pitch, configCUpLimit ? -45.0f : -180.0f, configCUpLimit ? 80.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    actor->head_rot_z = fake_pitch * 65536 / 360;
-                }
+                ImGuiKnobs::Knob("Pitch", &fake_pitch, configCUpLimit ? -45.0f : -180.0f, configCUpLimit ? 80.0f : 180.0f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal);
                 ImGui::TableSetColumnIndex(2);
-                if (ImGuiKnobs::Knob("Roll", &fake_roll, configCUpLimit ? 0.f : -180.f, configCUpLimit ? 0.f : 180.f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal)) {
-                    actor->head_rot_y = fake_roll * 65536 / 360;
-                }
+                ImGuiKnobs::Knob("Roll", &fake_roll, configCUpLimit ? 0.f : -180.f, configCUpLimit ? 0.f : 180.f, 0.0f, "%.0f deg", ImGuiKnobVariant_Dot, 0.f, ImGuiKnobFlags_DragHorizontal);
+                actor->head_rot_x = fake_yaw * 65536 / 360;
+                actor->head_rot_z = fake_pitch * 65536 / 360;
+                actor->head_rot_y = fake_roll * 65536 / 360;
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                saturn_keyframe_popout({ "k_headrot_x", "k_headrot_z", "k_headrot_y" });
                 ImGui::EndTable();
             }
             ImGui::EndMenu();
@@ -491,6 +492,7 @@ void sdynos_imgui_menu(int index) {
     if (actor->model.CustomEyeSupport) {
         // Custom Eyes Checkbox
         ImGui::Checkbox("Custom Eyes", &actor->custom_eyes);
+        saturn_keyframe_popout("k_customeyes");
 
         if ((actor->custom_eyes && actor->model.Expressions.size() > 0) || actor->model.Expressions.size() > 1)
             ImGui::Separator();
@@ -499,9 +501,7 @@ void sdynos_imgui_menu(int index) {
         OpenExpressionSelector(actor);
 
         // Keyframing
-        /*if (custom_eyes_enabled ||
-            current_model.Expressions.size() > 0)
-                saturn_keyframe_popout_next_line("k_mario_expr");*/
+        if (actor->custom_eyes || actor->model.Expressions.size() > 0) saturn_keyframe_popout_next_line("k_mario_expr");
     }
 
     ImGui::Separator();

@@ -7,6 +7,7 @@
 #include <map>
 #include <fstream>
 
+#include "game/area.h"
 #include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn/imgui/saturn_imgui_cc_editor.h"
@@ -684,7 +685,7 @@ void saturn_keyframe_window() {
         for (int i = 0; i < keyframes->size(); i++) {
             if ((*keyframes)[i].position == k_context_popout_keyframe.position) index = i;
         }
-        bool isFirst = k_context_popout_keyframe.position == 0 && k_frame_keys[k_context_popout_keyframe.timelineID].first.behavior != KFBEH_EVENT;
+        bool isFirst = k_context_popout_keyframe.position == 0;
         if (isFirst) ImGui::BeginDisabled();
         bool doDelete = false;
         bool doCopy = false;
@@ -824,7 +825,7 @@ void saturn_keyframe_window() {
                     Keyframe* keyframe = &(*keyframes)[keyframeIndex];
                     void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
                     if (timeline.type == KFTYPE_BOOL) (*keyframe).value[0] = *(bool*)ptr;
-                    if (timeline.type == KFTYPE_FLOAT) {
+                    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
                         float* values = (float*)ptr;
                         for (int i = 0; i < timeline.numValues; i++) {
                             (*keyframe).value[i] = *values;
@@ -832,12 +833,12 @@ void saturn_keyframe_window() {
                         }
                     }
                     if (timeline.type == KFTYPE_ANIM) {
-                        AnimationState* anim_state = (AnimationState*)timeline.dest;
+                        AnimationState* anim_state = (AnimationState*)ptr;
                         (*keyframe).value[0] = anim_state->custom;
                         (*keyframe).value[1] = anim_state->id;
                     }
                     if (timeline.type == KFTYPE_EXPRESSION) {
-                        Model* model = (Model*)timeline.dest;
+                        Model* model = (Model*)ptr;
                         for (int i = 0; i < model->Expressions.size(); i++) {
                             (*keyframe).value[i] = model->Expressions[i].CurrentIndex;
                         }
@@ -848,6 +849,9 @@ void saturn_keyframe_window() {
                             (*keyframe).value[i] = *values;
                             values++;
                         }
+                    }
+                    if (timeline.type == KFTYPE_SWITCH) {
+                        (*keyframe).value[0] = *(int*)ptr;
                     }
                     if (timeline.behavior != KFBEH_DEFAULT) (*keyframe).curve = InterpolationCurve::WAIT;
                 }
@@ -1007,13 +1011,13 @@ void saturn_imgui_update() {
         }
 
         if (ImGui::CollapsingHeader("Autochroma")) {
-            if (ImGui::Checkbox("Enabled", &autoChroma)) {
-                schroma_imgui_init();
-                windowCcEditor = false;
-                windowAnimPlayer = false;
+            if (gCurrLevelNum != LEVEL_SA) {
+                if (ImGui::Checkbox("Enabled", &autoChroma)) schroma_imgui_init();
+                ImGui::Separator();
             }
-            ImGui::Separator();
-            if (autoChroma) schroma_imgui_update();
+            if (!autoChroma && gCurrLevelNum != LEVEL_SA) ImGui::BeginDisabled();
+            schroma_imgui_update();
+            if (!autoChroma && gCurrLevelNum != LEVEL_SA) ImGui::EndDisabled();
         }
 
         if (ImGui::CollapsingHeader("Recording")) {
@@ -1264,28 +1268,47 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
         ImGui::Text(anim_name.c_str());
     }
     if (timeline.type == KFTYPE_EXPRESSION) {
+        Model* model = (Model*)saturn_keyframe_get_timeline_ptr(timeline);
         for (int i = 0; i < keyframe.value.size(); i++) {
-            if (current_model.Expressions[i].Textures.size() == 2 && (
-                current_model.Expressions[i].Textures[0].FileName.find("default") != std::string::npos ||
-                current_model.Expressions[i].Textures[1].FileName.find("default") != std::string::npos
+            if (model->Expressions[i].Textures.size() == 2 && (
+                model->Expressions[i].Textures[0].FileName.find("default") != std::string::npos ||
+                model->Expressions[i].Textures[1].FileName.find("default") != std::string::npos
             )) {
-                int   select_index = (current_model.Expressions[i].Textures[0].FileName.find("default") != std::string::npos) ? 0 : 1;
-                int deselect_index = (current_model.Expressions[i].Textures[0].FileName.find("default") != std::string::npos) ? 1 : 0;
-                bool is_selected = (current_model.Expressions[i].CurrentIndex == select_index);
-                ImGui::Checkbox((current_model.Expressions[i].Name + "###kf_content_expr").c_str(), &is_selected);
+                int   select_index = (model->Expressions[i].Textures[0].FileName.find("default") != std::string::npos) ? 0 : 1;
+                int deselect_index = (model->Expressions[i].Textures[0].FileName.find("default") != std::string::npos) ? 1 : 0;
+                bool is_selected = (model->Expressions[i].CurrentIndex == select_index);
+                ImGui::Checkbox((model->Expressions[i].Name + "###kf_content_expr").c_str(), &is_selected);
             }
             else {
-                ImGui::Text((current_model.Expressions[i].Textures[current_model.Expressions[i].CurrentIndex].FileName + " - " + current_model.Expressions[i].Name).c_str());
+                ImGui::Text((model->Expressions[i].Textures[model->Expressions[i].CurrentIndex].FileName + " - " + model->Expressions[i].Name).c_str());
             }
         }
     }
     if (timeline.type == KFTYPE_COLOR) {
+        ImVec4 colorm;
+        colorm.x = keyframe.value[0] / 255.f;
+        colorm.y = keyframe.value[2] / 255.f;
+        colorm.z = keyframe.value[4] / 255.f;
+        colorm.w = 1;
+        ImVec4 colors;
+        colors.x = keyframe.value[1] / 255.f;
+        colors.y = keyframe.value[3] / 255.f;
+        colors.z = keyframe.value[5] / 255.f;
+        colors.w = 1;
+        ImGui::ColorEdit4("###kfprev_maincol",  (float*)&colorm, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+        ImGui::ColorEdit4("###kfprev_shadecol", (float*)&colors, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+    }
+    if (timeline.type == KFTYPE_COLORF) {
         ImVec4 color;
         color.x = keyframe.value[0];
         color.y = keyframe.value[1];
         color.z = keyframe.value[2];
         color.w = 1;
-        ImGui::ColorEdit4("Col###wlight_col", (float*)&color, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+        ImGui::ColorEdit4("###kfprev_color", (float*)&color, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+    }
+    if (timeline.type == KFTYPE_SWITCH) {
+        if (kf_switch_names.find(keyframe.timelineID) == kf_switch_names.end()) ImGui::Text("u forgor");
+        else ImGui::Text(kf_switch_names[keyframe.timelineID][(int)keyframe.value[0]].c_str());
     }
     ImVec2 window_pos = ImGui::GetMousePos();
     ImVec2 window_size = ImGui::GetWindowSize();
@@ -1303,7 +1326,7 @@ void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
     KeyframeTimeline timeline = k_frame_keys[id].first;
     void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
     if (timeline.type == KFTYPE_BOOL) keyframe.value.push_back(*(bool*)ptr);
-    if (timeline.type == KFTYPE_FLOAT) {
+    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
         float* values = (float*)ptr;
         for (int i = 0; i < timeline.numValues; i++) {
             keyframe.value.push_back(*values);
@@ -1327,6 +1350,9 @@ void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
             keyframe.value.push_back(*values);
             values++;
         }
+    }
+    if (timeline.type == KFTYPE_SWITCH) {
+        keyframe.value.push_back(*(int*)ptr);
     }
     keyframe.curve = curve;
     k_frame_keys[id].second.push_back(keyframe);
@@ -1376,30 +1402,15 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
                 startFrame = 0;
                 std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, is_mario ? mario_menu_index : -1);
                 k_frame_keys.insert({ timeline_id, { timeline, {} } });
-                if (behavior != KFBEH_EVENT) saturn_create_keyframe(timeline_id, behavior == KFBEH_FORCE_WAIT ? InterpolationCurve::WAIT : InterpolationCurve::LINEAR);
+                saturn_create_keyframe(timeline_id, behavior == KFBEH_FORCE_WAIT ? InterpolationCurve::WAIT : InterpolationCurve::LINEAR);
             }
         }
     }
     for (std::string id : ids) {
         timeline_metadata = timelineDataTable[id];
         std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, get<6>(timeline_metadata) ? mario_menu_index : -1);
-        if (saturn_timeline_exists(timeline_id.c_str())) {
-            if (k_frame_keys[timeline_id].first.behavior == KFBEH_EVENT) event_button = true;
-        }
     }
     imgui_bundled_tooltip(contains ? "Remove" : "Animate");
-    if (event_button && contains) {
-        ImGui::SameLine();
-        if (ImGui::Button(ICON_FK_PLUS "###kb_ev_place")) {
-            for (std::string id : ids) {
-                timeline_metadata = timelineDataTable[id];
-                std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, get<6>(timeline_metadata) ? mario_menu_index : -1);
-                if (!saturn_timeline_exists(timeline_id.c_str())) continue;
-                k_frame_keys[timeline_id].first.eventPlace = true;
-            }
-        }
-        imgui_bundled_tooltip("Place Keyframe");
-    }
 }
 
 bool saturn_disable_sm64_input() {
