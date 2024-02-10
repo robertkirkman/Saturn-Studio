@@ -82,6 +82,16 @@ BASEPACK ?= base.zip
 
 WINDOWS_BUILD ?= 0
 
+# Enable MINGW64 cross compilation mode on Linux (using quasi-msys2)
+
+CROSS_COMPILE ?= 0
+
+ifeq ($(CROSS_COMPILE),1)
+  CC := gcc
+  CXX := g++
+  NOTOOLS := 1
+endif
+
 # Attempt to detect OS
 
 ifeq ($(OS),Windows_NT)
@@ -591,7 +601,12 @@ endif
 ifneq ($(SDL1_USED)$(SDL2_USED),00)
   BACKEND_CFLAGS += `$(SDLCONFIG) --cflags`
   ifeq ($(WINDOWS_BUILD),1)
-    BACKEND_LDFLAGS += `pkg-config --static --libs sdl2` -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion
+    ifeq ($(CROSS_COMPILE),1)
+      BACKEND_LDFLAGS += `pkg-config --static --libs sdl2`
+    else
+      BACKEND_LDFLAGS += `$(SDLCONFIG) --static-libs`
+    endif
+    BACKEND_LDFLAGS += -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion
   else
     BACKEND_LDFLAGS += `$(SDLCONFIG) --libs`
   endif
