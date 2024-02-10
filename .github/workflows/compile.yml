@@ -1,8 +1,6 @@
 name: Compile
 
-on:
-  push:
-    branches: [ "studio" ]
+on: workflow_dispatch
 
 jobs:
   windows:
