@@ -1032,6 +1032,10 @@ void saturn_imgui_update() {
             }
             if (ImGui::BeginCombo("###res_preset", "Resolution Preset")) {
                 if (ImGui::Selectable("240p 4:3 (N64)")) { videores[0] =  320; videores[1] =  240; }
+                if (ImGui::Selectable("360p 4:3"))       { videores[0] =  480; videores[1] =  360; }
+                if (ImGui::Selectable("360p 16:9"))      { videores[0] =  640; videores[1] =  360; }
+                if (ImGui::Selectable("480p 4:3"))       { videores[0] =  640; videores[1] =  480; }
+                if (ImGui::Selectable("480p 16:9"))      { videores[0] =  854; videores[1] =  480; }
                 if (ImGui::Selectable("720p 16:9"))      { videores[0] = 1280; videores[1] =  720; }
                 if (ImGui::Selectable("1080p 16:9"))     { videores[0] = 1920; videores[1] = 1080; }
                 if (ImGui::Selectable("4K 16:9"))        { videores[0] = 3840; videores[1] = 2160; }
