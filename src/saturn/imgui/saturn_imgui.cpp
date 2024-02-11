@@ -676,7 +676,7 @@ int endFrameText = 0;
 
 void saturn_keyframe_window() {
     std::string windowLabel = "Timeline###kf_timeline";
-    ImGui::Begin(windowLabel.c_str());
+    ImGui::Begin(windowLabel.c_str(), nullptr, ImGuiWindowFlags_NoScrollWithMouse);
     if (ImGui::BeginPopupContextItem("Keyframe Menu Popup")) {
         k_context_popout_open = false;
         vector<Keyframe>* keyframes = &k_frame_keys[k_context_popout_keyframe.timelineID].second;
@@ -774,7 +774,7 @@ void saturn_keyframe_window() {
     #define SEQUENCER { \
         ImGui::Dummy(ImVec2(0, 0)); \
         ImGui::SameLine(0.01); /* 0 doesnt work */ \
-        if (ImGui::BeginNeoSequencer("Sequencer###k_sequencer", (uint32_t*)&k_current_frame, (uint32_t*)&startFrame, (uint32_t*)&endFrame, ImVec2(window_size.x, window_size.y), ImGuiNeoSequencerFlags_HideZoom)) { \
+        if (ImGui::BeginNeoSequencer("Sequencer###k_sequencer", (uint32_t*)&k_current_frame, (uint32_t*)&startFrame, (uint32_t*)&endFrame, ImVec2(window_size.x, 1000), ImGuiNeoSequencerFlags_HideZoom)) { \
             for (auto& entry : k_frame_keys) { \
                 if (entry.second.first.marioIndex != mario_index) continue; \
                 std::string name = entry.second.first.name; \

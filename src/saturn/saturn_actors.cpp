@@ -12,10 +12,6 @@ extern "C" {
 #include "game/memory.h"
 }
 
-#define gMarioAnims mario_animation_data
-#include "assets/mario_anim_data.c"
-#undef gMarioAnims
-
 #define o gCurrentObject
 
 MarioActor* gMarioActorList = nullptr;
@@ -29,22 +25,6 @@ void delete_mario_actor_timelines(int index) {
     for (std::string id : ids) {
         k_frame_keys.erase(id);
     }
-}
-
-struct Animation* load_animation(MarioActor* actor, int index) {
-    struct Animation* anim = (struct Animation*)((u8*)&mario_animation_data + mario_animation_data.entries[index].offset);
-    actor->anim.index = anim->index;
-    actor->anim.values = anim->values;
-    actor->anim.flags = anim->flags;
-    actor->anim.length = anim->length;
-    actor->anim.unk02 = anim->unk02;
-    actor->anim.unk04 = anim->unk04;
-    actor->anim.unk06 = anim->unk06;
-    actor->anim.unk08 = anim->unk08;
-    actor->anim.unk0A = anim->unk0A;
-    actor->anim.values = (const s16*)((u8*)anim + (uintptr_t)anim->values);
-    actor->anim.index  = (const u16*)((u8*)anim + (uintptr_t)anim->index );
-    return &actor->anim;
 }
 
 MarioActor* saturn_spawn_actor(float x, float y, float z) {
@@ -169,8 +149,9 @@ void bhv_mario_actor_loop() {
         o->header.gfx.unk38.curAnim->length = (s16)actor->animstate.length;
     }
     else {
+        load_animation(&actor->anim, actor->animstate.id);
         o->header.gfx.unk38.animID = actor->animstate.id;
-        o->header.gfx.unk38.curAnim = load_animation(actor, actor->animstate.id);
+        o->header.gfx.unk38.curAnim = &actor->anim;
         o->header.gfx.unk38.curAnim->flags = 4; // prevent the anim to get a mind on its own
         actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
     }

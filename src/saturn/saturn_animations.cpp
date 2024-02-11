@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include <SDL2/SDL.h>
 
 #include "saturn/saturn.h"
@@ -44,6 +45,10 @@ std::string chainer_name;
 extern "C" {
 #include "game/mario.h"
 }
+
+#define gMarioAnims mario_animation_data
+#include "assets/mario_anim_data.c"
+#undef gMarioAnims
 
 const char* saturn_animations_list[] = {
     "SLOW_LEDGE_GRAB",
@@ -337,6 +342,16 @@ void run_hex_array(Json::Value array, std::vector<s16>* dest) {
     }
 }
 
+std::tuple<int, std::vector<s16>, std::vector<s16>> read_bone_data(Json::Value root) {
+    std::vector<s16> values = {};
+    std::vector<s16> indices = {};
+    int length = root["length"].asInt();
+    current_canim_nodes = root["nodes"].asInt();
+    run_hex_array(root["values"], (std::vector<s16>*)&values);
+    run_hex_array(root["indices"], (std::vector<s16>*)&indices);
+    return { length, values, indices };
+}
+
 void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
     // Load the json file
     std::ifstream file(current_anim_dir_path + json_path);
@@ -386,13 +401,10 @@ void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
     // A mess
     if (root["looping"].asString() == "true") current_canim_looping = true;
     if (root["looping"].asString() == "false") current_canim_looping = false;
-    actor->animstate.length = root["length"].asInt();
-    current_canim_nodes = root["nodes"].asInt();
-    actor->animstate.customanim_indices.clear();
-    actor->animstate.customanim_values.clear();
-    run_hex_array(root["values"], (std::vector<s16>*)&actor->animstate.customanim_values);
-    run_hex_array(root["indices"], (std::vector<s16>*)&actor->animstate.customanim_indices);
-
+    auto [ length, values, indices ] = read_bone_data(root);
+    actor->animstate.length = length;
+    actor->animstate.customanim_values = values;
+    actor->animstate.customanim_indices = indices;
     return;
 }
 
@@ -448,4 +460,17 @@ int saturn_anim_by_name(std::string name) {
         }
     }
     return -1;
+}
+
+void load_animation(struct Animation* out, int index) {
+    struct Animation* anim = (struct Animation*)((u8*)&mario_animation_data + mario_animation_data.entries[index].offset);
+    out->flags = anim->flags;
+    out->length = anim->length;
+    out->unk02 = anim->unk02;
+    out->unk04 = anim->unk04;
+    out->unk06 = anim->unk06;
+    out->unk08 = anim->unk08;
+    out->unk0A = anim->unk0A;
+    out->values = (const s16*)((u8*)anim + (uintptr_t)anim->values);
+    out->index  = (const u16*)((u8*)anim + (uintptr_t)anim->index );
 }

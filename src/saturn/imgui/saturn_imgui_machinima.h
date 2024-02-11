@@ -17,7 +17,7 @@ extern void saturn_create_object(int, const BehaviorScript*, float, float, float
 #ifdef __cplusplus
 
 #include "saturn/saturn_actors.h"
-extern void imgui_machinima_animation_player(MarioActor* actor);
+extern void imgui_machinima_animation_player(MarioActor* actor, bool sampling = false);
 
 extern "C" {
 #endif

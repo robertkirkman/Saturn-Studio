@@ -337,7 +337,6 @@ int saturn_rom_status(std::filesystem::path extract_dest, std::vector<std::strin
     stream.read((char*)data, ROM_SIZE);
     stream.close();
     unsigned int checksum = crc32(data, ROM_SIZE);
-    std::cout << checksum << std::endl;
     if (checksum != ROM_CHECKSUM) return ROM_INVALID;
     return ROM_NEED_EXTRACT;
 }
