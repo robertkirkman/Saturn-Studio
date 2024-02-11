@@ -60,7 +60,7 @@ unsigned int crc32(unsigned char* buf, size_t len) {
             crc = (crc >> 1) ^ (0xEDB88320 & mask);
         }
     }
-    return crc;
+    return ~crc;
 }
 
 struct mio0_header {
