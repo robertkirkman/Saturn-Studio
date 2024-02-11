@@ -29,7 +29,7 @@ void saturn_add_defined_location(int level, float x, float y, float z, s16 angle
         }
     }
 }
-void saturn_location_data_handler(SaturnFormatStream* stream, int version) {
+bool saturn_location_data_handler(SaturnFormatStream* stream, int version) {
     int count = saturn_format_read_int32(stream);
     for (int i = 0; i < count; i++) {
         int level = saturn_format_read_int16(stream);
@@ -42,6 +42,7 @@ void saturn_location_data_handler(SaturnFormatStream* stream, int version) {
         name[255] = 0;
         saturn_add_defined_location(level, x, y, z, angle, name);
     }
+    return true;
 }
 void saturn_load_locations() {
     saturn_format_input("dynos/locations.bin", "STLC", {

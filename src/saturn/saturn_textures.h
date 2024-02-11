@@ -15,8 +15,8 @@ class Model;
 
 class TexturePath {
 public:
-    std::string FileName;
-    std::string FilePath;
+    std::string FileName = "";
+    std::string FilePath = "";
     /* Relative path from res/gfx, as used by EXTERNAL_DATA */
     std::string GetRelativePath() {
         return "../../" + this->FilePath;//.substr(0, this->FilePath.size() - 4);
@@ -35,10 +35,10 @@ private:
         return "saturn_" + this->Name;
     }
 public:
-    std::string Name;
-    std::string FolderPath;
-    std::vector<TexturePath> Textures;
-    std::vector<TexturePath> Folders;
+    std::string Name = "";
+    std::string FolderPath = "";
+    std::vector<TexturePath> Textures = {};
+    std::vector<TexturePath> Folders = {};
     /* The index of the current selected texture */
     int CurrentIndex = 0;
 

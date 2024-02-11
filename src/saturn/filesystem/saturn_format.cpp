@@ -59,7 +59,7 @@ void saturn_format_input(char* filename, char* id, std::map<std::string, SaturnF
         int sectionBlockSize = saturn_format_read_int32(&contentStream);
         align(&contentStream);
         if (std::strcmp(sectionIdentifier, SATURN_FORMAT_FINISH_IDENTIFIER) == 0) break;
-        handlers[sectionIdentifier](&contentStream, version);
+        if (!handlers[sectionIdentifier](&contentStream, version)) break;
         contentStream.pointer = beginning + sectionBlockSize * SATURN_FORMAT_BLOCK_SIZE;
     }
     free(header);
@@ -100,7 +100,7 @@ float saturn_format_read_float(SaturnFormatStream* stream) {
     return u.y;
 }
 bool saturn_format_read_bool(SaturnFormatStream* stream) {
-    saturn_format_read_int8(stream) != 0;
+    return saturn_format_read_int8(stream) != 0;
 }
 void saturn_format_read_string(SaturnFormatStream* stream, char* dest, int bufferLength) {
     int i = -1;

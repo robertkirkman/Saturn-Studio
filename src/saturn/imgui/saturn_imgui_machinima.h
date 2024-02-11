@@ -9,6 +9,7 @@ extern int time_freeze_state;
 extern int current_sanim_id;
 
 extern bool enabled_acts[];
+extern s16 levelList[];
 
 extern void anim_play_button();
 extern void saturn_create_object(int, const BehaviorScript*, float, float, float, s16, s16, s16, int);

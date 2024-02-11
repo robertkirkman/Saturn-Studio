@@ -14,7 +14,7 @@ struct SaturnFormatStream {
     int sectionBeginning;
 };
 
-typedef std::function<void(SaturnFormatStream*, int)> SaturnFormatSectionHandler;
+typedef std::function<bool(SaturnFormatStream*, int)> SaturnFormatSectionHandler;
 
 void saturn_format_input(char* filename, char* identifier, std::map<std::string, SaturnFormatSectionHandler> handlers);
 SaturnFormatStream saturn_format_output(char* identifier, int version);

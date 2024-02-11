@@ -353,11 +353,9 @@ void sdynos_imgui_menu(int index) {
                     saturn_keyframe_popout("k_scale");
                 } else {
                     ImGui::SliderFloat("X###mscale_x", &actor->xScale, -2.f, 2.f);
-                    saturn_keyframe_popout("k_scale_x");
                     ImGui::SliderFloat("Y###mscale_y", &actor->yScale, -2.f, 2.f);
-                    saturn_keyframe_popout("k_scale_y");
                     ImGui::SliderFloat("Z###mscale_z", &actor->zScale, -2.f, 2.f);
-                    saturn_keyframe_popout("k_scale_z");
+                    saturn_keyframe_popout_next_line("k_scale");
                 }
                 ImGui::Checkbox("Link###link_mario_scale", &link_scaling);
                 if (actor->xScale != 1.f || actor->yScale != 1.f || actor->zScale != 1.f) {

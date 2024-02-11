@@ -73,17 +73,24 @@ MarioActor* saturn_add_new_actor(MarioActor& actor) {
 
 MarioActor* saturn_try_replace_actor(MarioActor& actor) {
     MarioActor* curr = gMarioActorList;
+    int i = 0;
     while (curr) {
         if (!curr->exists) break;
         curr = curr->next;
+        i++;
     }
     if (!curr) return nullptr;
+    MarioActor* new_actor = new MarioActor(actor);
+    new_actor->marioObj->oMarioActorIndex = i;
     MarioActor* prev = curr->prev;
     MarioActor* next = curr->next;
-    memcpy(curr, &actor, sizeof(MarioActor));
-    curr->prev = prev;
-    curr->next = next;
-    return curr;
+    delete curr;
+    new_actor->prev = prev;
+    new_actor->next = next;
+    if (next) next->prev = new_actor;
+    if (prev) prev->next = new_actor;
+    else gMarioActorList = new_actor;
+    return new_actor;
 }
 
 MarioActor* saturn_add_actor(MarioActor& actor) {
@@ -133,13 +140,13 @@ int saturn_actor_sizeof() {
 
 void saturn_clear_actors() {
     MarioActor* actor = gMarioActorList;
+    int i = 0;
     while (actor) {
-        MarioActor* next = actor->next;
+        delete_mario_actor_timelines(i++);
         obj_mark_for_deletion(actor->marioObj);
-        delete actor;
-        actor = next;
+        actor->exists = false;
+        actor = actor->next;
     }
-    gMarioActorList = nullptr;
 }
 
 void bhv_mario_actor_loop() {

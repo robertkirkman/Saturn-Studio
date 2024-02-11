@@ -474,6 +474,8 @@ void saturn_update() {
         gMarioState->faceAngle[1] += (s16)(spin_mult * 15 * 182.04f);
     }
 
+    if (current_project != "") saturn_load_project((char*)current_project.c_str());
+
     // Autosave
 
     if (gCurrLevelNum != LEVEL_SA || gCurrAreaIndex != 3) {

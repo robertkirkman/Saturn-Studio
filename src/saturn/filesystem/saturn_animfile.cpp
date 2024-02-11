@@ -7,11 +7,12 @@ const int curr_ver = 1;
 
 std::vector<int> favorite_anims = {};
 
-void saturn_favorite_anim_data_handler(SaturnFormatStream* stream, int version) {
+bool saturn_favorite_anim_data_handler(SaturnFormatStream* stream, int version) {
     int count = saturn_format_read_int32(stream);
     for (int i = 0; i < count; i++) {
         favorite_anims.push_back(saturn_format_read_int32(stream));
     }
+    return true;
 }
 
 void saturn_load_favorite_anims() {

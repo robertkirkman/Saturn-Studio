@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+extern std::string current_project;
+
 void saturn_load_project(char* filename);
 void saturn_save_project(char* filename);
 
