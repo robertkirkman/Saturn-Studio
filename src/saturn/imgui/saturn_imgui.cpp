@@ -1120,6 +1120,7 @@ void saturn_imgui_update() {
         MarioActor* actor = gMarioActorList;
         int i = 0;
         while (actor) {
+            if (actor->exists)
             if (case_insensitive_contains(actor->name, mario_search_prompt))
             if (ImGui::Selectable(actor->name)) {
                 saturn_imgui_open_mario_menu(i);
