@@ -19,6 +19,8 @@ extern void saturn_create_object(int, const BehaviorScript*, float, float, float
 #include "saturn/saturn_actors.h"
 extern void imgui_machinima_animation_player(MarioActor* actor, bool sampling = false);
 
+extern bool case_insensitive_contains(std::string base, std::string substr);
+
 extern "C" {
 #endif
     void warp_to_level(int, int, int);

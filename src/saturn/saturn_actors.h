@@ -54,6 +54,7 @@ public:
     MarioActor* next = nullptr;
     struct Object* marioObj = nullptr;
     bool exists = true;
+    char name[256];
     MarioActor() {
         u64 ptr = (u64)this;
         PasteGameShark(GameSharkCode().GameShark, colorcode);
@@ -62,7 +63,7 @@ public:
     }
 };
 
-extern MarioActor* mario_actor;
+extern MarioActor* gMarioActorList;
 
 extern MarioActor* saturn_spawn_actor(float x, float y, float z);
 extern MarioActor* saturn_add_actor(MarioActor& actor);

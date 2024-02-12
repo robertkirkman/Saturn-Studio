@@ -95,6 +95,8 @@ bool saturn_project_autochroma_handler(SaturnFormatStream* stream, int version) 
 }
 
 bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version) {
+    char name[256];
+    saturn_format_read_string(stream, name, 255);
     char modelname[256];
     saturn_format_read_string(stream, modelname, 255);
     float x = saturn_format_read_float(stream);
@@ -254,6 +256,7 @@ void saturn_save_project(char* filename) {
             continue;
         }
         saturn_format_new_section(stream, "MACT");
+        saturn_format_write_string(stream, actor->name);
         if (actor->selected_model == -1) saturn_format_write_int8(stream, 0);
         else saturn_format_write_string(stream, (char*)actor->model.Name.c_str());
         saturn_format_write_float(stream, actor->x);

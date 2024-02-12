@@ -520,6 +520,7 @@ void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
     ImGui::DockBuilderSplitNode(dockspace, ImGuiDir_Up, 0.7f, &up, &down);
     ImGui::DockBuilderSplitNode(up, ImGuiDir_Left, 0.25f, &left, &right);
     ImGui::DockBuilderDockWindow("Machinima", left);
+    ImGui::DockBuilderDockWindow("Marios", left);
     ImGui::DockBuilderDockWindow("Settings", left);
     ImGui::DockBuilderDockWindow("Game", right);
     ImGui::DockBuilderDockWindow("Timeline###kf_timeline", down);
@@ -884,6 +885,7 @@ void saturn_keyframe_window() {
 
 char saturnProjectFilename[257] = "Project";
 int current_project_id;
+char mario_search_prompt[256];
 
 void saturn_imgui_update() {
     if (!splash_finished) return;
@@ -1084,6 +1086,49 @@ void saturn_imgui_update() {
         }
     } ImGui::End();
 
+    if (ImGui::Begin("Marios")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
+        if (ImGui::Selectable(ICON_FK_TRASH " Delete all Marios")) {
+            int actors = saturn_actor_sizeof();
+            for (int i = 0; i < actors; i++) {
+                saturn_remove_actor(0);
+            }
+        }
+        ImGui::PopStyleColor();
+        if (ImGui::Selectable(ICON_FK_EYEDROPPER " Pick Nearest")) {
+            float nearest_dist = 0x10000;
+            int nearest_index = -1;
+            int i = 0;
+            MarioActor* actor = gMarioActorList;
+            while (actor) {
+                float dist = sqrtf(
+                    (actor->x - gCamera->pos[0]) * (actor->x - gCamera->pos[0]) +
+                    (actor->y - gCamera->pos[1]) * (actor->y - gCamera->pos[1]) +
+                    (actor->z - gCamera->pos[2]) * (actor->z - gCamera->pos[2])
+                );
+                if (nearest_dist > dist) {
+                    nearest_dist = dist;
+                    nearest_index = i;
+                }
+                actor = actor->next;
+                i++;
+            }
+            if (nearest_index != -1) saturn_imgui_open_mario_menu(i);
+        }
+        ImGui::Separator();
+        ImGui::InputTextWithHint("###mariosearch", ICON_FK_SEARCH " Search...", mario_search_prompt, 256);
+        MarioActor* actor = gMarioActorList;
+        int i = 0;
+        while (actor) {
+            if (case_insensitive_contains(actor->name, mario_search_prompt))
+            if (ImGui::Selectable(actor->name)) {
+                saturn_imgui_open_mario_menu(i);
+            }
+            actor = actor->next;
+            i++;
+        }
+    } ImGui::End();
+
     if (ImGui::Begin("Settings")) {
         ssettings_imgui_update();
     } ImGui::End();
@@ -1103,13 +1148,14 @@ void saturn_imgui_update() {
         ImGui::PopStyleVar();
         if (ImGui::BeginPopup("Mario Menu")) {
             mario_menu_do_open = false;
+            MarioActor* actor = saturn_get_actor(mario_menu_index);
+            ImGui::InputText("###marioname", actor->name, 256);
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
             if (ImGui::MenuItem(ICON_FK_TRASH_O " Remove")) {
                 saturn_remove_actor(mario_menu_index);
             }
             ImGui::PopStyleColor();
             if (ImGui::MenuItem(ICON_FK_EYE " Look at")) {
-                MarioActor* actor = saturn_get_actor(mario_menu_index);
                 Vec3f mpos;
                 float dist;
                 s16 pitch, yaw;

@@ -175,6 +175,8 @@ bool extraction_finished = false;
 float extraction_progress = -1;
 int extract_return_code = 0;
 
+int marios_spawned = 0;
+
 extern void saturn_run_chainer();
 
 float key_increase_val(std::vector<float> vecfloat) {
@@ -437,6 +439,8 @@ void saturn_update() {
             vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
             MarioActor* actor = saturn_spawn_actor(hit[0], hit[1], hit[2]);
             actor->angle = yaw;
+            std::string name = "Unnamed Mario " + std::to_string(++marios_spawned);
+            memcpy(actor->name, name.c_str(), name.length() + 1);
         }
         if (mouse_state.released & MOUSEBTN_MASK_R) {
             struct Object* obj = get_mario_actor_from_ray(gCamera->pos, dir);
