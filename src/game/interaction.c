@@ -18,6 +18,7 @@
 #include "memory.h"
 #include "obj_behaviors.h"
 #include "object_helpers.h"
+#include "saturn/saturn_actors.h"
 #include "save_file.h"
 #include "seq_ids.h"
 #include "sm64.h"
@@ -851,6 +852,7 @@ u32 interact_bbh_entrance(struct MarioState *m, UNUSED u32 interactType, struct 
 }
 
 u32 interact_warp(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
+    if (saturn_actor_is_recording_input()) return FALSE;
     if (machinimaMode) {
         return FALSE;
     }
@@ -895,6 +897,7 @@ u32 interact_warp(struct MarioState *m, UNUSED u32 interactType, struct Object *
 }
 
 u32 interact_warp_door(struct MarioState *m, UNUSED u32 interactType, struct Object *o) {
+    if (saturn_actor_is_recording_input()) return FALSE;
     if (!enable_dialogue) return FALSE;
 
     if (machinimaMode) {

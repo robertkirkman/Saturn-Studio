@@ -1010,7 +1010,7 @@ s32 play_mode_normal(void) {
 
     // If either initiate_painting_warp or initiate_delayed_warp initiated a
     // warp, change play mode accordingly.
-    if (sCurrPlayMode == PLAY_MODE_NORMAL) {
+    /*if (sCurrPlayMode == PLAY_MODE_NORMAL) {
         if (sWarpDest.type == WARP_TYPE_CHANGE_LEVEL) {
             set_play_mode(PLAY_MODE_CHANGE_LEVEL);
         } else if (sTransitionTimer != 0) {
@@ -1021,7 +1021,7 @@ s32 play_mode_normal(void) {
             gCameraMovementFlags |= CAM_MOVE_PAUSE_SCREEN;
             set_play_mode(PLAY_MODE_PAUSED);
         }
-    }
+    }*/
 
     // Override Mario if loaded from project file
     if (override_mario) {
