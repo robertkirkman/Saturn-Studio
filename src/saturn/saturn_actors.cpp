@@ -3,6 +3,7 @@
 #include "mario_animation_ids.h"
 #include "saturn/saturn.h"
 #include "saturn/saturn_models.h"
+#include "sm64.h"
 
 extern "C" {
 #include "include/object_fields.h"
@@ -10,6 +11,7 @@ extern "C" {
 #include "game/level_update.h"
 #include "engine/math_util.h"
 #include "game/memory.h"
+#include "game/mario.h"
 }
 
 #define o gCurrentObject
@@ -129,34 +131,54 @@ void saturn_clear_actors() {
     }
 }
 
+int recording_mario_actor = -1;
+InputRecordingFrame latest_recording_frame;
+
 void bhv_mario_actor_loop() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (!actor) return;
-    o->oPosX = actor->x;
-    o->oPosY = actor->y;
-    o->oPosZ = actor->z;
-    o->oFaceAngleYaw = actor->angle;
     vec3f_set(o->header.gfx.scale, actor->xScale, actor->yScale, actor->zScale);
-    if (actor->animstate.custom) {
-        o->header.gfx.unk38.curAnim->flags = 4;
-        o->header.gfx.unk38.curAnim->unk02 = 0;
-        o->header.gfx.unk38.curAnim->unk04 = 0;
-        o->header.gfx.unk38.curAnim->unk06 = 0;
-        o->header.gfx.unk38.curAnim->unk08 = (s16)actor->animstate.length;
-        o->header.gfx.unk38.curAnim->unk0A = actor->animstate.customanim_indices.size() / 6 - 1;
-        o->header.gfx.unk38.curAnim->values = actor->animstate.customanim_values.data();
-        o->header.gfx.unk38.curAnim->index = (const u16*)actor->animstate.customanim_indices.data();
-        o->header.gfx.unk38.curAnim->length = (s16)actor->animstate.length;
-    }
-    else {
-        load_animation(&actor->anim, actor->animstate.id);
-        o->header.gfx.unk38.animID = actor->animstate.id;
+    if (recording_mario_actor == o->oMarioActorIndex || actor->playback_input) {
+        InputRecordingFrame frame;
+        if (actor->playback_input) frame = actor->input_recording[actor->input_recording_frame];
+        else frame = latest_recording_frame;
+        o->oPosX = frame.x;
+        o->oPosY = frame.y;
+        o->oPosZ = frame.z;
+        o->oFaceAngleYaw = frame.angle;
+        load_animation(&actor->anim, frame.animID);
+        o->header.gfx.unk38.animID = frame.animID;
         o->header.gfx.unk38.curAnim = &actor->anim;
         o->header.gfx.unk38.curAnim->flags = 4; // prevent the anim to get a mind on its own
-        actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
+        o->header.gfx.unk38.animYTrans = 0xBD;
+        o->header.gfx.unk38.animFrame = frame.animFrame;
     }
-    o->header.gfx.unk38.animYTrans = 0xBD;
-    o->header.gfx.unk38.animFrame = actor->animstate.frame;
+    else {
+        o->oPosX = actor->x;
+        o->oPosY = actor->y;
+        o->oPosZ = actor->z;
+        o->oFaceAngleYaw = actor->angle;
+        if (actor->animstate.custom) {
+            o->header.gfx.unk38.curAnim->flags = 4;
+            o->header.gfx.unk38.curAnim->unk02 = 0;
+            o->header.gfx.unk38.curAnim->unk04 = 0;
+            o->header.gfx.unk38.curAnim->unk06 = 0;
+            o->header.gfx.unk38.curAnim->unk08 = (s16)actor->animstate.length;
+            o->header.gfx.unk38.curAnim->unk0A = actor->animstate.customanim_indices.size() / 6 - 1;
+            o->header.gfx.unk38.curAnim->values = actor->animstate.customanim_values.data();
+            o->header.gfx.unk38.curAnim->index = (const u16*)actor->animstate.customanim_indices.data();
+            o->header.gfx.unk38.curAnim->length = (s16)actor->animstate.length;
+        }
+        else {
+            load_animation(&actor->anim, actor->animstate.id);
+            o->header.gfx.unk38.animID = actor->animstate.id;
+            o->header.gfx.unk38.curAnim = &actor->anim;
+            o->header.gfx.unk38.curAnim->flags = 4; // prevent the anim to get a mind on its own
+            actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
+        }
+        o->header.gfx.unk38.animYTrans = 0xBD;
+        o->header.gfx.unk38.animFrame = actor->animstate.frame;
+    }
 }
 
 void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive) {
@@ -266,6 +288,47 @@ void saturn_actor_bone_do_override(Vec3s rotation) {
         actor->bones[actor->custom_bone_iter][1] / 360.f * 65536,
         actor->bones[actor->custom_bone_iter][2] / 360.f * 65536
     );
+}
+
+void saturn_actor_start_recording(int index) {
+    MarioActor* actor = saturn_get_actor(index);
+    if (actor == nullptr) return;
+    recording_mario_actor = index;
+    actor->input_recording.clear();
+    actor->input_recording_frame = 0;
+    actor->playback_input = false;
+    gMarioState->pos[0] = actor->x;
+    gMarioState->pos[1] = actor->y;
+    gMarioState->pos[2] = actor->z;
+    gMarioState->vel[0] = 0;
+    gMarioState->vel[1] = 0;
+    gMarioState->vel[2] = 0;
+    gMarioState->faceAngle[1] = actor->angle;
+}
+
+void saturn_actor_stop_recording() {
+    recording_mario_actor = -1;
+}
+
+bool saturn_actor_is_recording_input() {
+    if (recording_mario_actor == -1) return false;
+    return !!saturn_get_actor(recording_mario_actor);
+}
+
+void saturn_actor_record_new_frame() {
+    if (!saturn_actor_is_recording_input()) return;
+    MarioActor* actor = saturn_get_actor(recording_mario_actor);
+    if (!actor) return;
+    InputRecordingFrame frame;
+    frame.x = gMarioState->pos[0];
+    frame.y = gMarioState->pos[1];
+    frame.z = gMarioState->pos[2];
+    frame.angle = gMarioState->faceAngle[1];
+    frame.animID = gMarioState->marioObj->header.gfx.unk38.animID;
+    frame.animFrame = gMarioState->marioObj->header.gfx.unk38.animFrame;
+    if (frame.animFrame < 0) frame.animFrame = 0;
+    actor->input_recording.push_back(frame);
+    latest_recording_frame = frame;
 }
 
 struct ModelTexture {

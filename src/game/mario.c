@@ -1,5 +1,6 @@
 #include <PR/ultratypes.h>
 
+#include "saturn/saturn_actors.h"
 #include "sm64.h"
 #include "area.h"
 #include "audio/data.h"
@@ -1014,7 +1015,6 @@ static u32 set_mario_action_cutscene(struct MarioState *m, u32 action, UNUSED u3
  * specific function if needed.
  */
 u32 set_mario_action(struct MarioState *m, u32 action, u32 actionArg) {
-    action = ACT_DEBUG_FREE_MOVE;
     switch (action & ACT_GROUP_MASK) {
         case ACT_GROUP_MOVING:
             action = set_mario_action_moving(m, action, actionArg);
@@ -1441,7 +1441,7 @@ void update_mario_geometry_inputs(struct MarioState *m) {
  * Handles Mario's input flags as well as a couple timers.
  */
 void update_mario_inputs(struct MarioState *m) {
-    return;
+    if (!saturn_actor_is_recording_input()) return;
     m->particleFlags = 0;
     m->input = 0;
     m->collidedObjInteractTypes = m->marioObj->collidedObjInteractTypes;
@@ -1892,6 +1892,8 @@ s32 execute_mario_action(UNUSED struct Object *o) {
         play_infinite_stairs_music();
         gMarioState->marioObj->oInteractStatus = 0;
         func_sh_8025574C();
+
+        saturn_actor_record_new_frame();
 
         return gMarioState->particleFlags;
     }

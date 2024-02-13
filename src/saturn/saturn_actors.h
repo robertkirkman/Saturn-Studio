@@ -17,6 +17,13 @@ extern "C" {
 #include "include/behavior_data.h"
 }
 
+struct InputRecordingFrame {
+    float x, y, z;
+    s16 angle;
+    int animID;
+    int animFrame;
+};
+
 class MarioActor {
 public:
     float x = 0;
@@ -50,6 +57,9 @@ public:
     ColorCode colorcode;
     struct Animation anim;
     struct AnimationState animstate;
+    std::vector<struct InputRecordingFrame> input_recording = {};
+    int input_recording_frame = 0;
+    bool playback_input = false;
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;
     struct Object* marioObj = nullptr;
@@ -87,6 +97,10 @@ extern "C" {
     void saturn_actor_bone_iterate();
     void saturn_actor_bone_do_override(Vec3s rotation);
     int saturn_actor_get_support_flags(int marioIndex);
+    void saturn_actor_start_recording(int index);
+    void saturn_actor_stop_recording();
+    bool saturn_actor_is_recording_input();
+    void saturn_actor_record_new_frame();
     void saturn_actor_add_model_texture(char* id, char* data, int w, int h);
     char* saturn_actor_get_model_texture(char* id, int* w, int* h);
 #ifdef __cplusplus

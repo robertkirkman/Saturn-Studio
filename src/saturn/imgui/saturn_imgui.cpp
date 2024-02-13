@@ -654,6 +654,10 @@ void saturn_imgui_handle_events(SDL_Event * event) {
             if(event->key.keysym.sym == SDLK_F6) {
                 k_popout_open = !k_popout_open;
             }
+
+            if(event->key.keysym.sym == SDLK_F10 && saturn_actor_is_recording_input()) {
+                saturn_actor_stop_recording();
+            }
         
         break;
     }
@@ -899,6 +903,8 @@ void saturn_imgui_update() {
     camera_savestate_mult = 1.f;
 
     ImGuiID dockspace = saturn_imgui_setup_dockspace();
+    bool is_recording = saturn_actor_is_recording_input();
+    if (is_recording) ImGui::BeginDisabled();
     if (ImGui::Begin("Machinima")) {
         windowCcEditor = false;
 
@@ -1145,7 +1151,9 @@ void saturn_imgui_update() {
         game_viewport[2] = window_size.x;
         game_viewport[3] = window_size.y;
         if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
+        if (is_recording) ImGui::EndDisabled();
         ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        if (is_recording) ImGui::BeginDisabled();
         ImGui::PopStyleVar();
         if (ImGui::BeginPopup("Mario Menu")) {
             mario_menu_do_open = false;
@@ -1184,6 +1192,7 @@ void saturn_imgui_update() {
     if (showStatusBars) {
         if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, height, window_flags)) {
             if (ImGui::BeginMenuBar()) {
+                if (is_recording) ImGui::EndDisabled();
                 ImGui::Text(PLATFORM_ICON);
                 if (configFps60) ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
                 else ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate / 2, 1000.0f / (ImGui::GetIO().Framerate / 2));
@@ -1193,7 +1202,15 @@ void saturn_imgui_update() {
                 ImGui::TextDisabled(ICON_FK_GITHUB " " GIT_BRANCH " " GIT_HASH);
 #endif
 #endif
-                if (gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3) {
+                if (is_recording) {
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 126);
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.00f, 0.00f, 1.00f));
+                    ImGui::Text(ICON_FK_CIRCLE);
+                    ImGui::PopStyleColor();
+                    ImGui::SameLine();
+                    ImGui::Text("Recording...");
+                }
+                else if (gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3) {
                     ImGui::SameLine(ImGui::GetWindowWidth() - 280);
                     ImGui::Text("Saving in custom level isn't supported");
                 }
@@ -1201,6 +1218,7 @@ void saturn_imgui_update() {
                     ImGui::SameLine(ImGui::GetWindowWidth() - 140);
                     ImGui::Text("Autosaving in %ds", autosaveDelay / 30);
                 }
+                if (is_recording) ImGui::BeginDisabled();
                 ImGui::EndMenuBar();
             }
             ImGui::End();
@@ -1251,6 +1269,7 @@ void saturn_imgui_update() {
     }*/
 
     //ImGui::ShowDemoWindow();
+    if (is_recording) ImGui::EndDisabled();
 
     saturn_imgui_create_dockspace_layout(dockspace);
 

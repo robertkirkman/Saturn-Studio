@@ -424,7 +424,7 @@ void saturn_update() {
         }
     }*/
 
-    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game) {
+    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game && !saturn_actor_is_recording_input()) {
         Vec3f dir, hit;
         s16 yaw, pitch;
         float dist;

@@ -305,6 +305,29 @@ void sdynos_imgui_menu(int index) {
         ImGui::EndMenu();
     }
 
+    if (ImGui::BeginMenu(ICON_FK_FILM " Input Recording")) {
+        bool empty = actor->input_recording.empty();
+        if (empty) ImGui::Text("No recording made");
+        if (ImGui::Button("Record")) {
+            saturn_actor_start_recording(index);
+        }
+        ImGui::SameLine();
+        ImGui::BeginDisabled();
+        ImGui::Text("F10 to stop");
+        ImGui::EndDisabled();
+        ImGui::Separator();
+        if (empty) ImGui::BeginDisabled();
+        bool checked = !empty && actor->playback_input;
+        if (ImGui::Checkbox("Playback", &checked)) actor->playback_input = !actor->playback_input;
+        saturn_keyframe_popout("k_inputrec_enable");
+        if (!empty && !actor->playback_input) ImGui::BeginDisabled();
+        ImGui::SliderInt("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1);
+        if (!empty && !actor->playback_input) ImGui::EndDisabled();
+        saturn_keyframe_popout("k_inputrec_frame");
+        if (empty) ImGui::EndDisabled();
+        ImGui::EndMenu();
+    }
+
     ImGui::Separator();
 
     if (!actor->model.ColorCodeSupport) ImGui::BeginDisabled();

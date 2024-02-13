@@ -18,6 +18,8 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
   - [x] Misc settings
   - [x] In-game bone editor
 - [ ] Input recording/playback
+  - [x] Functionality
+  - [ ] Visual bugs
 - [x] Recording transparent .webm videos (or .png sequences) directly in the editor
 - [x] Capturing transparent screenshots
 - [x] Mouse-based camera controls
