@@ -774,8 +774,6 @@ static void anim_process(Vec3f translation, Vec3s rotation, u8 *animType, s16 an
     }
 
     if (*animType == ANIM_TYPE_ROTATION) {
-        Vec3s headrot;
-        saturn_rotate_head(headrot);
         if (saturn_actor_bone_should_override()) {
             saturn_actor_bone_do_override(rotation);
             *animAttribute += 6;
@@ -785,7 +783,13 @@ static void anim_process(Vec3f translation, Vec3s rotation, u8 *animType, s16 an
             rotation[1] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
             rotation[2] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
         }
-        vec3s_add(rotation, headrot);
+        Vec3s headrot, torsorot;
+        if (saturn_rotate_head(headrot)) vec3s_add(rotation, headrot);
+        if (saturn_rotate_torso(torsorot)) {
+            rotation[0] += torsorot[1];
+            rotation[1] += torsorot[2];
+            rotation[2] += torsorot[0];
+        }
     }
 }
 

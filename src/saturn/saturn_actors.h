@@ -22,6 +22,7 @@ struct InputRecordingFrame {
     s16 angle;
     int animID;
     int animFrame;
+    Vec3s torsoAngle;
 };
 
 class MarioActor {
@@ -58,7 +59,8 @@ public:
     struct Animation anim;
     struct AnimationState animstate;
     std::vector<struct InputRecordingFrame> input_recording = {};
-    int input_recording_frame = 0;
+    float input_recording_frame = 0;
+    Vec3s torsoAngle;
     bool playback_input = false;
     MarioActor* prev = nullptr;
     MarioActor* next = nullptr;
@@ -88,6 +90,7 @@ extern "C" {
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
     bool saturn_rotate_head(Vec3s rotation);
+    bool saturn_rotate_torso(Vec3s rotation);
     s16 saturn_actor_geo_switch(u8 item);
     float saturn_actor_get_alpha();
     bool saturn_actor_has_custom_anim_extra();

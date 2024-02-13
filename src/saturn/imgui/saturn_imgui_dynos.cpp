@@ -321,7 +321,7 @@ void sdynos_imgui_menu(int index) {
         if (ImGui::Checkbox("Playback", &checked)) actor->playback_input = !actor->playback_input;
         saturn_keyframe_popout("k_inputrec_enable");
         if (!empty && !actor->playback_input) ImGui::BeginDisabled();
-        ImGui::SliderInt("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1);
+        ImGui::SliderFloat("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1, "%.0f");
         if (!empty && !actor->playback_input) ImGui::EndDisabled();
         saturn_keyframe_popout("k_inputrec_frame");
         if (empty) ImGui::EndDisabled();

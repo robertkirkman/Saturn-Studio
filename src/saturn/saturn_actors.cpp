@@ -142,6 +142,7 @@ void bhv_mario_actor_loop() {
         InputRecordingFrame frame;
         if (actor->playback_input) frame = actor->input_recording[actor->input_recording_frame];
         else frame = latest_recording_frame;
+        vec3s_copy(actor->torsoAngle, frame.torsoAngle);
         o->oPosX = frame.x;
         o->oPosY = frame.y;
         o->oPosZ = frame.z;
@@ -154,6 +155,7 @@ void bhv_mario_actor_loop() {
         o->header.gfx.unk38.animFrame = frame.animFrame;
     }
     else {
+        vec3s_set(actor->torsoAngle, 0, 0, 0);
         o->oPosX = actor->x;
         o->oPosY = actor->y;
         o->oPosZ = actor->z;
@@ -205,6 +207,21 @@ bool saturn_rotate_head(Vec3s rotation) {
         }
     }
     vec3s_set(rotation, 0, 0, 0);
+    return false;
+}
+
+bool saturn_rotate_torso(Vec3s rotation) {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor != nullptr) {
+        if (actor->custom_bone_iter != 1) actor = nullptr;
+        if (actor != nullptr) {
+            vec3s_copy(rotation, actor->torsoAngle);
+            return true;
+        }
+    }
+    if (recording_mario_actor == o->oMarioActorIndex) vec3s_copy(rotation, gMarioState->marioBodyState->torsoAngle);
+    else vec3s_set(rotation, 0, 0, 0);
     return false;
 }
 
@@ -323,9 +340,10 @@ void saturn_actor_record_new_frame() {
     frame.x = gMarioState->pos[0];
     frame.y = gMarioState->pos[1];
     frame.z = gMarioState->pos[2];
-    frame.angle = gMarioState->faceAngle[1];
+    frame.angle = gMarioState->marioObj->header.gfx.angle[1];
     frame.animID = gMarioState->marioObj->header.gfx.unk38.animID;
     frame.animFrame = gMarioState->marioObj->header.gfx.unk38.animFrame;
+    vec3s_copy(frame.torsoAngle, gMarioState->marioBodyState->torsoAngle);
     if (frame.animFrame < 0) frame.animFrame = 0;
     actor->input_recording.push_back(frame);
     latest_recording_frame = frame;
