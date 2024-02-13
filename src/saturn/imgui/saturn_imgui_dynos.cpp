@@ -45,6 +45,7 @@ extern "C" {
 #include "pc/cheats.h"
 #include "include/sm64.h"
 #include "game/sound_init.h"
+#include "engine/surface_collision.h"
 }
 
 Array<PackData *> &sDynosPacks = DynOS_Gfx_GetPacks();
@@ -272,6 +273,11 @@ bool link_scaling = true;
 void sdynos_imgui_menu(int index) {
     MarioActor* actor = saturn_get_actor(index);
     if (actor == nullptr) return;
+    
+    if (ImGui::MenuItem(ICON_FK_DOWNLOAD " Drop to Floor")) {
+        actor->y = find_floor_height(actor->x, actor->y + 100, actor->z);
+    }
+
     if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
         // Color Code Selection
         if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
