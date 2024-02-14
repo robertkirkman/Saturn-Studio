@@ -84,6 +84,8 @@ extern MarioActor* saturn_get_actor(int index);
 extern int saturn_actor_indexof(MarioActor* actor);
 extern int saturn_actor_sizeof();
 
+extern int recording_mario_actor;
+
 extern "C" {
 #endif
     void saturn_clear_actors();

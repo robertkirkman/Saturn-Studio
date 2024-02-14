@@ -10,6 +10,7 @@
 #include <SDL2/SDL.h>
 
 #include "data/dynos.cpp.h"
+#include "engine/math_util.h"
 #include "saturn/imgui/saturn_imgui.h"
 #include "saturn/imgui/saturn_imgui_machinima.h"
 #include "saturn/imgui/saturn_imgui_chroma.h"
@@ -201,6 +202,12 @@ bool timeline_has_id(std::string id) {
 
 // SATURN Machinima Functions
 
+float inpreccam_distfrommario = 500.f;
+s16 inpreccam_yaw = 0;
+s16 inpreccam_pitch = 0;
+Vec3f inpreccam_pos;
+Vec3f inpreccam_focus;
+
 void saturn_update() {
 
     // Keybinds
@@ -340,30 +347,53 @@ void saturn_update() {
 
     f32 dist;
     if (mouse_state.update_camera) {
-        Vec3f offset;
-        vec3f_set(offset, 0, 0, 0);
-        if (mouse_state.held & MOUSEBTN_MASK_L) {
-            offset[0] += sins(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-            offset[2] += coss(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-            offset[1] += coss(freezecamPitch) * mouse_state.y_diff * camVelSpeed;
-            offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
-            offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
+        if (saturn_actor_is_recording_input()) {
+            if (mouse_state.held & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R)) {
+                inpreccam_yaw   += mouse_state.x_diff * 50 * camVelRSpeed;
+                inpreccam_pitch -= mouse_state.y_diff * 50 * camVelRSpeed;
+            }
         }
-        if (mouse_state.held & MOUSEBTN_MASK_R) {
-            freezecamYaw   += mouse_state.x_diff * 20 * camVelRSpeed;
-            freezecamPitch += mouse_state.y_diff * 20 * camVelRSpeed;
+        else {
+            Vec3f offset;
+            vec3f_set(offset, 0, 0, 0);
+            if (mouse_state.held & MOUSEBTN_MASK_L) {
+                offset[0] += sins(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
+                offset[2] += coss(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
+                offset[1] += coss(freezecamPitch) * mouse_state.y_diff * camVelSpeed;
+                offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
+                offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
+            }
+            if (mouse_state.held & MOUSEBTN_MASK_R) {
+                freezecamYaw   += mouse_state.x_diff * 20 * camVelRSpeed;
+                freezecamPitch += mouse_state.y_diff * 20 * camVelRSpeed;
+            }
+            vec3f_add(freezecamPos, offset);
         }
-        vec3f_add(freezecamPos, offset);
     }
-    vec3f_set_dist_and_angle(freezecamPos, freezecamPos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, freezecamPitch, freezecamYaw);
+    if (saturn_actor_is_recording_input()) {
+        inpreccam_distfrommario += mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier;
+        MarioActor* actor = saturn_get_actor(recording_mario_actor);
+        if (actor != nullptr) {
+            InputRecordingFrame last = actor->input_recording[actor->input_recording.size() - 1];
+            vec3f_set(inpreccam_focus, last.x, last.y + 80, last.z);
+            vec3f_set_dist_and_angle(inpreccam_focus, inpreccam_pos, inpreccam_distfrommario, inpreccam_pitch, inpreccam_yaw);
+        }
+    }
+    else vec3f_set_dist_and_angle(freezecamPos, freezecamPos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, freezecamPitch, freezecamYaw);
     mouse_state.scrollwheel = 0;
 
     if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
     if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;
 
     if (gCamera) {
-        vec3f_copy(gCamera->pos, freezecamPos);
-        vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
+        if (saturn_actor_is_recording_input()) {
+            vec3f_copy(gCamera->pos, inpreccam_pos);
+            vec3f_copy(gCamera->focus, inpreccam_focus);
+        }
+        else {
+            vec3f_copy(gCamera->pos, freezecamPos);
+            vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
+        }
         vec3f_copy(gLakituState.pos, gCamera->pos);
         vec3f_copy(gLakituState.focus, gCamera->focus);
         vec3f_copy(gLakituState.goalPos, gCamera->pos);
