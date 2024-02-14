@@ -100,6 +100,8 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
 // Update models
 //
 
+std::map<SysPath, GfxData*> gfxdata = {};
+
 void DynOS_Gfx_Update() {
     if (gObjectLists) {
 
@@ -110,50 +112,15 @@ void DynOS_Gfx_Update() {
                 MarioActor* _Actor = saturn_get_actor(_Object->oMarioActorIndex);
                 if (_Actor == nullptr) continue;
 
-                // Check packs
-                Array<bool> _Enabled;
                 const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
-                for (s32 i = 0; i != pDynosPacks.Count(); ++i) {
-                    _Enabled.Add(_Actor->selected_model == i);
-                }
 
-                if (_Object->header.gfx.sharedChild) {
-                    
-                    // Actor index
-                    s32 _ActorIndex = DynOS_Geo_GetActorIndex(_Object->header.gfx.sharedChild->georef);
-                    if (_ActorIndex != -1) {
-                        
-                        // Replace the object's model and animations
-                        ActorGfx *_ActorGfx = &DynOS_Gfx_GetActorList()[_ActorIndex];
-                        for (s32 i = 0; i != pDynosPacks.Count(); ++i) {
-
-                            // If enabled and no pack is selected
-                            // load the pack's model and replace the default actor's model
-                            if (_Enabled[i] && _ActorGfx->mPackIndex == -1) {
-
-                                // Load Gfx data from binary
-                                GfxData *_GfxData = DynOS_Gfx_LoadFromBinary(pDynosPacks[i]->mPath, DynOS_Geo_GetActorName(_ActorIndex));
-                                if (_GfxData) {
-                                    _ActorGfx->mPackIndex = i;
-                                    _ActorGfx->mGfxData   = _GfxData;
-                                    _ActorGfx->mGraphNode = (GraphNode *) DynOS_Geo_GetGraphNode((*(_GfxData->mGeoLayouts.end() - 1))->mData, true);
-                                    _ActorGfx->mGraphNode->georef = DynOS_Geo_GetActorLayout(_ActorIndex);
-                                    break;
-                                }
-                            }
-
-                            // If disabled and this pack is the one selected
-                            // replace the actor's model by the default one
-                            else if (!_Enabled[i] && _ActorGfx->mPackIndex == i) {
-                                _ActorGfx->mPackIndex = -1;
-                                _ActorGfx->mGfxData   = NULL;
-                                _ActorGfx->mGraphNode = (GraphNode *) DynOS_Geo_GetGraphNode(DynOS_Geo_GetActorLayout(_ActorIndex), true);
-                            }
-                        }
-
-                        // Update object
-                        _Object->header.gfx.sharedChild = _ActorGfx->mGraphNode;
+                if (_Object->header.gfx.sharedChild && _Actor->selected_model != -1) {
+                    if (gfxdata.find(pDynosPacks[_Actor->selected_model]->mPath) == gfxdata.end()) {
+                        GfxData* _GfxData = DynOS_Gfx_LoadFromBinary(pDynosPacks[_Actor->selected_model]->mPath, "mario_geo");
+                        gfxdata.insert({ pDynosPacks[_Actor->selected_model]->mPath, _GfxData });
                     }
+                    GfxData* _GfxData = gfxdata[pDynosPacks[_Actor->selected_model]->mPath];
+                    _Object->header.gfx.sharedChild = (GraphNode*)DynOS_Geo_GetGraphNode((*(_GfxData->mGeoLayouts.end() - 1))->mData, true);
                 }
             }
         }
