@@ -279,10 +279,8 @@ void ssettings_imgui_update() {
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Editor")) {
-                ImGui::Text("Animation");
-                SaturnKeyBind("Play", configKeyPlayAnim, "bPlayA", 3*24);
-                ImGui::SameLine(); imgui_bundled_help_marker("Press again to pause the playing animation.");
-                SaturnKeyBind("Loop", configKeyLoopAnim, "bLoopA", 3*25);
+                ImGui::Text("Input Recording");
+                SaturnKeyBind("Stop", configKeyStopInpRec, "bStopInpRec", 3*26);
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();

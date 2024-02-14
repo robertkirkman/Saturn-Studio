@@ -207,12 +207,8 @@ void saturn_update() {
 
     if (mario_exists) {
         if (!saturn_disable_sm64_input()) {
-            if (gPlayer1Controller->buttonPressed & L_JPAD) {
-                if (!is_anim_playing) {
-                    anim_play_button();
-                } else {
-                    is_anim_paused = !is_anim_paused;
-                }
+            if (gPlayer1Controller->buttonPressed & D_JPAD) {
+                saturn_actor_stop_recording();
             }
         }
     }

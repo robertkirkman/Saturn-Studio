@@ -49,6 +49,7 @@ extern unsigned int configRumbleStrength;
 extern unsigned int configKeyFreeze[];
 extern unsigned int configKeyPlayAnim[];
 extern unsigned int configKeyLoopAnim[];
+extern unsigned int configKeyStopInpRec[];
 #ifdef EXTERNAL_DATA
 extern bool         configPrecacheRes;
 #endif

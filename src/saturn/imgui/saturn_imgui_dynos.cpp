@@ -1,5 +1,6 @@
 #include "saturn_imgui_dynos.h"
 
+#include "saturn/imgui/saturn_imgui_settings.h"
 #include "saturn/libs/portable-file-dialogs.h"
 
 #include <algorithm>
@@ -313,7 +314,7 @@ void sdynos_imgui_menu(int index) {
         }
         ImGui::SameLine();
         ImGui::BeginDisabled();
-        ImGui::Text("F10 to stop");
+        ImGui::Text("%s to stop", translate_bind_to_name(configKeyStopInpRec[0]));
         ImGui::EndDisabled();
         ImGui::Separator();
         if (empty) ImGui::BeginDisabled();

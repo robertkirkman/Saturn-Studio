@@ -654,10 +654,6 @@ void saturn_imgui_handle_events(SDL_Event * event) {
             if(event->key.keysym.sym == SDLK_F6) {
                 k_popout_open = !k_popout_open;
             }
-
-            if(event->key.keysym.sym == SDLK_F10 && saturn_actor_is_recording_input()) {
-                saturn_actor_stop_recording();
-            }
         
         break;
     }
