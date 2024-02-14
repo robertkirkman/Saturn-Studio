@@ -371,7 +371,8 @@ void saturn_update() {
         }
     }
     if (saturn_actor_is_recording_input()) {
-        inpreccam_distfrommario += mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier;
+        inpreccam_distfrommario -= mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier;
+        if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
         MarioActor* actor = saturn_get_actor(recording_mario_actor);
         if (actor != nullptr) {
             InputRecordingFrame last = actor->input_recording[actor->input_recording.size() - 1];
