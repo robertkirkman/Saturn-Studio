@@ -311,6 +311,7 @@ void sdynos_imgui_menu(int index) {
         if (empty) ImGui::Text("No recording made");
         if (ImGui::Button("Record")) {
             saturn_actor_start_recording(index);
+            ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
         ImGui::BeginDisabled();
