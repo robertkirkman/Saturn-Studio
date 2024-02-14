@@ -1103,6 +1103,11 @@ void saturn_imgui_update() {
             int i = 0;
             MarioActor* actor = gMarioActorList;
             while (actor) {
+                if (!actor->exists) {
+                    actor = actor->next;
+                    i++;
+                    continue;
+                }
                 float dist = sqrtf(
                     (actor->x - gCamera->pos[0]) * (actor->x - gCamera->pos[0]) +
                     (actor->y - gCamera->pos[1]) * (actor->y - gCamera->pos[1]) +
@@ -1115,7 +1120,7 @@ void saturn_imgui_update() {
                 actor = actor->next;
                 i++;
             }
-            if (nearest_index != -1) saturn_imgui_open_mario_menu(i);
+            if (nearest_index != -1) saturn_imgui_open_mario_menu(nearest_index);
         }
         ImGui::Separator();
         ImGui::InputTextWithHint("###mariosearch", ICON_FK_SEARCH " Search...", mario_search_prompt, 256);
