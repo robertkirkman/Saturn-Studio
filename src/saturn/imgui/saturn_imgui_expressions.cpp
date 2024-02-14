@@ -197,7 +197,7 @@ void OpenExpressionSelector(MarioActor* actor) {
     if (!actor->model.Active) return;
     if (actor->model.Expressions.size() > 1) {
         // Other Expressions
-        if (actor->model.Expressions.size() > 8) ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), false, ImGuiChildFlags_AlwaysAutoResize );
+        if (actor->model.Expressions.size() > 8) ImGui::BeginChild(("###menu_exp_model"), ImVec2(200, 190), false);
         for (int i = 0; i < actor->model.Expressions.size(); i++) {
             Expression expression = actor->model.Expressions[i];
             if (expression.Name == "eyes") continue;
