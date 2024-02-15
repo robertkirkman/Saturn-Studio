@@ -275,7 +275,7 @@ s32 act_top_of_pole_transition(struct MarioState *m) {
         }
     }
 
-    set_pole_position(m, return_mario_anim_y_translation(m));
+    set_pole_position(m, 0);
     return FALSE;
 }
 
@@ -292,7 +292,7 @@ s32 act_top_of_pole(struct MarioState *m) {
     m->faceAngle[1] -= m->controller->stickX * 16.0f;
 
     set_mario_animation(m, MARIO_ANIM_HANDSTAND_IDLE);
-    set_pole_position(m, return_mario_anim_y_translation(m));
+    set_pole_position(m, 0);
     return FALSE;
 }
 

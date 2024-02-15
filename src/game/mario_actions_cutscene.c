@@ -1,5 +1,6 @@
 #include <PR/ultratypes.h>
 
+#include "mario_animation_ids.h"
 #include "prevent_bss_reordering.h"
 #include "sm64.h"
 #include "area.h"
@@ -952,7 +953,6 @@ s32 act_going_through_door(struct MarioState *m) {
     m->pos[0] = m->usedObj->oPosX;
     m->pos[2] = m->usedObj->oPosZ;
 
-    update_mario_pos_for_anim(m);
     stop_and_set_height_to_floor(m);
 
     if (m->actionArg & 4) {
@@ -961,9 +961,11 @@ s32 act_going_through_door(struct MarioState *m) {
         }
     } else {
         if (is_anim_at_end(m)) {
+            update_mario_pos_for_anim(m);
             if (m->actionArg & 2) {
                 m->faceAngle[1] += 0x8000;
             }
+            set_mario_animation(m, MARIO_ANIM_FIRST_PERSON);
             set_mario_action(m, ACT_IDLE, 0);
         }
     }
