@@ -22,7 +22,7 @@ std::map<std::string, std::vector<std::string>> kf_switch_names = {
 };
 
 #define MARIO_ENTRY(var) (void*)offsetof(MarioActor, var)
-#define ARR_ENTRY(arr, index) (void*)(offsetof(MarioActor, arr) + index * sizeof(((MarioActor*)0)->arr))
+#define ARR_ENTRY(arr, index) (void*)(offsetof(MarioActor, arr) + index * sizeof(*((MarioActor*)0)->arr))
 #define CC_ENTRY(index) ARR_ENTRY(colorcode, index)
 #define BONE_ENTRY(index) ARR_ENTRY(bones, index)
 
