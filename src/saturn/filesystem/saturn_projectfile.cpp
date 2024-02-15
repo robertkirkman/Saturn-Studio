@@ -115,6 +115,8 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     actor->cap_state = saturn_format_read_int32(stream);
     actor->hand_state = saturn_format_read_int32(stream);
     actor->powerup_state = saturn_format_read_int32(stream);
+    actor->input_recording_frame = saturn_format_read_int32(stream);
+    actor->playback_input = saturn_format_read_bool(stream);
     actor->cc_index = saturn_format_read_int32(stream);
     actor->show_emblem = saturn_format_read_bool(stream);
     actor->spinning = saturn_format_read_bool(stream);
@@ -151,6 +153,12 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
         actor->bones[i][0] = saturn_format_read_float(stream);
         actor->bones[i][1] = saturn_format_read_float(stream);
         actor->bones[i][2] = saturn_format_read_float(stream);
+    }
+    int numFrames = saturn_format_read_int32(stream);
+    for (int i = 0; i < numFrames; i++) {
+        InputRecordingFrame frame;
+        saturn_format_read_any(stream, &frame, sizeof(InputRecordingFrame));
+        actor->input_recording.push_back(frame);
     }
     return true;
 }
@@ -275,6 +283,8 @@ void saturn_save_project(char* filename) {
         saturn_format_write_int32(stream, actor->hand_state);
         saturn_format_write_int32(stream, actor->powerup_state);
         saturn_format_write_int32(stream, actor->cc_index);
+        saturn_format_write_int32(stream, actor->input_recording_frame);
+        saturn_format_write_bool(stream, actor->playback_input);
         saturn_format_write_bool(stream, actor->show_emblem);
         saturn_format_write_bool(stream, actor->spinning);
         saturn_format_write_bool(stream, actor->cc_support);
@@ -300,6 +310,8 @@ void saturn_save_project(char* filename) {
             saturn_format_write_float(stream, actor->bones[i][1]);
             saturn_format_write_float(stream, actor->bones[i][2]);
         }
+        saturn_format_write_int32(stream, actor->input_recording.size());
+        saturn_format_write_any(stream, actor->input_recording.data(), sizeof(InputRecordingFrame) * actor->input_recording.size());
         saturn_format_close_section(stream);
         actor = actor->next;
     }
