@@ -6,6 +6,7 @@
 #include <map>
 #include <fstream>
 
+#include "game/area.h"
 #include "saturn/libs/imgui/imgui.h"
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
@@ -85,7 +86,7 @@ s16 levelList[] = {
     LEVEL_TTC, LEVEL_WMOTR, LEVEL_RR, LEVEL_BITS
 };
 int areaList[] = {
-    1, 1, 3, 1, 1,
+    2, 1, 3, 1, 1,
     1, 1, 1, 2, 2,
     1, 1, 1, 1, 2,
     2, 1, 2, 1,
@@ -163,15 +164,17 @@ void smachinima_imgui_controls(SDL_Event * event) {
 }
 
 void warp_to_level(int level, int area, int act = -1) {
+    s32 levelID = levelList[level];
+    s32 warpnode = 0x0A;
+
+    if (gCurrLevelNum == levelID && gCurrAreaIndex == area) return;
+
     is_anim_playing = false;
     is_anim_paused = false;
     time_freeze_state = 0;
 
     if (level != 0) enable_shadows = true;
     else enable_shadows = false;
-
-    s32 levelID = levelList[level];
-    s32 warpnode = 0x0A;
 
     switch (level) {
         case 1:
@@ -194,6 +197,8 @@ void warp_to_level(int level, int area, int act = -1) {
 
     if (act == -1) warp_to(levelID, area, warpnode);
     else DynOS_Warp_ToWarpNode(levelID, area, act, warpnode);
+
+    saturn_clear_actors();
 }
 
 int get_saturn_level_id(int level) {

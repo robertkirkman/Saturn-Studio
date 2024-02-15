@@ -1252,8 +1252,6 @@ s32 init_level(void) {
         sound_banks_disable(2, 0x0330);
     }
 
-    saturn_clear_actors();
-
     return 1;
 }
 

@@ -91,6 +91,7 @@ void saturn_remove_actor(int index) {
     if (!actorptr->exists) return;
     actorptr->exists = false;
     delete_mario_actor_timelines(index);
+    actorptr->marioObj->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
     obj_mark_for_deletion(actorptr->marioObj);
 }
 
@@ -125,6 +126,7 @@ void saturn_clear_actors() {
     int i = 0;
     while (actor) {
         delete_mario_actor_timelines(i++);
+        actor->marioObj->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
         obj_mark_for_deletion(actor->marioObj);
         actor->exists = false;
         actor = actor->next;
