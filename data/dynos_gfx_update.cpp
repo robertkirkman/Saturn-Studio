@@ -114,13 +114,18 @@ void DynOS_Gfx_Update() {
 
                 const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
 
-                if (_Object->header.gfx.sharedChild && _Actor->selected_model != -1) {
-                    if (gfxdata.find(pDynosPacks[_Actor->selected_model]->mPath) == gfxdata.end()) {
-                        GfxData* _GfxData = DynOS_Gfx_LoadFromBinary(pDynosPacks[_Actor->selected_model]->mPath, "mario_geo");
-                        gfxdata.insert({ pDynosPacks[_Actor->selected_model]->mPath, _GfxData });
+                if (_Object->header.gfx.sharedChild) {
+                    if (_Object->header.gfx.sharedChild && _Actor->selected_model != -1) {
+                        if (gfxdata.find(pDynosPacks[_Actor->selected_model]->mPath) == gfxdata.end()) {
+                            GfxData* _GfxData = DynOS_Gfx_LoadFromBinary(pDynosPacks[_Actor->selected_model]->mPath, "mario_geo");
+                            gfxdata.insert({ pDynosPacks[_Actor->selected_model]->mPath, _GfxData });
+                        }
+                        GfxData* _GfxData = gfxdata[pDynosPacks[_Actor->selected_model]->mPath];
+                        _Object->header.gfx.sharedChild = (GraphNode*)DynOS_Geo_GetGraphNode((*(_GfxData->mGeoLayouts.end() - 1))->mData, true);
                     }
-                    GfxData* _GfxData = gfxdata[pDynosPacks[_Actor->selected_model]->mPath];
-                    _Object->header.gfx.sharedChild = (GraphNode*)DynOS_Geo_GetGraphNode((*(_GfxData->mGeoLayouts.end() - 1))->mData, true);
+                    else {
+                        _Object->header.gfx.sharedChild = gLoadedGraphNodes[MODEL_MARIO];
+                    }
                 }
             }
         }
