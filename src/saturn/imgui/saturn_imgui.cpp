@@ -1204,6 +1204,11 @@ void saturn_imgui_update() {
 #endif
 #endif
                 if (is_recording) {
+                    ImGui::SameLine(450); ImGui::Text(ICON_FK_SKATE " Walkpoint");
+                    ImGui::PushItemWidth(100);
+                    ImGui::SameLine(534); ImGui::SliderFloat("###run_speed", &run_speed, 0.f, 127.f, "%.0f");
+                    ImGui::PopItemWidth();
+                    imgui_bundled_tooltip("Controls the axis range for Mario's running input; Can be used to force walking (36) or tiptoe (25) animations.");
                     ImGui::SameLine(ImGui::GetWindowWidth() - 126);
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.00f, 0.00f, 1.00f));
                     ImGui::Text(ICON_FK_CIRCLE);

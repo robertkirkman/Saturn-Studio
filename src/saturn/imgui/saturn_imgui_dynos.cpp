@@ -436,9 +436,6 @@ void sdynos_imgui_menu(int index) {
             imgui_bundled_tooltip("Displays dust particles when Mario moves.");
             ImGui::Checkbox("Torso Rotations", &enable_torso_rotation);
             imgui_bundled_tooltip("Tilts Mario's torso when he moves; Disable for a \"beta running\" effect.");
-            ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::Text(ICON_FK_SKATE " Walkpoint");
-            ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::SliderFloat("###run_speed", &run_speed, 0.f, 127.f, "%.0f");
-            imgui_bundled_tooltip("Controls the axis range for Mario's running input; Can be used to force walking (36) or tiptoe (25) animations.");
             ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::Text("Shadow Scale");
             ImGui::Dummy(ImVec2(0, 0)); ImGui::SameLine(25); ImGui::SliderFloat("###shadow_scale", &actor->shadow_scale, 0.f, 2.f);
             saturn_keyframe_popout("k_shadow_scale");
