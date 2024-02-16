@@ -26,8 +26,15 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 
 * Left click to spawn a new Mario
 * Right click him to modify his properties (or use the Marios menu incase it doesn't work)
-* Hold left click to pan the camera
-* Hold right click to rotate it
-* Use the scrollwheel to zoom in and out
-* Hold left shift to zoom slower
-* Hold left ctrl to zoom faster
+* Mouse based camera controls
+  * Hold left click to pan the camera
+  * Hold right click to rotate it
+  * Use the scrollwheel to zoom in and out
+  * Hold left shift to zoom slower
+  * Hold left ctrl to zoom faster
+* Keyboard based camera controls
+  * WSAD to move, W and S is forward and backward respectively
+  * Holding P makes the W and S keys up and down respectively
+  * Holding O makes the camera rotate instead
+  * Left shift to move slower
+  * Left ctrl to move faster
