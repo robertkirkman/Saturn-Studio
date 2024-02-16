@@ -9,6 +9,7 @@
 #include <map>
 #include <SDL2/SDL.h>
 
+#include "PR/os_cont.h"
 #include "data/dynos.cpp.h"
 #include "engine/math_util.h"
 #include "saturn/imgui/saturn_imgui.h"
@@ -350,6 +351,14 @@ void saturn_update() {
         move_y = mouse_state.y_diff;
         pan = mouse_state.held & MOUSEBTN_MASK_L;
         rotate = mouse_state.held & MOUSEBTN_MASK_R;
+        if (saturn_actor_is_recording_input()) {
+            move_x *= 64;
+            move_y *= 64;
+        }
+        else if (rotate) {
+            move_x *= 24;
+            move_y *= 24;
+        }
     }
     else if (!saturn_actor_is_recording_input()) {
         const Uint8* kb = SDL_GetKeyboardState(NULL);
@@ -377,6 +386,13 @@ void saturn_update() {
         move_y *= modif;
         zoom *= modif;
     }
+    else {
+        rotate = true;
+        if (gPlayer1Controller->buttonDown & U_CBUTTONS) move_y -= 1200;
+        if (gPlayer1Controller->buttonDown & D_CBUTTONS) move_y += 1200;
+        if (gPlayer1Controller->buttonDown & L_CBUTTONS) move_x -= 1200;
+        if (gPlayer1Controller->buttonDown & R_CBUTTONS) move_x += 1200;
+    }
     mouse_state.scrollwheel = 0;
 
     if (saturn_actor_is_recording_input()) {
@@ -384,7 +400,7 @@ void saturn_update() {
             inpreccam_yaw   += move_x * camVelRSpeed;
             inpreccam_pitch -= move_y * camVelRSpeed;
         }
-        inpreccam_distfrommario -= zoom;
+        inpreccam_distfrommario -= zoom * 50;
         if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
         MarioActor* actor = saturn_get_actor(recording_mario_actor);
         if (actor != nullptr) {
