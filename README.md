@@ -21,3 +21,13 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 - [x] Recording transparent .webm videos (or .png sequences) directly in the editor
 - [x] Capturing transparent screenshots
 - [x] Mouse-based camera controls
+
+### Controls
+
+* Left click to spawn a new Mario
+* Right click him to modify his properties (or use the Marios menu incase it doesn't work)
+* Hold left click to pan the camera
+* Hold right click to rotate it
+* Use the scrollwheel to zoom in and out
+* Hold left shift to zoom slower
+* Hold left ctrl to zoom faster
