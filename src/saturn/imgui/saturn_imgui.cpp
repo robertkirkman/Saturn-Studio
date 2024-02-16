@@ -1127,10 +1127,17 @@ void saturn_imgui_update() {
         MarioActor* actor = gMarioActorList;
         int i = 0;
         while (actor) {
-            if (actor->exists)
-            if (case_insensitive_contains(actor->name, mario_search_prompt))
-            if (ImGui::Selectable(actor->name)) {
-                saturn_imgui_open_mario_menu(i);
+            if (actor->exists && case_insensitive_contains(actor->name, mario_search_prompt)) {
+                std::string name = actor->name;
+                bool unnamed = name.empty();
+                if (unnamed) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+                    name = "[Unnamed]";
+                }
+                if (ImGui::Selectable(name.c_str())) {
+                    saturn_imgui_open_mario_menu(i);
+                }
+                if (unnamed) ImGui::PopStyleColor();
             }
             actor = actor->next;
             i++;
