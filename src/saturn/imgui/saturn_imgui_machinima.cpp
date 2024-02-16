@@ -644,7 +644,7 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
             if (saturn_file_browser_show("animations")) {
                 if (sampling) {
                     sampling_anim_loaded = true;
-                    std::ifstream stream = std::ifstream(saturn_file_browser_get_selected());
+                    std::ifstream stream = std::ifstream(current_anim_dir_path / saturn_file_browser_get_selected());
                     Json::Value value;
                     value << stream;
                     auto [ length, values, indices ] = read_bone_data(value);
