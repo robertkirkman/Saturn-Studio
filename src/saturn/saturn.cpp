@@ -346,7 +346,7 @@ void saturn_update() {
     int move_x = 0, move_y = 0;
     bool pan = false, rotate = false;
     f32 zoom = mouse_state.scrollwheel;
-    if (mouse_state.update_camera) {
+    if (mouse_state.update_camera && (mouse_state.x_diff != 0 || mouse_state.y_diff != 0)) {
         move_x = mouse_state.x_diff;
         move_y = mouse_state.y_diff;
         pan = mouse_state.held & MOUSEBTN_MASK_L;
@@ -379,8 +379,8 @@ void saturn_update() {
         if (kb[SDL_SCANCODE_D]) move_x--;
 
         int modif = 60;
-        if (kb[SDL_SCANCODE_LSHIFT]) modif *= 4;
-        if (kb[SDL_SCANCODE_LCTRL]) modif /= 4;
+        if (kb[SDL_SCANCODE_LSHIFT]) modif /= 4;
+        if (kb[SDL_SCANCODE_LCTRL]) modif *= 4;
         if (rotate) modif *= 8;
         move_x *= modif;
         move_y *= modif;
