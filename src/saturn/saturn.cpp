@@ -256,11 +256,7 @@ void saturn_update() {
     if (!saturn_disable_sm64_input()) {
         cameraRollLeft  = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_V];
         cameraRollRight = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_B];
-        mouse_state.scrollwheel_modifier = 1.00f;
-        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LSHIFT]) mouse_state.scrollwheel_modifier = 0.25f;
-        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_LCTRL ]) mouse_state.scrollwheel_modifier = 2.00f;
     }
-    else mouse_state.scrollwheel_modifier = 1.f;
 
     if (!keyframe_playing && !camera_frozen) {
         gLakituState.focHSpeed = camera_focus * camera_savestate_mult * 0.8f;
@@ -346,32 +342,49 @@ void saturn_update() {
     // Camera
 
     f32 dist;
+    int move_x = 0, move_y = 0;
+    bool pan = false, rotate = false;
+    f32 zoom = mouse_state.scrollwheel;
     if (mouse_state.update_camera) {
-        if (saturn_actor_is_recording_input()) {
-            if (mouse_state.held & (MOUSEBTN_MASK_L | MOUSEBTN_MASK_R)) {
-                inpreccam_yaw   += mouse_state.x_diff * 50 * camVelRSpeed;
-                inpreccam_pitch -= mouse_state.y_diff * 50 * camVelRSpeed;
-            }
+        move_x = mouse_state.x_diff;
+        move_y = mouse_state.y_diff;
+        pan = mouse_state.held & MOUSEBTN_MASK_L;
+        rotate = mouse_state.held & MOUSEBTN_MASK_R;
+    }
+    else if (!saturn_actor_is_recording_input()) {
+        const Uint8* kb = SDL_GetKeyboardState(NULL);
+        rotate = kb[SDL_SCANCODE_O];
+        pan = !rotate;
+        bool up = kb[SDL_SCANCODE_P] || rotate;
+
+        if (up) {
+            if (kb[SDL_SCANCODE_W]) move_y++;
+            if (kb[SDL_SCANCODE_S]) move_y--;
         }
         else {
-            Vec3f offset;
-            vec3f_set(offset, 0, 0, 0);
-            if (mouse_state.held & MOUSEBTN_MASK_L) {
-                offset[0] += sins(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-                offset[2] += coss(freezecamYaw + atan2s(0, 127)) * mouse_state.x_diff * camVelSpeed;
-                offset[1] += coss(freezecamPitch) * mouse_state.y_diff * camVelSpeed;
-                offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
-                offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * mouse_state.y_diff * camVelSpeed;
-            }
-            if (mouse_state.held & MOUSEBTN_MASK_R) {
-                freezecamYaw   += mouse_state.x_diff * 20 * camVelRSpeed;
-                freezecamPitch += mouse_state.y_diff * 20 * camVelRSpeed;
-            }
-            vec3f_add(freezecamPos, offset);
+            if (kb[SDL_SCANCODE_W] || kb[SDL_SCANCODE_S]) zoom = 0;
+            if (kb[SDL_SCANCODE_W]) zoom++;
+            if (kb[SDL_SCANCODE_S]) zoom--;
         }
+        if (kb[SDL_SCANCODE_A]) move_x++;
+        if (kb[SDL_SCANCODE_D]) move_x--;
+
+        int modif = 60;
+        if (kb[SDL_SCANCODE_LSHIFT]) modif *= 4;
+        if (kb[SDL_SCANCODE_LCTRL]) modif /= 4;
+        if (rotate) modif *= 8;
+        move_x *= modif;
+        move_y *= modif;
+        zoom *= modif;
     }
+    mouse_state.scrollwheel = 0;
+
     if (saturn_actor_is_recording_input()) {
-        inpreccam_distfrommario -= mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier;
+        if (pan || rotate) {
+            inpreccam_yaw   += move_x * camVelRSpeed;
+            inpreccam_pitch -= move_y * camVelRSpeed;
+        }
+        inpreccam_distfrommario -= zoom;
         if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
         MarioActor* actor = saturn_get_actor(recording_mario_actor);
         if (actor != nullptr) {
@@ -380,8 +393,23 @@ void saturn_update() {
             vec3f_set_dist_and_angle(inpreccam_focus, inpreccam_pos, inpreccam_distfrommario, inpreccam_pitch, inpreccam_yaw);
         }
     }
-    else vec3f_set_dist_and_angle(freezecamPos, freezecamPos, mouse_state.scrollwheel * 200 * mouse_state.scrollwheel_modifier * camVelSpeed, freezecamPitch, freezecamYaw);
-    mouse_state.scrollwheel = 0;
+    else {
+        Vec3f offset;
+        vec3f_set(offset, 0, 0, 0);
+        if (pan) {
+            offset[0] += sins(freezecamYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+            offset[2] += coss(freezecamYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+            offset[1] += coss(freezecamPitch) * move_y * camVelSpeed;
+            offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+            offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+        }
+        if (rotate) {
+            freezecamYaw   += move_x * camVelRSpeed;
+            freezecamPitch += move_y * camVelRSpeed;
+        }
+        vec3f_add(freezecamPos, offset);
+        vec3f_set_dist_and_angle(freezecamPos, freezecamPos, zoom * camVelSpeed, freezecamPitch, freezecamYaw);
+    }
 
     if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
     if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;

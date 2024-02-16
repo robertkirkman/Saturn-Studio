@@ -74,7 +74,6 @@ struct MouseState {
     float dist_travelled;
     bool update_camera;
     bool focused_on_game;
-    float scrollwheel_modifier;
 };
 
 extern bool using_chainer;
