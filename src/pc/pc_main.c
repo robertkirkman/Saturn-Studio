@@ -39,6 +39,7 @@
 #include "saturn/saturn.h"
 #include "saturn/discord/saturn_discord.h"
 #include "saturn/saturn_rom_extract.h"
+#include "saturn/imgui/saturn_imgui.h"
 
 #ifdef DISCORDRPC
 #include "pc/discord/discordrpc.h"
@@ -110,7 +111,10 @@ static inline void patch_interpolations(void) {
 void produce_one_frame(void) {
     gfx_start_frame();
 
-    const f32 master_mod = (f32)configMasterVolume / 127.0f;
+    f32 master_mod;
+    if (saturn_imgui_is_capturing_video()) master_mod = 0.f;
+    else master_mod = (f32)configMasterVolume / 127.0f;
+
     set_sequence_player_volume(SEQ_PLAYER_LEVEL, (f32)configMusicVolume / 127.0f * master_mod);
     set_sequence_player_volume(SEQ_PLAYER_SFX, (f32)configSfxVolume / 127.0f * master_mod);
     set_sequence_player_volume(SEQ_PLAYER_ENV, (f32)configEnvVolume / 127.0f * master_mod);
