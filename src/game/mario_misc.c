@@ -322,7 +322,7 @@ static Gfx *make_gfx_mario_alpha(struct GraphNodeGenerated *node, s16 alpha) {
         node->fnNode.node.flags = (node->fnNode.node.flags & 0xFF) | (LAYER_TRANSPARENT << 8);
         gfxHead = alloc_display_list(3 * sizeof(*gfxHead));
         gfx = gfxHead;
-        gDPSetAlphaCompare(gfx++, G_AC_DITHER);
+        if (!saturn_actor_is_hidden()) gDPSetAlphaCompare(gfx++, G_AC_DITHER);
     }
     gDPSetEnvColor(gfx++, 255, 255, 255, alpha);
     gSPEndDisplayList(gfx);
@@ -341,7 +341,7 @@ Gfx *geo_mirror_mario_set_alpha(s32 callContext, struct GraphNode *node, UNUSED 
     UNUSED u8 unused2[4];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        alpha = saturn_actor_get_alpha();
+        alpha = saturn_actor_is_hidden() ? 127 : saturn_actor_get_alpha();
         gfx = make_gfx_mario_alpha(asGenerated, alpha);
     }
     return gfx;
@@ -516,7 +516,9 @@ Gfx *geo_switch_mario_cap_effect(s32 callContext, struct GraphNode *node, UNUSED
     struct MarioBodyState *bodyState = &gBodyStates[switchCase->numCases];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        switchCase->selectedCase = saturn_actor_geo_switch(ACTOR_SWITCH_POWERUP);
+        int powerup = saturn_actor_geo_switch(ACTOR_SWITCH_POWERUP);
+        if (saturn_actor_is_hidden()) powerup |= 1;
+        switchCase->selectedCase = powerup;
     }
     return NULL;
 }

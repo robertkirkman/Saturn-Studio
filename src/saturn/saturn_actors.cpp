@@ -277,6 +277,13 @@ float saturn_actor_get_shadow_scale() {
     return actor->shadow_scale;
 }
 
+bool saturn_actor_is_hidden() {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) return false;
+    return actor->hidden;
+}
+
 void saturn_actor_bone_override_begin() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (o->behavior != bhvMarioActor) actor = nullptr;

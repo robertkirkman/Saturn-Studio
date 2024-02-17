@@ -45,6 +45,7 @@ public:
     int hand_state = 0;
     int powerup_state = 0;
     float alpha = 128;
+    bool hidden = false;
     float shadow_scale = 1.f;
     int selected_model = -1;
     int cc_index = 0;
@@ -97,6 +98,7 @@ extern "C" {
     float saturn_actor_get_alpha();
     bool saturn_actor_has_custom_anim_extra();
     float saturn_actor_get_shadow_scale();
+    bool saturn_actor_is_hidden();
     void saturn_actor_bone_override_begin();
     bool saturn_actor_bone_should_override();
     void saturn_actor_bone_iterate();

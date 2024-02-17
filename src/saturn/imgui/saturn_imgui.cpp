@@ -1097,6 +1097,20 @@ void saturn_imgui_update() {
             }
         }
         ImGui::PopStyleColor();
+        if (ImGui::Selectable(ICON_FK_EYE " Show all Marios")) {
+            MarioActor* actor = gMarioActorList;
+            while (actor) {
+                actor->hidden = false;
+                actor = actor->next;
+            }
+        }
+        if (ImGui::Selectable(ICON_FK_EYE_SLASH " Hide all Marios")) {
+            MarioActor* actor = gMarioActorList;
+            while (actor) {
+                actor->hidden = true;
+                actor = actor->next;
+            }
+        }
         if (ImGui::Selectable(ICON_FK_EYEDROPPER " Pick Nearest")) {
             float nearest_dist = 0x10000;
             int nearest_index = -1;

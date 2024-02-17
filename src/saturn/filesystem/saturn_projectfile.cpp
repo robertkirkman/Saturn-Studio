@@ -120,6 +120,7 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     actor->cc_index = saturn_format_read_int32(stream);
     actor->show_emblem = saturn_format_read_bool(stream);
     actor->spinning = saturn_format_read_bool(stream);
+    actor->hidden = saturn_format_read_bool(stream);
     actor->cc_support = saturn_format_read_bool(stream);
     actor->spark_support = saturn_format_read_bool(stream);
     actor->custom_eyes = saturn_format_read_bool(stream);
@@ -287,6 +288,7 @@ void saturn_save_project(char* filename) {
         saturn_format_write_bool(stream, actor->playback_input);
         saturn_format_write_bool(stream, actor->show_emblem);
         saturn_format_write_bool(stream, actor->spinning);
+        saturn_format_write_bool(stream, actor->hidden);
         saturn_format_write_bool(stream, actor->cc_support);
         saturn_format_write_bool(stream, actor->spark_support);
         saturn_format_write_bool(stream, actor->custom_eyes);

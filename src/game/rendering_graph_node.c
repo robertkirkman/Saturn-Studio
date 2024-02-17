@@ -1145,6 +1145,7 @@ static void geo_process_object(struct Object *node) {
 
     gCurrentObject = node;
 
+    if (saturn_imgui_is_capturing_video() && saturn_actor_is_hidden()) return;
     saturn_actor_bone_override_begin();
 
     if (node->header.gfx.unk18 == gCurGraphNodeRoot->areaIndex) {
