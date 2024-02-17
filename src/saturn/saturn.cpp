@@ -388,7 +388,7 @@ void saturn_update() {
         }
     }
 
-    if (!inprec) { // keyboard
+    if (!inprec && !saturn_disable_sm64_input()) { // keyboard
         bool rotate = kb[SDL_SCANCODE_O];
         bool pan = !rotate;
         bool up = kb[SDL_SCANCODE_P] || rotate;
