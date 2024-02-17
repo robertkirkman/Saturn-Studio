@@ -11,6 +11,7 @@
 #include "saturn/libs/imgui/imgui_impl_opengl3.h"
 #include "saturn/libs/imgui/imgui-knobs.h"
 #include "saturn/saturn.h"
+#include "saturn/saturn_actors.h"
 #include "saturn_imgui.h"
 #include <SDL2/SDL.h>
 
@@ -146,6 +147,7 @@ void ssettings_imgui_init() {
 int current_theme_id = 0;
 
 void ssettings_imgui_update() {
+    if (saturn_actor_is_recording_input()) ImGui::EndDisabled();
     std::vector<const char*> theme_names = {};
     for (int i = 0; i < theme_list.size(); i++) {
         auto& entry = theme_list[i];
@@ -281,6 +283,72 @@ void ssettings_imgui_update() {
             if (ImGui::BeginTabItem("Editor")) {
                 ImGui::Text("Input Recording");
                 SaturnKeyBind("Stop", configKeyStopInpRec, "bStopInpRec", 3*26);
+                ImGui::Text("Camera");
+                if (ImGui::TreeNode("Mouse")) {
+                    ImGui::Checkbox("X###1", &configCamCtrlMousePanInvX);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Y###2", &configCamCtrlMousePanInvY);
+                    ImGui::SameLine();
+                    ImGui::Text(" - Invert Pan");
+                    ImGui::Checkbox("X###3", &configCamCtrlMouseRotInvX);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Y###4", &configCamCtrlMouseRotInvY);
+                    ImGui::SameLine();
+                    ImGui::Text(" - Invert Rotation");
+                    ImGui::Checkbox("Invert Zoom###5", &configCamCtrlMouseZoomInv);
+                    ImGui::PushItemWidth(200);
+                    ImGui::SliderFloat("Pan Sensitivity###6", &configCamCtrlMousePanSens, 0, 2);
+                    ImGui::SliderFloat("Rotate Sensitivity###7", &configCamCtrlMouseRotSens, 0, 2);
+                    ImGui::SliderFloat("Zoom Sensitivity###8", &configCamCtrlMouseZoomSens, 0, 2);
+                    ImGui::PopItemWidth();
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Keyboard")) {
+                    ImGui::Checkbox("X###9", &configCamCtrlKeybPanInvX);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Y###10", &configCamCtrlKeybPanInvY);
+                    ImGui::SameLine();
+                    ImGui::Text(" - Invert Pan");
+                    ImGui::Checkbox("X###11", &configCamCtrlKeybRotInvX);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Y###12", &configCamCtrlKeybRotInvY);
+                    ImGui::SameLine();
+                    ImGui::Text(" - Invert Rotation");
+                    ImGui::Checkbox("Invert Zoom###13", &configCamCtrlKeybZoomInv);
+                    ImGui::PushItemWidth(200);
+                    ImGui::SliderFloat("Pan Sensitivity###14", &configCamCtrlKeybPanSens, 0, 2);
+                    ImGui::SliderFloat("Rotate Sensitivity###15", &configCamCtrlKeybRotSens, 0, 2);
+                    ImGui::SliderFloat("Zoom Sensitivity###16", &configCamCtrlKeybZoomSens, 0, 2);
+                    ImGui::PopItemWidth();
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Input Recording")) {
+                    if (ImGui::TreeNode("Mouse")) {
+                        ImGui::Checkbox("X###17", &configCamCtrlMouseInprecRotInvX);
+                        ImGui::SameLine();
+                        ImGui::Checkbox("Y###18", &configCamCtrlMouseInprecRotInvY);
+                        ImGui::SameLine();
+                        ImGui::Text(" - Invert Rotation");
+                        ImGui::Checkbox("Invert Zoom###19", &configCamCtrlMouseInprecZoomInv);
+                        ImGui::PushItemWidth(200);
+                        ImGui::SliderFloat("Rotate Sensitivity###20", &configCamCtrlMouseInprecRotSens, 0, 2);
+                        ImGui::SliderFloat("Zoom Sensitivity###21", &configCamCtrlMouseInprecZoomSens, 0, 2);
+                        ImGui::PopItemWidth();
+                        ImGui::TreePop();
+                    }
+                    if (ImGui::TreeNode("Keyboard")) {
+                        ImGui::Checkbox("X###22", &configCamCtrlKeybInprecRotInvX);
+                        ImGui::SameLine();
+                        ImGui::Checkbox("Y###23", &configCamCtrlKeybInprecRotInvY);
+                        ImGui::SameLine();
+                        ImGui::Text(" - Invert Rotation");
+                        ImGui::PushItemWidth(200);
+                        ImGui::SliderFloat("Rotate Sensitivity###24", &configCamCtrlKeybInprecSens, 0, 2);
+                        ImGui::PopItemWidth();
+                        ImGui::TreePop();
+                    }
+                    ImGui::TreePop();
+                }
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -327,4 +395,5 @@ void ssettings_imgui_update() {
         //ImGui::Checkbox("Always show chroma options", &configEditorAlwaysChroma);
         //imgui_bundled_tooltip("Allows the usage of CHROMA KEY features outside of the paired stage; Useful only for models and custom-compiled levels.");
     }
+    if (saturn_actor_is_recording_input()) ImGui::BeginDisabled();
 }

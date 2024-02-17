@@ -342,72 +342,101 @@ void saturn_update() {
 
     // Camera
 
+    // im sorry for this mess
     f32 dist;
-    float move_x = 0, move_y = 0;
-    float rotate_x = 0, rotate_y = 0;
-    f32 zoom = mouse_state.scrollwheel;
+    float   kmove_x = 0,   kmove_y = 0;
+    float krotate_x = 0, krotate_y = 0;
+    float kzoom = 0;
+    float   mmove_x = 0,   mmove_y = 0;
+    float mrotate_x = 0, mrotate_y = 0;
+    float mzoom = 0;
+    bool inprec = saturn_actor_is_recording_input();
+    const Uint8* kb = SDL_GetKeyboardState(NULL);
+
+#define inv(var) ((var) * -2 + 1)
+
+    float mzoom_modif = 200;
+    if (inprec) {
+        mzoom_modif = 50;
+        mzoom_modif *= configCamCtrlMouseInprecZoomSens * inv(configCamCtrlMouseInprecZoomInv);
+    }
+    else mzoom_modif *= configCamCtrlMouseZoomSens * inv(configCamCtrlMouseZoomInv);
+    if (kb[SDL_SCANCODE_LSHIFT]) mzoom_modif /= 4;
+    if (kb[SDL_SCANCODE_LCTRL]) mzoom_modif *= 4;
+    mzoom = mouse_state.scrollwheel * mzoom_modif;
+
     if (mouse_state.update_camera) { // mouse
         bool pan = mouse_state.held & MOUSEBTN_MASK_L;
         bool rotate = mouse_state.held & MOUSEBTN_MASK_R;
-        if (saturn_actor_is_recording_input()) { pan |= rotate; rotate = false; }
-        float *x = &move_x, *y = &move_y;
-        if (rotate) { x = &rotate_x; y = &rotate_y; }
+        if (inprec) { pan |= rotate; rotate = false; }
+        float *x = &mmove_x, *y = &mmove_y;
+        if (rotate) { x = &mrotate_x; y = &mrotate_y; }
         *x = mouse_state.x_diff;
         *y = mouse_state.y_diff;
-        if (saturn_actor_is_recording_input()) {
-            *x *= 64;
-            *y *= 64;
+        if (inprec) {
+            *x *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvX);
+            *y *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvY);
+            
         }
         else if (rotate) {
-            *x *= 24;
-            *y *= 24;
+            *x *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvX);
+            *y *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvY);
         }
         else {
-            *x /= 30.f;
-            *y /= 30.f;
+            *x *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvX);
+            *y *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvY);
         }
     }
-    if (!saturn_actor_is_recording_input()) { // keyboard
-        const Uint8* kb = SDL_GetKeyboardState(NULL);
+
+    if (!inprec) { // keyboard
         bool rotate = kb[SDL_SCANCODE_O];
         bool pan = !rotate;
         bool up = kb[SDL_SCANCODE_P] || rotate;
 
-        float *x = &move_x, *y = &move_y;
-        if (rotate) { x = &rotate_x; y = &rotate_y; }
+        float *x = &kmove_x, *y = &kmove_y;
+        if (rotate) { x = &krotate_x; y = &krotate_y; }
 
         if (up) {
             if (kb[SDL_SCANCODE_W]) (*y)++;
             if (kb[SDL_SCANCODE_S]) (*y)--;
         }
         else {
-            if (kb[SDL_SCANCODE_W] || kb[SDL_SCANCODE_S]) zoom = 0;
-            if (kb[SDL_SCANCODE_W]) zoom++;
-            if (kb[SDL_SCANCODE_S]) zoom--;
+            if (kb[SDL_SCANCODE_W] || kb[SDL_SCANCODE_S]) kzoom = 0;
+            if (kb[SDL_SCANCODE_W]) kzoom++;
+            if (kb[SDL_SCANCODE_S]) kzoom--;
         }
         if (kb[SDL_SCANCODE_A]) (*x)++;
         if (kb[SDL_SCANCODE_D]) (*x)--;
 
-        int modif = 60;
+        float modif = 60;
         if (kb[SDL_SCANCODE_LSHIFT]) modif /= 4;
         if (kb[SDL_SCANCODE_LCTRL]) modif *= 4;
         if (rotate) modif *= 8;
-        *x *= modif;
-        *y *= modif;
-        zoom *= modif;
+        *x *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvX : configCamCtrlKeybPanInvX);
+        *y *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvY : configCamCtrlKeybPanInvY);
+        kzoom *= modif * configCamCtrlKeybZoomSens * inv(configCamCtrlKeybZoomInv);
     }
+
     else { // input record cbuttons
-        if (gPlayer1Controller->buttonDown & U_CBUTTONS) move_y -= 1200;
-        if (gPlayer1Controller->buttonDown & D_CBUTTONS) move_y += 1200;
-        if (gPlayer1Controller->buttonDown & L_CBUTTONS) move_x -= 1200;
-        if (gPlayer1Controller->buttonDown & R_CBUTTONS) move_x += 1200;
+        float speed = 1200 * configCamCtrlKeybInprecSens;
+        if (gPlayer1Controller->buttonDown & U_CBUTTONS) kmove_y -= speed * inv(configCamCtrlKeybInprecRotInvY);
+        if (gPlayer1Controller->buttonDown & D_CBUTTONS) kmove_y += speed * inv(configCamCtrlKeybInprecRotInvY);
+        if (gPlayer1Controller->buttonDown & L_CBUTTONS) kmove_x -= speed * inv(configCamCtrlKeybInprecRotInvX);
+        if (gPlayer1Controller->buttonDown & R_CBUTTONS) kmove_x += speed * inv(configCamCtrlKeybInprecRotInvX);
     }
+#undef inv
     mouse_state.scrollwheel = 0;
 
-    if (saturn_actor_is_recording_input()) {
+    float move_x = kmove_x + mmove_x;
+    float move_y = kmove_y + mmove_y;
+    float rotate_x = krotate_x + mrotate_x;
+    float rotate_y = krotate_y + mrotate_y;
+    float zoom = kzoom + mzoom;
+
+    if (inprec) {
         inpreccam_yaw   += move_x * camVelRSpeed;
         inpreccam_pitch -= move_y * camVelRSpeed;
-        inpreccam_distfrommario -= zoom * 50;
+        inpreccam_distfrommario -= zoom;
         if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
         MarioActor* actor = saturn_get_actor(recording_mario_actor);
         if (actor != nullptr) {
@@ -434,7 +463,7 @@ void saturn_update() {
     if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;
 
     if (gCamera) {
-        if (saturn_actor_is_recording_input()) {
+        if (inprec) {
             vec3f_copy(gCamera->pos, inpreccam_pos);
             vec3f_copy(gCamera->focus, inpreccam_focus);
         }

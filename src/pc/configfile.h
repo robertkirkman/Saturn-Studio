@@ -94,6 +94,31 @@ extern bool         configDiscordRPC;
 #endif
 extern unsigned int configAutosaveDelay;
 
+extern float configCamCtrlMousePanSens;
+extern float configCamCtrlMouseRotSens;
+extern float configCamCtrlMouseZoomSens;
+extern float configCamCtrlKeybPanSens;
+extern float configCamCtrlKeybRotSens;
+extern float configCamCtrlKeybZoomSens;
+extern float configCamCtrlMouseInprecRotSens;
+extern float configCamCtrlMouseInprecZoomSens;
+extern float configCamCtrlKeybInprecSens;
+extern bool configCamCtrlMousePanInvX;
+extern bool configCamCtrlMousePanInvY;
+extern bool configCamCtrlMouseRotInvX;
+extern bool configCamCtrlMouseRotInvY;
+extern bool configCamCtrlMouseZoomInv;
+extern bool configCamCtrlKeybPanInvX;
+extern bool configCamCtrlKeybPanInvY;
+extern bool configCamCtrlKeybRotInvX;
+extern bool configCamCtrlKeybRotInvY;
+extern bool configCamCtrlKeybZoomInv;
+extern bool configCamCtrlMouseInprecRotInvX;
+extern bool configCamCtrlMouseInprecRotInvY;
+extern bool configCamCtrlMouseInprecZoomInv;
+extern bool configCamCtrlKeybInprecRotInvX;
+extern bool configCamCtrlKeybInprecRotInvY;
+
 void configfile_load(const char *filename);
 void configfile_save(const char *filename);
 const char *configfile_name(void);

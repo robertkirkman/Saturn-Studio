@@ -129,6 +129,31 @@ bool         configDiscordRPC    = false;
 #endif
 unsigned int configAutosaveDelay = 60; // seconds
 
+float configCamCtrlMousePanSens        = 1.f;
+float configCamCtrlMouseRotSens        = 1.f;
+float configCamCtrlMouseZoomSens       = 1.f;
+float configCamCtrlKeybPanSens         = 1.f;
+float configCamCtrlKeybRotSens         = 1.f;
+float configCamCtrlKeybZoomSens        = 1.f;
+float configCamCtrlMouseInprecRotSens  = 1.f;
+float configCamCtrlMouseInprecZoomSens = 1.f;
+float configCamCtrlKeybInprecSens      = 1.f;
+bool configCamCtrlMousePanInvX       = false;
+bool configCamCtrlMousePanInvY       = false;
+bool configCamCtrlMouseRotInvX       = false;
+bool configCamCtrlMouseRotInvY       = false;
+bool configCamCtrlMouseZoomInv       = false;
+bool configCamCtrlKeybPanInvX        = false;
+bool configCamCtrlKeybPanInvY        = false;
+bool configCamCtrlKeybRotInvX        = false;
+bool configCamCtrlKeybRotInvY        = false;
+bool configCamCtrlKeybZoomInv        = false;
+bool configCamCtrlMouseInprecRotInvX = false;
+bool configCamCtrlMouseInprecRotInvY = false;
+bool configCamCtrlMouseInprecZoomInv = false;
+bool configCamCtrlKeybInprecRotInvX  = false;
+bool configCamCtrlKeybInprecRotInvY  = false;
+
 static const struct ConfigOption options[] = {
     {.name = "fullscreen",           .type = CONFIG_TYPE_BOOL, .boolValue = &configWindow.fullscreen},
     {.name = "window_x",             .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.x},
@@ -208,6 +233,31 @@ static const struct ConfigOption options[] = {
     {.name = "discordrpc_enable",    .type = CONFIG_TYPE_BOOL, .boolValue = &configDiscordRPC},
     #endif 
     {.name = "autosave_delay",       .type = CONFIG_TYPE_UINT, .uintValue = &configAutosaveDelay},
+
+    {.name="camctrl_mouse_psens",        .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlMousePanSens},
+    {.name="camctrl_mouse_rsens",        .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlMouseRotSens},
+    {.name="camctrl_mouse_zsens",        .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlMouseZoomSens},
+    {.name="camctrl_keyb_psens",         .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlKeybPanSens},
+    {.name="camctrl_keyb_rsens",         .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlKeybRotSens},
+    {.name="camctrl_keyb_zsens",         .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlKeybZoomSens},
+    {.name="camctrl_mouse_inprec_rsens", .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlMouseInprecRotSens},
+    {.name="camctrl_mouse_inprec_zsens", .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlMouseInprecZoomSens},
+    {.name="camctrl_keyb_inprec_sens",   .type = CONFIG_TYPE_FLOAT, .floatValue = &configCamCtrlKeybInprecSens},
+    {.name="camctrl_mouse_pinvx",        .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMousePanInvX},
+    {.name="camctrl_mouse_pinvy",        .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMousePanInvY},
+    {.name="camctrl_mouse_rinvx",        .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseRotInvX},
+    {.name="camctrl_mouse_rinvy",        .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseRotInvY},
+    {.name="camctrl_mouse_zinv",         .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseZoomInv},
+    {.name="camctrl_keyb_pinvx",         .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybPanInvX},
+    {.name="camctrl_keyb_pinvy",         .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybPanInvY},
+    {.name="camctrl_keyb_rinvx",         .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybRotInvX},
+    {.name="camctrl_keyb_rinvy",         .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybRotInvY},
+    {.name="camctrl_keyb_zinv",          .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybZoomInv},
+    {.name="camctrl_mouse_inprec_rinvx", .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseInprecRotInvX},
+    {.name="camctrl_mouse_inprec_rinvy", .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseInprecRotInvY},
+    {.name="camctrl_mouse_inprec_zinv",  .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlMouseInprecZoomInv},
+    {.name="camctrl_keyb_inprec_rinvx",  .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybInprecRotInvX},
+    {.name="camctrl_keyb_inprec_rinvy",  .type = CONFIG_TYPE_BOOL,   .boolValue = &configCamCtrlKeybInprecRotInvY},
 };
 
 // Reads an entire line from a file (excluding the newline character) and returns an allocated string
