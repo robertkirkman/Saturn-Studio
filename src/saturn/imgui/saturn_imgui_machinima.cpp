@@ -189,14 +189,7 @@ void warp_to_level(int level, int area, int act = -1) {
             break;
     }
 
-    if (levelID != LEVEL_BOB && levelID != LEVEL_WF  && levelID != LEVEL_JRB &&
-        levelID != LEVEL_CCM && levelID != LEVEL_BBH && levelID != LEVEL_HMC &&
-        levelID != LEVEL_LLL && levelID != LEVEL_SSL && levelID != LEVEL_DDD &&
-        levelID != LEVEL_SL  && levelID != LEVEL_WDW && levelID != LEVEL_TTM &&
-        levelID != LEVEL_THI && levelID != LEVEL_TTC && levelID != LEVEL_RR  && levelID != LEVEL_SA) act = -1;
-
-    if (act == -1) warp_to(levelID, area, warpnode);
-    else DynOS_Warp_ToWarpNode(levelID, area, act, warpnode);
+    DynOS_Warp_ToWarpNode(levelID, area, act, warpnode);
 
     saturn_clear_actors();
 }

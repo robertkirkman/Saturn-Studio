@@ -103,6 +103,7 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     float y = saturn_format_read_float(stream);
     float z = saturn_format_read_float(stream);
     MarioActor* actor = saturn_spawn_actor(x, y, z);
+    memcpy(actor->name, name, 256);
     actor->angle = saturn_format_read_float(stream);
     actor->xScale = saturn_format_read_float(stream);
     actor->yScale = saturn_format_read_float(stream);
@@ -115,9 +116,9 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     actor->cap_state = saturn_format_read_int32(stream);
     actor->hand_state = saturn_format_read_int32(stream);
     actor->powerup_state = saturn_format_read_int32(stream);
+    actor->cc_index = saturn_format_read_int32(stream);
     actor->input_recording_frame = saturn_format_read_int32(stream);
     actor->playback_input = saturn_format_read_bool(stream);
-    actor->cc_index = saturn_format_read_int32(stream);
     actor->show_emblem = saturn_format_read_bool(stream);
     actor->spinning = saturn_format_read_bool(stream);
     actor->hidden = saturn_format_read_bool(stream);
@@ -205,6 +206,9 @@ void saturn_load_project(char* filename) {
         { "KFTL", saturn_project_keyframe_timeline_handler },
         { "LEVL", saturn_project_level_handler },
     });
+    for (auto& entry : k_frame_keys) {
+        saturn_keyframe_apply(entry.first, k_current_frame);
+    }
     std::cout << "Loaded project " << filename << std::endl;
 }
 
