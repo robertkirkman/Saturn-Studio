@@ -45,46 +45,26 @@ namespace fs = std::filesystem;
 bool custom_eyes_enabled;
 bool show_vmario_emblem;
 
-/* Loads subfolders into an expression */
-std::vector<TexturePath> LoadExpressionFolders(std::string FolderPath) {
-    std::vector<TexturePath> folders;
-
-    // Check if the expression's folder exists
-    if (fs::is_directory(fs::path(FolderPath))) {
-        for (const auto & entry : fs::directory_iterator(FolderPath)) {
-            if (fs::is_directory(entry.path())) {
-                // Only allow PNG files
-                TexturePath folder;
-                folder.FileName = entry.path().filename().generic_u8string();
-                folder.FilePath = entry.path().generic_u8string();
-                folders.push_back(folder);
-            }
-        }
-    }
-    return folders;
-}
-
 /* Loads textures into an expression */
 std::vector<TexturePath> LoadExpressionTextures(std::string FolderPath, Expression expression) {
     std::vector<TexturePath> textures;
 
     // Check if the expression's folder exists
     if (fs::is_directory(fs::path(FolderPath))) {
-        for (const auto & entry : fs::directory_iterator(FolderPath)) {
-            if (!fs::is_directory(entry.path())) {
-                if (entry.path().extension() == ".png") {
-                    // Only allow PNG files
-                    TexturePath texture;
-                    texture.FileName = entry.path().filename().generic_u8string();
-                    texture.FilePath = entry.path().generic_u8string();
-                    textures.push_back(texture);
-                }
+        for (const auto & entry : fs::recursive_directory_iterator(FolderPath)) {
+            if (fs::is_directory(entry.path())) continue;
+            if (entry.path().extension() == ".png") {
+                // Only allow PNG files
+                TexturePath texture;
+                texture.FileName = entry.path().filename().generic_u8string();
+                texture.FilePath = entry.path().generic_u8string();
+                textures.push_back(texture);
             }
         }
 
         // Attempt to add a default "model texture"
         // These are exposed saturn_ textures in the model's /mario/ folder
-        std::vector<TexturePath> model_textures;
+        /*std::vector<TexturePath> model_textures;
         fs::path MarioFolder = fs::path(FolderPath).parent_path().parent_path().append("mario");
         if (fs::is_directory(MarioFolder)) {
             for (const auto & entry : fs::directory_iterator(MarioFolder)) {
@@ -106,7 +86,7 @@ std::vector<TexturePath> LoadExpressionTextures(std::string FolderPath, Expressi
             }
 
             textures.insert(textures.end(), model_textures.begin(), model_textures.end());
-        }
+        }*/
     }
     return textures;
 }
@@ -128,7 +108,6 @@ std::vector<Expression> LoadExpressions(Model* model, std::string modelFolderPat
 
                 // Load all PNG files
                 expression.Textures = LoadExpressionTextures(expression.FolderPath, expression);
-                expression.Folders = LoadExpressionFolders(expression.FolderPath);
 
                 // Eyes will always appear first
                 if (expression.Name == "eyes") {
@@ -155,7 +134,6 @@ void LoadEyesFolder(Model* model) {
         VanillaEyes.Name = "eyes";
         VanillaEyes.FolderPath = "dynos/eyes";
         VanillaEyes.Textures = LoadExpressionTextures(VanillaEyes.FolderPath, VanillaEyes);
-        VanillaEyes.Folders = LoadExpressionFolders(VanillaEyes.FolderPath);
     }
     if (model->Expressions.size() == 0) model->Expressions.push_back(VanillaEyes);
     else if (model->UsingVanillaEyes()) model->Expressions[0] = VanillaEyes;

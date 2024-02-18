@@ -123,19 +123,19 @@ void saturn_file_browser_clear() {
     extension_filter = "";
 }
 
-bool saturn_file_browser_create_imgui(FileBrowserEntry dir, std::string path, std::string browser_id) {
+bool saturn_file_browser_create_imgui(FileBrowserEntry dir, std::string path, std::string browser_id, bool do_search) {
     bool clicked = false;
     for (FileBrowserEntry& entry : dir.dir()) {
         if (entry.is_dir()) {
             if (ImGui::TreeNode(entry.name().c_str())) {
-                clicked |= saturn_file_browser_create_imgui(entry, path + entry.name() + "/", browser_id);
+                clicked |= saturn_file_browser_create_imgui(entry, path + entry.name() + "/", browser_id, do_search);
                 ImGui::TreePop();
             }
         }
         else {
             std::string filename = entry.name();
             std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-            if (filename.find(search_terms[browser_id]) == std::string::npos) continue;
+            if (do_search) if (filename.find(search_terms[browser_id]) == std::string::npos) continue;
             std::string fullpath = path + entry.name();
             bool selected = selected_paths[browser_id] == fullpath;
             if (ImGui::Selectable(entry.name().c_str(), &selected)) {
@@ -165,14 +165,16 @@ bool saturn_file_browser_show(std::string id) {
     ImGui::SameLine();
     ImGui::InputTextWithHint(("###searchbar_file_browser_" + id).c_str(), ICON_FK_SEARCH " Search...", search_terms[id], 256);
     ImGui::BeginChild(("###file_browser_" + id).c_str(), ImVec2(0, browser_height), true);
-    bool result = saturn_file_browser_show_tree(id);
+    bool result = saturn_file_browser_create_imgui(root, "", id, true);
     ImGui::EndChild();
     saturn_file_browser_clear();
     return result;
 }
 
 bool saturn_file_browser_show_tree(std::string id) {
-    return saturn_file_browser_create_imgui(root, "", id);
+    bool result = saturn_file_browser_create_imgui(root, "", id, false);
+    saturn_file_browser_clear();
+    return result;
 }
 
 std::filesystem::path saturn_file_browser_get_selected() {

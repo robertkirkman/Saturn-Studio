@@ -149,7 +149,17 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
         actor->model.Expressions = LoadExpressions(&actor->model, actor->model.FolderPath);
     }
     for (int i = 0; i < actor->model.Expressions.size(); i++) {
-        actor->model.Expressions[i].CurrentIndex = saturn_format_read_int32(stream);
+        char expr[256];
+        saturn_format_read_string(stream, expr, 255);
+        actor->model.Expressions[i].CurrentIndex = 0;
+        for (int j = 0; j < actor->model.Expressions[i].Textures.size(); j++) {
+            std::filesystem::path path = actor->model.Expressions[i].Textures[j].FilePath;
+            std::filesystem::path base = actor->model.Expressions[i].FolderPath;
+            if (std::filesystem::relative(path, base) == expr) {
+                actor->model.Expressions[i].CurrentIndex = j;
+                break;
+            }
+        }
     }
     for (int i = 0; i < 20; i++) {
         actor->bones[i][0] = saturn_format_read_float(stream);
@@ -309,7 +319,9 @@ void saturn_save_project(char* filename) {
             }
         }
         for (int i = 0; i < actor->model.Expressions.size(); i++) {
-            saturn_format_write_int32(stream, actor->model.Expressions[i].CurrentIndex);
+            std::filesystem::path path = actor->model.Expressions[i].Textures[actor->model.Expressions[i].CurrentIndex].FilePath;
+            std::filesystem::path base = actor->model.Expressions[i].FolderPath;
+            saturn_format_write_string(stream, (char*)std::filesystem::relative(path, base).string().c_str());
         }
         for (int i = 0; i < 20; i++) {
             saturn_format_write_float(stream, actor->bones[i][0]);

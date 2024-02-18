@@ -3,6 +3,7 @@
 #include "saturn/libs/portable-file-dialogs.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 #include "GL/glew.h"
 
@@ -116,7 +117,6 @@ void ShowTextureContextMenu(Expression* expression, TexturePath texture, int id)
         // Refresh Textures
         if (ImGui::Button(ICON_FK_REFRESH " Refresh All###refresh_textures")) {
             expression->Textures = LoadExpressionTextures(expression->FolderPath, *expression);
-            expression->Folders = LoadExpressionFolders(expression->FolderPath);
             // We attempt to keep each currently-selected texture
             // If our index is out of bounds (e.g. PNG was deleted) reset it
             for (int i = 0; i < expression->Textures.size(); i++) {
@@ -131,67 +131,24 @@ void ShowTextureContextMenu(Expression* expression, TexturePath texture, int id)
     }
 }
 
-/* Recursively loads an Expression's folders and textures into a selection tree */
-void RecursiveSelector(Expression* expression, int depth, std::string parent_path, int id) {
-    // Regenerate folder contents
-    expression->Folders = LoadExpressionFolders(parent_path);
-    expression->Textures = LoadExpressionTextures(parent_path, *expression);
-
-    // Runs for all subfolders
-    for (int i = 0; i < expression->Folders.size(); i++) {
-        TexturePath Folder = expression->Folders[i];
-        // Only show folders in our current subfolder
-        if (Folder.ParentPath() == parent_path || Folder.ParentPath() == parent_path + "/") {
-            // Runs when the tree is open
-            if (ImGui::TreeNode(Folder.FileName.c_str())) {
-                if (ImGui::IsItemClicked())
-                    expression->CurrentIndex = 0;
-                // Repeat
-                RecursiveSelector(expression, depth + 1, Folder.FilePath, id);
-                ImGui::TreePop();
-            }
-        }
-    }
-
-    // Runs for all textures
-    if (expression->Textures.size() > 0) {
-        bool reachedEnd;
-        for (int i = 0; i < expression->Textures.size(); i++) {
-            TexturePath Texture = expression->Textures[i];
-            // Failsafe if the index was going out of bounds
-            if (expression->CurrentIndex > expression->Textures.size())
-                expression->CurrentIndex = 0;
-
-            // Only show textures in our current subfolder
-            if (Texture.ParentPath() == parent_path || Texture.ParentPath() == parent_path + "/" || Texture.IsModelTexture == true) {
-                std::string label = Texture.FileName;
-                // Optional model texture appears at the bottom of the list
-                if (Texture.IsModelTexture) {
-                    label = ICON_FK_FOLDER_OPEN_O " " + Texture.FileName;
-                    if (!reachedEnd) ImGui::Separator();
-                    reachedEnd = true;
-                }
-
-                if (ImGui::Selectable(label.c_str(), expression->CurrentIndex == i)) { 
-                    expression->CurrentIndex = i;
-                    active_expression_preview = 0;
-                }
-                ShowTextureContextMenu(expression, expression->Textures[i], i);
-            }
-        }
-    } else
-        // Subfolder of subfolders
-        expression->CurrentIndex = -1;
-}
-
 /* Creates a nested expression selection menu for a model; Contains dropdown OR checkbox widgets */
 void OpenExpressionSelector(MarioActor* actor) {
     if (!actor) return;
     if (actor->custom_eyes && actor->model.Expressions.size() > 0 && actor->model.CustomEyeSupport) {
         // Eye Selector
-        ImGui::BeginChild(("###menu_eye_%s", actor->model.Expressions[0].Name.c_str()), ImVec2(200, 150), true);
-        RecursiveSelector(&actor->model.Expressions[0], 0, actor->model.Expressions[0].FolderPath, 0);
-        ImGui::EndChild();
+        saturn_file_browser_filter_extension("png");
+        saturn_file_browser_scan_directory(actor->model.Expressions[0].FolderPath);
+        saturn_file_browser_height(150);
+        if (saturn_file_browser_show("eyes")) {
+            for (int i = 0; i < actor->model.Expressions[0].Textures.size(); i++) {
+                std::filesystem::path path = actor->model.Expressions[0].Textures[i].FilePath;
+                std::filesystem::path base = actor->model.Expressions[0].FolderPath;
+                if (std::filesystem::relative(path, base) == saturn_file_browser_get_selected()) {
+                    actor->model.Expressions[0].CurrentIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     if (!actor->model.Active) return;
@@ -227,10 +184,24 @@ void OpenExpressionSelector(MarioActor* actor) {
                 // Use dropdown
                 std::string defaultLabel = ((expression.Textures.size() > 0) ? expression.Textures[expression.CurrentIndex].FileName : expression.Name) + "###combo_" + expression.Name.c_str();
                 if (ImGui::BeginCombo(label_name.c_str(), defaultLabel.c_str(), ImGuiComboFlags_None)) {
-                    RecursiveSelector(&actor->model.Expressions[i], 0, expression.FolderPath, i);
+                    saturn_file_browser_filter_extension("png");
+                    saturn_file_browser_scan_directory(actor->model.Expressions[i].FolderPath);
+                    if (saturn_file_browser_show_tree("expr_" + std::to_string(i))) {
+                        for (int j = 0; j < actor->model.Expressions[i].Textures.size(); j++) {
+                            std::filesystem::path path = actor->model.Expressions[i].Textures[j].FilePath;
+                            std::filesystem::path base = actor->model.Expressions[i].FolderPath;
+                            if (std::filesystem::relative(path, base) == saturn_file_browser_get_selected()) {
+                                actor->model.Expressions[i].CurrentIndex = j;
+                                break;
+                            }
+                        }
+                    }
                     ImGui::EndCombo();
                 }
-                ShowTextureContextMenu(&actor->model.Expressions[i], actor->model.Expressions[i].Textures[expression.CurrentIndex], i);
+                
+                if (ImGui::IsItemHovered()) {
+                    ShowExpressionPreview(actor->model.Expressions[i].Textures[expression.CurrentIndex]);
+                }
             }
             ImGui::PopItemWidth();
         }

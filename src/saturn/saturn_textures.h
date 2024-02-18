@@ -38,7 +38,6 @@ public:
     std::string Name = "";
     std::string FolderPath = "";
     std::vector<TexturePath> Textures = {};
-    std::vector<TexturePath> Folders = {};
     /* The index of the current selected texture */
     int CurrentIndex = 0;
 
@@ -58,7 +57,6 @@ extern Expression VanillaEyes;
 extern void LoadEyesFolder(Model*);
 
 std::vector<TexturePath> LoadExpressionTextures(std::string, Expression);
-std::vector<TexturePath> LoadExpressionFolders(std::string);
 std::vector<Expression> LoadExpressions(Model*, std::string);
 
 void saturn_copy_file(std::string from, std::string to);
