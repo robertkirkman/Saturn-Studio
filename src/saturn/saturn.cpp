@@ -921,7 +921,12 @@ SDL_Texture* saturn_splash_screen_banner = nullptr;
 int saturn_splash_screen_banner_width = 0;
 int saturn_splash_screen_banner_height = 0;
 unsigned char saturn_splash_screen_banner_data[] = {
-#include "saturn_splash_screen_banner.h"
+#include "splashdata/overlay.h"
+};
+
+SDL_Texture* saturn_splash_screen_bg = nullptr;
+unsigned char saturn_splash_screen_bg_data[] = {
+#include "splashdata/background.h"
 };
 
 int load_delay = 2;
@@ -942,6 +947,13 @@ void saturn_splash_screen_init(SDL_Renderer* renderer) {
         saturn_splash_screen_banner_width = width;
         saturn_splash_screen_banner_height = height;
     }
+    if (saturn_splash_screen_bg == nullptr) {
+        int width, height;
+        unsigned char* image_data = stbi_load_from_memory(saturn_splash_screen_bg_data, sizeof(saturn_splash_screen_bg_data), &width, &height, nullptr, STBI_rgb_alpha);
+        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(image_data, width, height, 32, width * 4, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+        saturn_splash_screen_bg = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+    }
     memset(stars, 0, sizeof(Star) * NUM_STARS);
     for (int i = 0; i < NUM_STARS; i++) {
         stars[i] = (Star){ .x = rand() % STAR_WIDTH - STAR_WIDTH / 2, .y = rand() % STAR_HEIGHT - STAR_HEIGHT / 2, .z = (i + 1) * STAR_SPAWN_DISTANCE };
@@ -956,9 +968,13 @@ void saturn_splash_screen_update_stars() {
 }
 
 bool saturn_splash_screen_update(SDL_Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer, 64, 0, 64, 255);
-    SDL_Rect bg = (SDL_Rect){ .x = 0, .y = 0, .w = 640, .h = 360 };
-    SDL_RenderFillRect(renderer, &bg);
+    SDL_Rect rect = (SDL_Rect){
+        .x = 0,
+        .y = 0,
+        .w = 640,
+        .h = 360
+    };
+    SDL_RenderCopy(renderer, saturn_splash_screen_bg, &rect, &rect);
     saturn_splash_screen_update_stars();
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     for (int i = 0; i < NUM_STARS; i++) {
