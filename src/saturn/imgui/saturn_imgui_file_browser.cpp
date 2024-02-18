@@ -39,12 +39,13 @@ public:
 
 FileBrowserEntry root = FileBrowserEntry("root", true, nullptr);
 FileBrowserEntry* curr = &root;
-int browser_height = 75;
+int browser_height = 150;
 std::filesystem::path selected_path;
 std::string extension_filter = "";
 std::map<std::string, char*> search_terms = {};
 std::map<std::string, std::string> selected_paths = {};
 std::map<std::filesystem::path, FileBrowserEntry*> scanned_paths = {};
+std::filesystem::path last_scanned_path;
 
 void saturn_file_browser_item(std::string item) {
     curr->add_file(item);
@@ -88,6 +89,7 @@ void saturn_file_browser_scan_directory_internal(std::filesystem::path dir, bool
 }
 
 void saturn_file_browser_scan_directory(std::filesystem::path dir, bool recursive) {
+    last_scanned_path = dir;
     FileBrowserEntry* entry;
     if (scanned_paths.find(dir) != scanned_paths.end()) entry = scanned_paths[dir];
     else {
@@ -117,7 +119,7 @@ void saturn_file_browser_height(int height) {
 
 void saturn_file_browser_clear() {
     root.clear();
-    browser_height = 75;
+    browser_height = 150;
     extension_filter = "";
 }
 
@@ -154,12 +156,23 @@ bool saturn_file_browser_show(std::string id) {
         search[0] = 0;
         search_terms.insert({ id, search });
     }
+    if (ImGui::Button(((ICON_FK_REFRESH "###refresh_file_browser_") + id).c_str())) {
+        if (scanned_paths.find(last_scanned_path) != scanned_paths.end()) {
+            free(scanned_paths[last_scanned_path]);
+            scanned_paths.erase(last_scanned_path);
+        }
+    }
+    ImGui::SameLine();
     ImGui::InputTextWithHint(("###searchbar_file_browser_" + id).c_str(), ICON_FK_SEARCH " Search...", search_terms[id], 256);
     ImGui::BeginChild(("###file_browser_" + id).c_str(), ImVec2(0, browser_height), true);
-    bool result = saturn_file_browser_create_imgui(root, "", id);
+    bool result = saturn_file_browser_show_tree(id);
     ImGui::EndChild();
     saturn_file_browser_clear();
     return result;
+}
+
+bool saturn_file_browser_show_tree(std::string id) {
+    return saturn_file_browser_create_imgui(root, "", id);
 }
 
 std::filesystem::path saturn_file_browser_get_selected() {
