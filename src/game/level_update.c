@@ -35,6 +35,8 @@
 #include "pc/pc_main.h"
 #include "pc/cliopts.h"
 #include "pc/configfile.h"
+#include "object_helpers.h"
+#include "behavior_data.h"
 
 #include "saturn/saturn.h"
 
@@ -1251,6 +1253,8 @@ s32 init_level(void) {
     if (gMarioState->action == ACT_INTRO_CUTSCENE) {
         sound_banks_disable(2, 0x0330);
     }
+
+    saturn_camera_object = spawn_object(gMarioState->marioObj, MODEL_CAMERA, bhvCamera);
 
     return 1;
 }

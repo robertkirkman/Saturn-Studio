@@ -138,6 +138,8 @@ f32 mario_headrot_yaw = 0;
 f32 mario_headrot_pitch = 0;
 f32 mario_headrot_speed = 10.0f;
 
+struct Object* saturn_camera_object = nullptr;
+
 extern "C" {
 #include "game/camera.h"
 #include "game/area.h"
@@ -301,9 +303,10 @@ void saturn_update() {
             vec3f_set(gCamera->pos, 0.f, 192.f, 264.f);
             vec3f_set(gCamera->focus, 0.f, 181.f, 28.f);
             vec3f_copy(freezecamPos, gCamera->pos);
+            vec3f_copy(cameraPos, freezecamPos);
             vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
-            freezecamYaw = (float)yaw;
-            freezecamPitch = (float)pitch;
+            freezecamYaw = cameraYaw = (float)yaw;
+            freezecamPitch = cameraPitch = (float)pitch;
             vec3f_copy(gLakituState.pos, gCamera->pos);
             vec3f_copy(gLakituState.focus, gCamera->focus);
             vec3f_copy(gLakituState.goalPos, gCamera->pos);
@@ -446,17 +449,29 @@ void saturn_update() {
         }
     }
     else {
+        Vec3f *camPos;
+        float *camYaw, *camPitch;
+        if (gIsCameraMounted) {
+            camPos = &freezecamPos;
+            camYaw = &freezecamYaw;
+            camPitch = &freezecamPitch;
+        }
+        else {
+            camPos = &cameraPos;
+            camYaw = &cameraYaw;
+            camPitch = &cameraPitch;
+        }
         Vec3f offset;
         vec3f_set(offset, 0, 0, 0);
-        offset[0] += sins(freezecamYaw + atan2s(0, 127)) * move_x * camVelSpeed;
-        offset[2] += coss(freezecamYaw + atan2s(0, 127)) * move_x * camVelSpeed;
-        offset[1] += coss(freezecamPitch) * move_y * camVelSpeed;
-        offset[0] += sins(freezecamPitch) * coss(freezecamYaw + atan2s(0, 127)) * move_y * camVelSpeed;
-        offset[2] -= sins(freezecamPitch) * sins(freezecamYaw + atan2s(0, 127)) * move_y * camVelSpeed;
-        freezecamYaw   += rotate_x * camVelRSpeed;
-        freezecamPitch += rotate_y * camVelRSpeed;
-        vec3f_add(freezecamPos, offset);
-        vec3f_set_dist_and_angle(freezecamPos, freezecamPos, zoom * camVelSpeed, freezecamPitch, freezecamYaw);
+        offset[0] += sins(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+        offset[2] += coss(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+        offset[1] += coss(*camPitch) * move_y * camVelSpeed;
+        offset[0] += sins(*camPitch) * coss(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+        offset[2] -= sins(*camPitch) * sins(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+        *camYaw   += rotate_x * camVelRSpeed;
+        *camPitch += rotate_y * camVelRSpeed;
+        vec3f_add(*camPos, offset);
+        vec3f_set_dist_and_angle(*camPos, *camPos, zoom * camVelSpeed, *camPitch, *camYaw);
     }
 
     if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
@@ -468,8 +483,14 @@ void saturn_update() {
             vec3f_copy(gCamera->focus, inpreccam_focus);
         }
         else {
-            vec3f_copy(gCamera->pos, freezecamPos);
-            vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
+            if (saturn_imgui_is_capturing_video() || gIsCameraMounted) {
+                vec3f_copy(gCamera->pos, freezecamPos);
+                vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, freezecamPitch, freezecamYaw);
+            }
+            else {
+                vec3f_copy(gCamera->pos, cameraPos);
+                vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, cameraPitch, cameraYaw);
+            }
         }
         vec3f_copy(gLakituState.pos, gCamera->pos);
         vec3f_copy(gLakituState.focus, gCamera->focus);
@@ -477,7 +498,21 @@ void saturn_update() {
         vec3f_copy(gLakituState.goalFocus, gCamera->focus);
         gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
         gLakituState.yaw = gCamera->yaw;
-        gLakituState.roll = freezecamRoll;
+        gLakituState.roll = 0;
+
+        saturn_camera_object->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
+        if (saturn_imgui_is_capturing_video()) gLakituState.roll = freezecamRoll;
+        else if (gIsCameraMounted) {
+            vec3f_copy(cameraPos, freezecamPos);
+            cameraYaw = freezecamYaw;
+            cameraPitch = freezecamPitch;
+            gLakituState.roll = freezecamRoll;
+        }
+        else {
+            saturn_camera_object->header.gfx.node.flags &= ~GRAPH_RENDER_INVISIBLE;
+            vec3f_copy(saturn_camera_object->header.gfx.pos, freezecamPos);
+            vec3s_set(saturn_camera_object->header.gfx.angle, freezecamPitch, freezecamYaw + 0x8000, freezecamRoll);
+        }
     }
 
     // Animations

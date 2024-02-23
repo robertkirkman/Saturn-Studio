@@ -6121,3 +6121,10 @@ const BehaviorScript bhvMarioActor[] = {
         CALL_NATIVE(bhv_mario_actor_loop),
     END_LOOP(),
 };
+
+const BehaviorScript bhvCamera[] = {
+    BEGIN(OBJ_LIST_DEFAULT),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_camera_update),
+    END_LOOP(),
+};

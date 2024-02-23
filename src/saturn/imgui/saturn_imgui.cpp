@@ -947,6 +947,14 @@ void saturn_imgui_update() {
         if (ImGui::CollapsingHeader("Camera")) {
             windowCcEditor = false;
 
+            if (ImGui::Checkbox("Mount Camera", (bool*)&gIsCameraMounted)) {
+                if (gIsCameraMounted) {
+                    vec3f_copy(cameraPos, freezecamPos);
+                    cameraYaw = freezecamYaw;
+                    cameraPitch = freezecamPitch;
+                }
+            }
+
             if (camera_frozen) {
                 saturn_keyframe_popout_next_line({ "k_c_camera_pos0", "k_c_camera_pos1", "k_c_camera_pos2", "k_c_camera_yaw", "k_c_camera_pitch", "k_c_camera_roll" });
 
@@ -1185,10 +1193,10 @@ void saturn_imgui_update() {
                 float dist;
                 s16 pitch, yaw;
                 vec3f_set(mpos, actor->x, actor->y + 100, actor->z);
-                vec3f_set_dist_and_angle(mpos, freezecamPos, 200, 0, actor->angle);
-                vec3f_get_dist_and_angle(freezecamPos, mpos, &dist, &pitch, &yaw);
-                freezecamPitch = pitch;
-                freezecamYaw = yaw;
+                vec3f_set_dist_and_angle(mpos, cameraPos, 200, 0, actor->angle);
+                vec3f_get_dist_and_angle(cameraPos, mpos, &dist, &pitch, &yaw);
+                cameraPitch = pitch;
+                cameraYaw = yaw;
             }
             sdynos_imgui_menu(mario_menu_index);
             ImGui::EndPopup();

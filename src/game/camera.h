@@ -810,4 +810,10 @@ extern float freezecamYaw;
 extern float freezecamPitch;
 extern float freezecamRoll;
 
+extern Vec3f cameraPos;
+extern float cameraYaw;
+extern float cameraPitch;
+
+extern u8 gIsCameraMounted;
+
 #endif // CAMERA_H

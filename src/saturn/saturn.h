@@ -123,6 +123,8 @@ extern float extraction_progress;
 
 extern struct MouseState mouse_state;
 
+extern struct Object* saturn_camera_object;
+
 #ifdef __cplusplus
 #include <string>
 #include <vector>

@@ -1,0 +1,10 @@
+extern const GeoLayout camera_geo[];
+extern Vtx camera_camera_Root_mesh_layer_1_mesh_mesh_layer_1_vtx_0[60];
+extern Gfx camera_camera_Root_mesh_layer_1_mesh_mesh_layer_1_tri_0[];
+extern Vtx camera_camera_Icosphere_001_mesh_layer_1_mesh_mesh_layer_1_vtx_0[12];
+extern Gfx camera_camera_Icosphere_001_mesh_layer_1_mesh_mesh_layer_1_tri_0[];
+extern Gfx mat_camera_f3dlite_material_001[];
+extern Gfx mat_camera_f3dlite_material_002[];
+extern Gfx mat_revert_camera_f3dlite_material_002[];
+extern Gfx camera_camera_Root_mesh_layer_1_mesh_mesh_layer_1[];
+extern Gfx camera_camera_Icosphere_001_mesh_layer_1_mesh_mesh_layer_1[];

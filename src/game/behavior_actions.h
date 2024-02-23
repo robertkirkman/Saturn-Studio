@@ -551,6 +551,7 @@ void bhv_intro_scene_loop(void);
 void bhv_dust_smoke_loop(void);
 void bhv_yoshi_loop(void);
 void bhv_volcano_trap_loop(void);
+void bhv_camera_update(void);
 
 Gfx *geo_move_mario_part_from_parent(s32 run, UNUSED struct GraphNode *node, Mat4 mtx);
 
@@ -571,6 +572,8 @@ Gfx *geo_snufit_scale_body(s32 callContext, struct GraphNode *node, UNUSED Mat4 
 
 // Bowser key cutscene
 Gfx *geo_scale_bowser_key(s32 run, struct GraphNode *node, UNUSED f32 mtx[4][4]);
+
+Gfx* geo_camera_scale(s32 callContext, struct GraphNode *node, UNUSED Mat4 *c);
 
 // Water splash
 extern struct WaterDropletParams gShallowWaterSplashDropletParams;
