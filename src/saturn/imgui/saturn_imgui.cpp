@@ -940,10 +940,7 @@ void saturn_imgui_update() {
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
         if (ImGui::Selectable(ICON_FK_TRASH " Delete all Marios")) {
-            int actors = saturn_actor_sizeof();
-            for (int i = 0; i < actors; i++) {
-                saturn_remove_actor(0);
-            }
+            saturn_clear_actors();
         }
         ImGui::PopStyleColor();
 
@@ -1091,10 +1088,7 @@ void saturn_imgui_update() {
     if (ImGui::Begin("Marios")) {
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
         if (ImGui::Selectable(ICON_FK_TRASH " Delete all Marios")) {
-            int actors = saturn_actor_sizeof();
-            for (int i = 0; i < actors; i++) {
-                saturn_remove_actor(0);
-            }
+            saturn_clear_actors();
         }
         ImGui::PopStyleColor();
         if (ImGui::Selectable(ICON_FK_EYE " Show all Marios")) {
