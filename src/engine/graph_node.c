@@ -281,7 +281,7 @@ struct GraphNodeRotation *init_graph_node_rotation(struct AllocOnlyPool *pool,
  */
 struct GraphNodeScale *init_graph_node_scale(struct AllocOnlyPool *pool,
                                              struct GraphNodeScale *graphNode, s32 drawingLayer,
-                                             void *displayList, f32 scale) {
+                                             void *displayList, f32 x, f32 y, f32 z) {
     if (pool != NULL) {
         graphNode = alloc_only_pool_alloc(pool, sizeof(struct GraphNodeScale));
     }
@@ -289,7 +289,7 @@ struct GraphNodeScale *init_graph_node_scale(struct AllocOnlyPool *pool,
     if (graphNode != NULL) {
         init_scene_graph_node_links(&graphNode->node, GRAPH_NODE_TYPE_SCALE);
         graphNode->node.flags = (drawingLayer << 8) | (graphNode->node.flags & 0xFF);
-        graphNode->scale = scale;
+        vec3f_set(graphNode->scale, x, y, z);
         graphNode->displayList = displayList;
     }
 
@@ -402,6 +402,22 @@ struct GraphNodeBillboard *init_graph_node_billboard(struct AllocOnlyPool *pool,
         vec3s_copy(graphNode->translation, translation);
         graphNode->node.flags = (drawingLayer << 8) | (graphNode->node.flags & 0xFF);
         graphNode->displayList = displayList;
+    }
+
+    return graphNode;
+}
+
+/**
+ * Allocates and returns a newly created billboard node
+ */
+struct GraphNodeWireframe *init_graph_node_wireframe(struct AllocOnlyPool *pool,
+                                                     struct GraphNodeWireframe *graphNode) {
+    if (pool != NULL) {
+        graphNode = alloc_only_pool_alloc(pool, sizeof(struct GraphNodeWireframe));
+    }
+
+    if (graphNode != NULL) {
+        init_scene_graph_node_links(&graphNode->node, GRAPH_NODE_TYPE_WIREFRAME);
     }
 
     return graphNode;

@@ -1,6 +1,7 @@
 #include <PR/ultratypes.h>
 
 #include "area.h"
+#include "engine/graph_node.h"
 #include "engine/math_util.h"
 #include "game_init.h"
 #include "gfx_dimensions.h"
@@ -568,13 +569,11 @@ static void geo_process_rotation(struct GraphNodeRotation *node) {
  */
 static void geo_process_scale(struct GraphNodeScale *node) {
     UNUSED Mat4 transform;
-    Vec3f scaleVec;
     Mtx *mtx = alloc_display_list(sizeof(*mtx));
     Mtx *mtxInterpolated = alloc_display_list(sizeof(*mtxInterpolated));
 
-    vec3f_set(scaleVec, node->scale, node->scale, node->scale);
-    mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex], scaleVec);
-    mtxf_scale_vec3f(gMatStackInterpolated[gMatStackIndex + 1], gMatStackInterpolated[gMatStackIndex], scaleVec);
+    mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex], node->scale);
+    mtxf_scale_vec3f(gMatStackInterpolated[gMatStackIndex + 1], gMatStackInterpolated[gMatStackIndex], node->scale);
     gMatStackIndex++;
     mtxf_to_mtx(mtx, gMatStack[gMatStackIndex]);
     gMatStackFixed[gMatStackIndex] = mtx;
@@ -629,6 +628,22 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
         geo_process_node_and_siblings(node->node.children);
     }
     gMatStackIndex--;
+}
+
+static void geo_process_wireframe(struct GraphNodeWireframe* node) {
+    Gfx* gfxStart = alloc_display_list(sizeof(Gfx) * 2);
+    Gfx* gfxEnd   = alloc_display_list(sizeof(Gfx) * 2);
+    Gfx* gfxStartHead = gfxStart;
+    Gfx* gfxEndHead   = gfxEnd;
+    gSPWireframe(gfxStartHead++, TRUE);
+    gSPEndDisplayList(gfxStartHead++);
+    geo_append_display_list(gfxStart, LAYER_OPAQUE);
+    if (node->node.children != NULL) {
+        geo_process_node_and_siblings(node->node.children);
+    }
+    gSPWireframe(gfxEndHead++, FALSE);
+    gSPEndDisplayList(gfxEndHead++);
+    geo_append_display_list(gfxEnd, LAYER_OPAQUE);
 }
 
 static Gfx* create_object_dl(Gfx* dl) {
@@ -957,7 +972,7 @@ static void geo_process_shadow(struct GraphNodeShadow *node) {
                 || gCurAnimType == ANIM_TYPE_LATERAL_TRANSLATION) {
                 geo = node->node.children;
                 if (geo != NULL && geo->type == GRAPH_NODE_TYPE_SCALE) {
-                    objScale = ((struct GraphNodeScale *) geo)->scale;
+                    objScale = ((struct GraphNodeScale *) geo)->scale[0];
                 }
                 animOffset[0] =
                     gCurAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
@@ -1450,6 +1465,9 @@ void geo_process_node_and_siblings(struct GraphNode *firstNode) {
                         break;
                     case GRAPH_NODE_TYPE_SCALE:
                         geo_process_scale((struct GraphNodeScale *) curGraphNode);
+                        break;
+                    case GRAPH_NODE_TYPE_WIREFRAME:
+                        geo_process_wireframe((struct GraphNodeWireframe*)curGraphNode);
                         break;
                     case GRAPH_NODE_TYPE_SHADOW:
                         geo_process_shadow((struct GraphNodeShadow *) curGraphNode);

@@ -46,6 +46,7 @@
 #define GRAPH_NODE_TYPE_BACKGROUND           (0x02C | GRAPH_NODE_TYPE_FUNCTIONAL)
 #define GRAPH_NODE_TYPE_HELD_OBJ             (0x02E | GRAPH_NODE_TYPE_FUNCTIONAL)
 #define GRAPH_NODE_TYPE_CULLING_RADIUS        0x02F
+#define GRAPH_NODE_TYPE_WIREFRAME             0x030
 
 // The number of master lists. A master list determines the order and render
 // mode with which display lists are drawn.
@@ -266,6 +267,11 @@ struct GraphNodeBillboard
     /*0x18*/ Vec3s translation;
 };
 
+struct GraphNodeWireframe
+{
+    /*0x00*/ struct GraphNode node;
+};
+
 /** A GraphNode that simply draws a display list without doing any
  *  transformation beforehand. It does inherit the parent's transformation.
  */
@@ -287,7 +293,7 @@ struct GraphNodeScale
 {
     /*0x00*/ struct GraphNode node;
     /*0x14*/ void *displayList;
-    /*0x18*/ f32 scale;
+    /*0x18*/ Vec3f scale;
 };
 
 /** GraphNode that draws a shadow under an object.
@@ -401,7 +407,7 @@ struct GraphNodeTranslation *init_graph_node_translation(struct AllocOnlyPool *p
 struct GraphNodeRotation *init_graph_node_rotation(struct AllocOnlyPool *pool, struct GraphNodeRotation *graphNode,
                                                    s32 drawingLayer, void *displayList, Vec3s rotation);
 struct GraphNodeScale *init_graph_node_scale(struct AllocOnlyPool *pool, struct GraphNodeScale *graphNode,
-                                             s32 drawingLayer, void *displayList, f32 scale);
+                                             s32 drawingLayer, void *displayList, f32 x, f32 y, f32 z);
 struct GraphNodeObject *init_graph_node_object(struct AllocOnlyPool *pool, struct GraphNodeObject *graphNode,
                                                struct GraphNode *sharedChild, Vec3f pos, Vec3s angle, Vec3f scale);
 struct GraphNodeCullingRadius *init_graph_node_culling_radius(struct AllocOnlyPool *pool, struct GraphNodeCullingRadius *graphNode, s16 radius);
@@ -411,6 +417,7 @@ struct GraphNodeAnimatedPart *init_graph_node_mcomp_extra(struct AllocOnlyPool *
                                                             s32 drawingLayer, void *displayList, Vec3s translation);
 struct GraphNodeBillboard *init_graph_node_billboard(struct AllocOnlyPool *pool, struct GraphNodeBillboard *graphNode,
                                                      s32 drawingLayer, void *displayList, Vec3s translation);
+struct GraphNodeWireframe *init_graph_node_wireframe(struct AllocOnlyPool *pool, struct GraphNodeWireframe *graphNode);
 struct GraphNodeDisplayList *init_graph_node_display_list(struct AllocOnlyPool *pool, struct GraphNodeDisplayList *graphNode,
                                                           s32 drawingLayer, void *displayList);
 struct GraphNodeShadow *init_graph_node_shadow(struct AllocOnlyPool *pool, struct GraphNodeShadow *graphNode,

@@ -494,16 +494,17 @@ Gfx *geo_mario_hand_foot_scaler(s32 callContext, struct GraphNode *node, UNUSED 
     struct MarioBodyState *bodyState = &gBodyStates[0];
 
     if (callContext == GEO_CONTEXT_RENDER) {
-        scaleNode->scale = 1.0f;
+        f32 scale = 1.0f;
         if (asGenerated->parameter == bodyState->punchState >> 6) {
             if (sMarioAttackAnimCounter != gAreaUpdateCounter && (bodyState->punchState & 0x3F) > 0) {
                 bodyState->punchState -= 1;
                 sMarioAttackAnimCounter = gAreaUpdateCounter;
             }
-            scaleNode->scale =
+            scale =
                 gMarioAttackScaleAnimation[asGenerated->parameter * 6 + (bodyState->punchState & 0x3F)]
                 / 10.0f;
         }
+        vec3f_set(scaleNode->scale, scale, scale, scale);
     }
     return NULL;
 }

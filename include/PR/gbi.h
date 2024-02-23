@@ -127,6 +127,7 @@
 #define G_QUAD			0x07
 #define G_LINE3D		0x08
 #define G_SETOBJ        0x09
+#define G_WIREFRAME     0x0A
 #else   /* F3DEX_GBI_2 */
 
 /* DMA commands: */
@@ -2889,6 +2890,13 @@ typedef union {
 	Gfx* _g = (Gfx*)(pkt);                  \
 	_g->words.w0 = _SHIFTL(G_SETOBJ, 24, 8); \
 	_g->words.w1 = (uintptr_t)(obj);          \
+}
+
+#define gSPWireframe(pkt, enable)            \
+{                                             \
+	Gfx* _g = (Gfx*)(pkt);                     \
+	_g->words.w0 = _SHIFTL(G_WIREFRAME, 24, 8); \
+	_g->words.w1 = (enable);                     \
 }
 
 #ifdef	F3DEX_GBI_2

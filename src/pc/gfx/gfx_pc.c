@@ -1287,6 +1287,12 @@ static void gfx_sp_texture(uint16_t sc, uint16_t tc, uint8_t level, uint8_t tile
     rsp.texture_scaling_factor.t = tc;
 }
 
+extern bool enableWireframe;
+
+static void gfx_sp_set_wireframe(uint8_t enable) {
+    enableWireframe = enable;
+}
+
 static void gfx_dp_set_scissor(uint32_t mode, uint32_t ulx, uint32_t uly, uint32_t lrx, uint32_t lry) {
     float x = ulx / 4.0f * RATIO_X;
     float y = (SCREEN_HEIGHT - lry / 4.0f) * RATIO_Y;
@@ -1741,6 +1747,10 @@ static void gfx_run_dl(Gfx* cmd) {
 #else
                 gfx_sp_set_other_mode(C0(8, 8) + 32, C0(0, 8), (uint64_t) cmd->words.w1 << 32);
 #endif
+                break;
+            case G_WIREFRAME:
+                gfx_flush();
+                gfx_sp_set_wireframe(cmd->words.w1);
                 break;
             
             // RDP Commands:
