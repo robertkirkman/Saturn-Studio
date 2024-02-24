@@ -1521,6 +1521,8 @@ static void ParseGeoSymbol(GfxData* aGfxData, DataNode<GeoLayout>* aNode, GeoLay
     geo_symbol_0(GEO_NOP_1E);
     geo_symbol_0(GEO_NOP_1F);
     geo_symbol_1(GEO_CULLING_RADIUS, 0);
+    geo_symbol_0(GEO_WIREFRAME);
+    geo_symbol_4(GEO_SCALE_XYZ, 0);
 
     // Switch node
     if (_Symbol == "GEO_SWITCH_CASE") {

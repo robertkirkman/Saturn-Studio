@@ -424,18 +424,21 @@
  *   0x04: u32 scale (0x10000 = 1.0)
  *   0x08: [u32 displayList: if MSbit of params is set, display list segment address]
  */
-#define GEO_SCALE_XYZ(layer, x, y, z) \
+#define GEO_SCALE(layer, scale) \
     CMD_BBH(0x1D, layer, 0x0000), \
-    CMD_W(x), \
-    CMD_W(y), \
-    CMD_W(z)
-#define GEO_SCALE(layer, scale) GEO_SCALE_XYZ(layer, scale, scale, scale)
+    CMD_W(scale)
 #define GEO_SCALE_WITH_DL(layer, scale, displayList) \
     CMD_BBH(0x1D, (layer | 0x80), 0x0000), \
     CMD_W(scale), \
     CMD_W(scale), \
     CMD_W(scale), \
     CMD_PTR(displayList)
+
+#define GEO_SCALE_XYZ(layer, x, y, z) \
+    CMD_BBH(0x25, layer, 0x0000), \
+    CMD_W(x), \
+    CMD_W(y), \
+    CMD_W(z)
 
 /**
  * 0x1E: No operation

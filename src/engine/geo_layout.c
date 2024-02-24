@@ -49,6 +49,7 @@ GeoLayoutCommandProc GeoLayoutJumpTable[] = {
     geo_layout_cmd_node_mcomp_extra,
     geo_layout_cmd_node_level_display_list,
     geo_layout_cmd_node_wireframe,
+    geo_layout_cmd_node_scale_xyz,
 };
 
 struct GraphNode gObjParentGraphNode;
@@ -552,9 +553,7 @@ void geo_layout_cmd_node_scale(void) {
 
     s16 drawingLayer = 0;
     s16 params = cur_geo_cmd_u8(0x01);
-    f32 scaleX = cur_geo_cmd_u32(0x04) / 65536.0f;
-    f32 scaleY = cur_geo_cmd_u32(0x08) / 65536.0f;
-    f32 scaleZ = cur_geo_cmd_u32(0x0C) / 65536.0f;
+    f32 scale = cur_geo_cmd_u32(0x04) / 65536.0f;
     void *displayList = NULL;
 
     if (params & 0x80) {
@@ -563,7 +562,23 @@ void geo_layout_cmd_node_scale(void) {
         gGeoLayoutCommand += 4 << CMD_SIZE_SHIFT;
     }
 
-    graphNode = init_graph_node_scale(gGraphNodePool, NULL, drawingLayer, displayList, scaleX, scaleY, scaleZ);
+    graphNode = init_graph_node_scale(gGraphNodePool, NULL, drawingLayer, displayList, scale, scale, scale);
+
+    register_scene_graph_node(&graphNode->node);
+
+    gGeoLayoutCommand += 0x08 << CMD_SIZE_SHIFT;
+}
+
+void geo_layout_cmd_node_scale_xyz(void) {
+    struct GraphNodeScale *graphNode;
+
+    s16 drawingLayer = 0;
+    s16 params = cur_geo_cmd_u8(0x01);
+    f32 scaleX = cur_geo_cmd_u32(0x04) / 65536.0f;
+    f32 scaleY = cur_geo_cmd_u32(0x08) / 65536.0f;
+    f32 scaleZ = cur_geo_cmd_u32(0x0C) / 65536.0f;
+
+    graphNode = init_graph_node_scale(gGraphNodePool, NULL, drawingLayer, NULL, scaleX, scaleY, scaleZ);
 
     register_scene_graph_node(&graphNode->node);
 
