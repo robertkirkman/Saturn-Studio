@@ -65,6 +65,17 @@ void gif_init(int w, int h) {
 #endif
 }
 
+void mov_init(int w, int h) {
+    video_width = w;
+    video_height = h;
+    std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v qtrle -pix_fmt argb video.mov";
+#ifdef _WIN32
+    ffmpeg = popen(cmd.c_str(), "wb");
+#else
+    ffmpeg = popen(cmd.c_str(), "w");
+#endif
+}
+
 void ffmpeg_render(unsigned char* data) {
     fwrite(data, video_width * video_height * 4, 1, ffmpeg);
 }
@@ -101,11 +112,19 @@ VideoRenderer renderer_gif = {
     VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY,
 };
 
+VideoRenderer renderer_mov = {
+    mov_init,
+    ffmpeg_render,
+    ffmpeg_finalize,
+    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY,
+};
+
 std::vector<std::pair<std::string, VideoRenderer>> video_renderers =  {
     { ".png sequence", renderer_pngseq },
     { ".webm",         renderer_webm   },
     { ".mp4",          renderer_mp4    },
     { ".gif",          renderer_gif    },
+    { ".mov",          renderer_mov    },
 };
 
 FUNC(video_renderer_init      FUNC_INIT    ) = nullptr;
