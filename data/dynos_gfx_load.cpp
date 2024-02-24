@@ -48,8 +48,6 @@ static void *GetPointerFromData(GfxData *aGfxData, const String &aPtrName, u32 a
         }
     }
 
-    // Error
-    sys_fatal("Pointer not found: %s", aPtrName.begin());
     return NULL;
 }
 
@@ -65,7 +63,10 @@ static void *ReadPointer(FILE *aFile, GfxData *aGfxData, u32 aValue) {
     if (aValue == POINTER_CODE) {
         String _PtrName; _PtrName.Read(aFile);
         u32   _PtrData = ReadBytes<u32>(aFile);
-        return GetPointerFromData(aGfxData, _PtrName, _PtrData);
+        void* _Ptr = GetPointerFromData(aGfxData, String("%d_%s", aGfxData->mModelIdentifier, _PtrName).begin(), _PtrData);
+        if (!_Ptr) _Ptr = GetPointerFromData(aGfxData, _PtrName, _PtrData);
+        if (!_Ptr) sys_fatal("Pointer not found: %s", _PtrName.begin());
+        return _Ptr;
     }
 
     // Not a pointer
@@ -95,6 +96,7 @@ static void LoadTextureData(FILE *aFile, GfxData *aGfxData) {
 
     // Name
     _Node->mName.Read(aFile);
+    _Node->mName = String("%d_%s", aGfxData->mModelIdentifier, _Node->mName);
 
     // Data
     _Node->mData = New<TexData>();
@@ -258,6 +260,8 @@ static void LoadAnimationTable(FILE *aFile, GfxData *aGfxData) {
 // Load from binary
 //
 
+int gLoadedModelCounter = 0;
+
 GfxData *DynOS_Gfx_LoadFromBinary(const SysPath &aPackFolder, const char *aActorName) {
     struct DynosGfxDataCache { SysPath mPackFolder; Array<Pair<const char *, GfxData *>> mGfxData; };
     static Array<DynosGfxDataCache *> sDynosGfxDataCache;
@@ -286,6 +290,7 @@ GfxData *DynOS_Gfx_LoadFromBinary(const SysPath &aPackFolder, const char *aActor
     FILE *_File = fopen(_Filename.c_str(), "rb");
     if (_File) {
         _GfxData = New<GfxData>();
+        _GfxData->mModelIdentifier = gLoadedModelCounter++;
         for (bool _Done = false; !_Done;) {
             switch (ReadBytes<u8>(_File)) {
                 case DATA_TYPE_LIGHT:           LoadLightData      (_File, _GfxData); break;
