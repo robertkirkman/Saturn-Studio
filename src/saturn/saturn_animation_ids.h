@@ -97,7 +97,7 @@ inline std::map<std::pair<int, std::string>, int> sanim_actions = {
 inline std::map<std::pair<int, std::string>, int> sanim_automatic = {
     // 2 : Automatic (27)
     { std::make_pair(0, "IDLE_HEAD_LEFT"), MARIO_ANIM_IDLE_HEAD_LEFT},
-    { std::make_pair(1, "IDLE_HEAD_RIGHT"), MARIO_ANIM_IDLE_HEAD_CENTER},
+    { std::make_pair(1, "IDLE_HEAD_RIGHT"), MARIO_ANIM_IDLE_HEAD_RIGHT},
     { std::make_pair(2, "IDLE_HEAD_CENTER"), MARIO_ANIM_IDLE_HEAD_CENTER},
     { std::make_pair(3, "FIRST_PERSON"), MARIO_ANIM_FIRST_PERSON},
     { std::make_pair(4, "SLEEP_IDLE"), MARIO_ANIM_SLEEP_IDLE},
