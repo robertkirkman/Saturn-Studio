@@ -806,57 +806,7 @@ void saturn_keyframe_window() {
     // Keyframes
     if (!keyframe_playing) {
         for (auto& entry : k_frame_keys) {
-            KeyframeTimeline timeline = entry.second.first;
-            std::vector<Keyframe>* keyframes = &entry.second.second;
-
-            if (k_previous_frame == k_current_frame && !saturn_keyframe_matches(entry.first, k_current_frame)) {
-                // We create a keyframe here
-                int keyframeIndex = 0;
-                for (int i = 0; i < keyframes->size(); i++) {
-                    if (k_current_frame >= (*keyframes)[i].position) keyframeIndex = i;
-                }
-                bool create_new = keyframes->size() == 0;
-                InterpolationCurve curve = InterpolationCurve::WAIT;
-                if (!create_new) {
-                    create_new = (*keyframes)[keyframeIndex].position != k_current_frame;
-                    curve = (*keyframes)[keyframeIndex].curve;
-                }
-                if (create_new) saturn_create_keyframe(entry.first, curve);
-                else {
-                    Keyframe* keyframe = &(*keyframes)[keyframeIndex];
-                    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
-                    if (timeline.type == KFTYPE_BOOL) (*keyframe).value[0] = *(bool*)ptr;
-                    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
-                        float* values = (float*)ptr;
-                        for (int i = 0; i < timeline.numValues; i++) {
-                            (*keyframe).value[i] = *values;
-                            values++;
-                        }
-                    }
-                    if (timeline.type == KFTYPE_ANIM) {
-                        AnimationState* anim_state = (AnimationState*)ptr;
-                        (*keyframe).value[0] = anim_state->custom;
-                        (*keyframe).value[1] = anim_state->id;
-                    }
-                    if (timeline.type == KFTYPE_EXPRESSION) {
-                        Model* model = (Model*)ptr;
-                        for (int i = 0; i < model->Expressions.size(); i++) {
-                            (*keyframe).value[i] = model->Expressions[i].CurrentIndex;
-                        }
-                    }
-                    if (timeline.type == KFTYPE_COLOR) {
-                        int* values = (int*)ptr;
-                        for (int i = 0; i < 6; i++) {
-                            (*keyframe).value[i] = *values;
-                            values++;
-                        }
-                    }
-                    if (timeline.type == KFTYPE_SWITCH) {
-                        (*keyframe).value[0] = *(int*)ptr;
-                    }
-                    if (timeline.behavior != KFBEH_DEFAULT) (*keyframe).curve = InterpolationCurve::WAIT;
-                }
-            }
+            if (k_previous_frame == k_current_frame && !saturn_keyframe_matches(entry.first, k_current_frame)) saturn_place_keyframe(entry.first, k_current_frame);
             else saturn_keyframe_apply(entry.first, k_current_frame);
         }
     }
@@ -1420,47 +1370,6 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
     ImGui::EndTooltip();
 }
 
-void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
-    Keyframe keyframe = Keyframe();
-    keyframe.position = k_current_frame;
-    keyframe.curve = curve;
-    keyframe.timelineID = id;
-    KeyframeTimeline timeline = k_frame_keys[id].first;
-    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
-    if (timeline.type == KFTYPE_BOOL) keyframe.value.push_back(*(bool*)ptr);
-    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
-        float* values = (float*)ptr;
-        for (int i = 0; i < timeline.numValues; i++) {
-            keyframe.value.push_back(*values);
-            values++;
-        }
-    }
-    if (timeline.type == KFTYPE_ANIM) {
-        AnimationState* anim_state = (AnimationState*)ptr;
-        keyframe.value.push_back(anim_state->custom);
-        keyframe.value.push_back(anim_state->id);
-    }
-    if (timeline.type == KFTYPE_EXPRESSION) {
-        Model* model = (Model*)ptr;
-        for (int i = 0; i < model->Expressions.size(); i++) {
-            keyframe.value.push_back(model->Expressions[i].CurrentIndex);
-        }
-    }
-    if (timeline.type == KFTYPE_COLOR) {
-        int* values = (int*)ptr;
-        for (int i = 0; i < 6; i++) {
-            keyframe.value.push_back(*values);
-            values++;
-        }
-    }
-    if (timeline.type == KFTYPE_SWITCH) {
-        keyframe.value.push_back(*(int*)ptr);
-    }
-    keyframe.curve = curve;
-    k_frame_keys[id].second.push_back(keyframe);
-    saturn_keyframe_sort(&k_frame_keys[id].second);
-}
-
 void saturn_keyframe_popout(std::string id) {
     ImGui::SameLine();
     saturn_keyframe_popout_next_line(id);
@@ -1513,6 +1422,31 @@ void saturn_keyframe_popout_next_line(std::vector<std::string> ids) {
         std::string timeline_id = saturn_keyframe_get_mario_timeline_id(id, get<6>(timeline_metadata) ? mario_menu_index : -1);
     }
     imgui_bundled_tooltip(contains ? "Remove" : "Animate");
+}
+
+std::map<std::string, float*> keyframe_helper_values = {};
+
+void saturn_keyframe_helper(std::string id, float* value, float max) {
+    if (keyframe_helper_values.find(id) == keyframe_helper_values.end()) {
+        float* data = (float*)malloc(sizeof(float) * 3);
+        data[0] = max;
+        data[1] = max - *value;
+        data[2] = 1;
+        keyframe_helper_values.insert({ id, data });
+    }
+    float* data = keyframe_helper_values[id];
+    ImGui::SeparatorText("Keyframe Helper");
+    if (ImGui::SliderFloat("End Frame", data + 0, 0, max         ) |
+        ImGui::SliderFloat("Duration" , data + 1, 0, max - *value) )
+        data[2] = (data[0] - *value) / data[1];
+    if (ImGui::SliderFloat("Speed", data + 2, 0, 2)) {
+        data[1] = (data[0] - *value) / data[2];
+    }
+    if (ImGui::Button("Place Keyframe")) {
+        k_current_frame += data[1];
+        k_previous_frame = k_current_frame;
+        *value = data[0];
+    }
 }
 
 bool saturn_disable_sm64_input() {

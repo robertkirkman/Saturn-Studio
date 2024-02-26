@@ -761,6 +761,97 @@ bool saturn_keyframe_matches(std::string id, int frame) {
     return true;
 }
 
+void saturn_create_keyframe(std::string id, InterpolationCurve curve) {
+    Keyframe keyframe = Keyframe();
+    keyframe.position = k_current_frame;
+    keyframe.curve = curve;
+    keyframe.timelineID = id;
+    KeyframeTimeline timeline = k_frame_keys[id].first;
+    void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+    if (timeline.type == KFTYPE_BOOL) keyframe.value.push_back(*(bool*)ptr);
+    if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
+        float* values = (float*)ptr;
+        for (int i = 0; i < timeline.numValues; i++) {
+            keyframe.value.push_back(*values);
+            values++;
+        }
+    }
+    if (timeline.type == KFTYPE_ANIM) {
+        AnimationState* anim_state = (AnimationState*)ptr;
+        keyframe.value.push_back(anim_state->custom);
+        keyframe.value.push_back(anim_state->id);
+    }
+    if (timeline.type == KFTYPE_EXPRESSION) {
+        Model* model = (Model*)ptr;
+        for (int i = 0; i < model->Expressions.size(); i++) {
+            keyframe.value.push_back(model->Expressions[i].CurrentIndex);
+        }
+    }
+    if (timeline.type == KFTYPE_COLOR) {
+        int* values = (int*)ptr;
+        for (int i = 0; i < 6; i++) {
+            keyframe.value.push_back(*values);
+            values++;
+        }
+    }
+    if (timeline.type == KFTYPE_SWITCH) {
+        keyframe.value.push_back(*(int*)ptr);
+    }
+    keyframe.curve = curve;
+    k_frame_keys[id].second.push_back(keyframe);
+    saturn_keyframe_sort(&k_frame_keys[id].second);
+}
+
+void saturn_place_keyframe(std::string id, int frame) {
+    KeyframeTimeline timeline = k_frame_keys[id].first;
+    std::vector<Keyframe>* keyframes = &k_frame_keys[id].second;
+    int keyframeIndex = 0;
+    for (int i = 0; i < keyframes->size(); i++) {
+        if (frame >= (*keyframes)[i].position) keyframeIndex = i;
+    }
+    bool create_new = keyframes->size() == 0;
+    InterpolationCurve curve = InterpolationCurve::WAIT;
+    if (!create_new) {
+        create_new = (*keyframes)[keyframeIndex].position != frame;
+        curve = (*keyframes)[keyframeIndex].curve;
+    }
+    if (create_new) saturn_create_keyframe(id, curve);
+    else {
+        Keyframe* keyframe = &(*keyframes)[keyframeIndex];
+        void* ptr = saturn_keyframe_get_timeline_ptr(timeline);
+        if (timeline.type == KFTYPE_BOOL) keyframe->value[0] = *(bool*)ptr;
+        if (timeline.type == KFTYPE_FLOAT || timeline.type == KFTYPE_COLORF) {
+            float* values = (float*)ptr;
+            for (int i = 0; i < timeline.numValues; i++) {
+                keyframe->value[i] = *values;
+                values++;
+            }
+        }
+        if (timeline.type == KFTYPE_ANIM) {
+            AnimationState* anim_state = (AnimationState*)ptr;
+            keyframe->value[0] = anim_state->custom;
+            keyframe->value[1] = anim_state->id;
+        }
+        if (timeline.type == KFTYPE_EXPRESSION) {
+            Model* model = (Model*)ptr;
+            for (int i = 0; i < model->Expressions.size(); i++) {
+                keyframe->value[i] = model->Expressions[i].CurrentIndex;
+            }
+        }
+        if (timeline.type == KFTYPE_COLOR) {
+            int* values = (int*)ptr;
+            for (int i = 0; i < 6; i++) {
+                keyframe->value[i] = *values;
+                values++;
+            }
+        }
+        if (timeline.type == KFTYPE_SWITCH) {
+            keyframe->value[0] = *(int*)ptr;
+        }
+        if (timeline.behavior != KFBEH_DEFAULT) keyframe->curve = InterpolationCurve::WAIT;
+    }
+}
+
 // Play Animation
 
 void saturn_play_animation(MarioAnimID anim) {

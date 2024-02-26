@@ -25,11 +25,11 @@ enum {
     KEY_COLOR,
 };
 
-extern void saturn_create_keyframe(std::string id, InterpolationCurve curve);
 extern void saturn_keyframe_popout(std::string id);
 extern void saturn_keyframe_popout(std::vector<std::string> id);
 extern void saturn_keyframe_popout_next_line(std::string id);
 extern void saturn_keyframe_popout_next_line(std::vector<std::string> id);
+extern void saturn_keyframe_helper(std::string id, float* value, float max);
 
 extern bool is_focused_on_game();
 extern void saturn_imgui_open_mario_menu(int index);

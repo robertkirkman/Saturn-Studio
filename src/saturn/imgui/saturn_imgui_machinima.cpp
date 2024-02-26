@@ -738,6 +738,8 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
     ImGui::SliderFloat("Frame", &actor->animstate.frame, 0, actor->animstate.length, "%.0f");
     saturn_keyframe_popout("k_mario_anim_frame");
     saturn_keyframe_popout_next_line("k_mario_anim");
+    if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_mario_anim_frame", saturn_actor_indexof(actor)).c_str()))
+        saturn_keyframe_helper("k_mario_anim_frame", &actor->animstate.frame, actor->animstate.length);
 }
 
 /*void imgui_machinima_animation_player() {

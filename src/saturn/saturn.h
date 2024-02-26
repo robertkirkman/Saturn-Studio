@@ -204,6 +204,8 @@ extern void saturn_paste_camera(void);
 extern void* saturn_keyframe_get_timeline_ptr(KeyframeTimeline&);
 extern bool saturn_keyframe_apply(std::string, int);
 extern bool saturn_keyframe_matches(std::string, int);
+extern void saturn_create_keyframe(std::string id, InterpolationCurve curve);
+extern void saturn_place_keyframe(std::string id, int frame);
 
 extern void schedule_animation();
 

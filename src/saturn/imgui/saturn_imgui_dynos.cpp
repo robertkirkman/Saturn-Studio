@@ -326,6 +326,8 @@ void sdynos_imgui_menu(int index) {
         ImGui::SliderFloat("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1, "%.0f");
         if (!empty && !actor->playback_input) ImGui::EndDisabled();
         saturn_keyframe_popout("k_inputrec_frame");
+        if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_mario_anim_frame", saturn_actor_indexof(actor)).c_str()))
+            saturn_keyframe_helper("k_inputrec_frame", &actor->input_recording_frame, actor->input_recording.size());
         if (empty) ImGui::EndDisabled();
         ImGui::EndMenu();
     }
