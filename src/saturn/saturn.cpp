@@ -797,19 +797,13 @@ Vec3s stored_mario_angle;
 void saturn_copy_mario() {
     vec3f_copy(stored_mario_pos, gMarioState->pos);
     vec3s_copy(stored_mario_angle, gMarioState->faceAngle);
-
-    vec3f_copy(stored_camera_pos, gCamera->pos);
-    vec3f_copy(stored_camera_focus, gCamera->focus);
 }
 
 void saturn_paste_mario() {
-    if (machinimaCopying == 0) {
-        vec3f_copy(gMarioState->pos, stored_mario_pos);
-        vec3f_copy(gMarioState->marioObj->header.gfx.pos, stored_mario_pos);
-        vec3s_copy(gMarioState->faceAngle, stored_mario_angle);
-        vec3s_set(gMarioState->marioObj->header.gfx.angle, 0, stored_mario_angle[1], 0);
-    }
-    machinimaCopying = 1;
+    vec3f_copy(gMarioState->pos, stored_mario_pos);
+    vec3f_copy(gMarioState->marioObj->header.gfx.pos, stored_mario_pos);
+    vec3s_copy(gMarioState->faceAngle, stored_mario_angle);
+    vec3s_set(gMarioState->marioObj->header.gfx.angle, 0, stored_mario_angle[1], 0);
 }
 
 Vec3f pos_relative;
@@ -817,31 +811,27 @@ Vec3s foc_relative;
 bool was_relative;
 
 void saturn_copy_camera(bool relative) {
-    if (relative) {
-        pos_relative[0] = floor(gCamera->pos[0] - gMarioState->pos[0]);
-        pos_relative[1] = floor(gCamera->pos[1] - gMarioState->pos[1]);
-        pos_relative[2] = floor(gCamera->pos[2] - gMarioState->pos[2]);
-
-        foc_relative[0] = floor(gCamera->focus[0] - gMarioState->pos[0]);
-        foc_relative[1] = floor(gCamera->focus[1] - gMarioState->pos[1]);
-        foc_relative[2] = floor(gCamera->focus[2] - gMarioState->pos[2]);
-    } else {
-        vec3f_copy(stored_camera_pos, gCamera->pos);
-        vec3f_copy(stored_camera_focus, gCamera->focus);
-    }
-    was_relative = relative;
+    vec3f_copy(stored_camera_pos, cameraPos);
+    vec3f_set(stored_camera_rot, cameraYaw, cameraPitch, freezecamRoll);
 }
 
 void saturn_paste_camera() {
-    if (was_relative) {
-        stored_camera_pos[0] = floor(gMarioState->pos[0] + pos_relative[0]);
-        stored_camera_pos[1] = floor(gMarioState->pos[1] + pos_relative[1]);
-        stored_camera_pos[2] = floor(gMarioState->pos[2] + pos_relative[2]);
-        stored_camera_focus[0] = floor(gMarioState->pos[0] + foc_relative[0]);
-        stored_camera_focus[1] = floor(gMarioState->pos[1] + foc_relative[1]);
-        stored_camera_focus[2] = floor(gMarioState->pos[2] + foc_relative[2]);
+    Vec3f *pos;
+    float *yaw, *pitch;
+    if (gIsCameraMounted) {
+        pos = &freezecamPos;
+        yaw = &freezecamYaw;
+        pitch = &freezecamPitch;
     }
-    machinimaCopying = 1;
+    else {
+        pos = &cameraPos;
+        yaw = &cameraYaw;
+        pitch = &cameraPitch;
+    }
+    vec3f_copy(*pos, stored_camera_pos);
+    *yaw = stored_camera_rot[0];
+    *pitch = stored_camera_rot[1];
+    freezecamRoll = stored_camera_rot[2];
 }
 
 // Debug
