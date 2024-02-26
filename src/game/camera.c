@@ -3108,7 +3108,7 @@ s16 mCameraKeyPitch;
 
 u8 machinimaCopying;
 Vec3f stored_camera_pos;
-Vec3f stored_camera_focus;
+Vec3f stored_camera_rot;
 
 /**
  * The main camera update function.
@@ -3206,16 +3206,6 @@ void update_camera(struct Camera *c) {
                 c->focus[1] += camVelY;
                 camVelY = approach_f32_symmetric(camVelY, 0.f, 2.f);
                 camVelY = approach_f32_asymptotic(camVelY, 0.f, 0.1f);
-            } else if (machinimaCopying) {
-                if (!machinimaKeyframing) {
-                    f32 dist;
-                    s16 pitch, yaw;
-                    vec3f_get_dist_and_angle(stored_camera_pos, stored_camera_focus, &dist, &pitch, &yaw);
-
-                    vec3f_copy(c->pos, stored_camera_pos);
-                    vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
-                }
-                machinimaCopying = 0;
             } else {
                 f32 dist;
                 s16 pitch, yaw;

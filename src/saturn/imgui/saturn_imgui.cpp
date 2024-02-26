@@ -962,8 +962,8 @@ void saturn_imgui_update() {
                     camera_savestate_mult = 0.f;
                     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
                     ImGui::BeginChild("###model_metadata", ImVec2(200, 90), true, ImGuiWindowFlags_NoScrollbar);
-                    ImGui::TextDisabled("pos %.f, %.f, %.f", gCamera->pos[0], gCamera->pos[1], gCamera->pos[2]);
-                    ImGui::TextDisabled("foc %.f, %.f, %.f", gCamera->focus[0], gCamera->focus[1], gCamera->focus[2]);
+                    ImGui::TextDisabled("pos %.f, %.f, %.f", cameraPos[0], cameraPos[1], cameraPos[2]);
+                    ImGui::TextDisabled("rot %.f, %.f, %.f", cameraYaw, cameraPitch, freezecamRoll);
                     if (ImGui::Button(ICON_FK_FILES_O " Copy###copy_camera")) {
                         saturn_copy_camera(copy_relative);
                         if (copy_relative) saturn_paste_camera();
@@ -978,7 +978,6 @@ void saturn_imgui_update() {
                         saturn_paste_camera();
                     }*/
                     if (!has_copy_camera) ImGui::EndDisabled();
-                    ImGui::Checkbox("Relative to Mario###camera_copy_relative", &copy_relative);
 
                     ImGui::EndChild();
                     ImGui::PopStyleVar();
