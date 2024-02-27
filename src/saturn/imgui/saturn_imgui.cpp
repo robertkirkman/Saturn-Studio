@@ -389,6 +389,30 @@ int video_timer = 0; // used for 1 frame delays on video captures
 
 const float ANTIALIAS_MODIFIER = 1.f;
 
+bool keep_aspect_ratio = false;
+
+void saturn_get_game_bounds(float* out, ImVec2 size) {
+    if (keep_aspect_ratio || saturn_imgui_is_capturing_video()) {
+        float aspect_ratio = (float)videores[0] / (float)videores[1];
+        float container_ar = size.x / size.y;
+        if (aspect_ratio < container_ar) {
+            out[2] = size.y * aspect_ratio;
+            out[3] = size.y;
+        }
+        else {
+            out[2] = size.x;
+            out[3] = size.x * aspect_ratio;
+        }
+        out[0] = (size.x - out[2]) / 2;
+        out[1] = (size.y - out[3]) / 2;
+        return;
+    }
+    out[0] = 0;
+    out[1] = 0;
+    out[2] = size.x;
+    out[3] = size.y;
+}
+
 bool saturn_imgui_get_viewport(int* width, int* height) {
     int w, h;
     if (width == nullptr) width = &w;
@@ -399,8 +423,10 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
         return true;
     }
     if (game_viewport[2] != -1 && game_viewport[3] != -1) {
-        *width  = game_viewport[2] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
-        *height = game_viewport[3] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
+        float bounds[4];
+        saturn_get_game_bounds(bounds, ImVec2(game_viewport[2], game_viewport[3]));
+        *width  = bounds[2] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
+        *height = bounds[3] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
         return true;
     }
     SDL_GetWindowSize(window, width, height);
@@ -1020,6 +1046,7 @@ void saturn_imgui_update() {
                 }
                 ImGui::EndCombo();
             }
+            ImGui::Checkbox("Preview Aspect Ratio", &keep_aspect_ratio);
             ImGui::Checkbox("Anti-aliasing", &video_antialias);
             bool transparency_supported = video_renderer_flags & VIDEO_RENDERER_FLAGS_TRANSPARECY;
             bool transparency_checkbox = transparency_enabled && transparency_supported;
@@ -1129,7 +1156,11 @@ void saturn_imgui_update() {
         game_viewport[3] = window_size.y;
         if (ImGui::IsWindowHovered()) mouse_state.scrollwheel += ImGui::GetIO().MouseWheel;
         if (is_recording) ImGui::EndDisabled();
-        ImGui::Image(framebuffer, window_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+        float image_bounds[4];
+        saturn_get_game_bounds(image_bounds, window_size);
+        ImVec2 cursor_pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(ImVec2(image_bounds[0] + cursor_pos.x, image_bounds[1] + cursor_pos.y));
+        ImGui::Image(framebuffer, ImVec2(image_bounds[2], image_bounds[3]), ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
         if (is_recording) ImGui::BeginDisabled();
         ImGui::PopStyleVar();
         if (ImGui::BeginPopup("Mario Menu")) {
