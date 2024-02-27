@@ -382,7 +382,7 @@ int selected_video_format = 0;
 int videores[] = { 1920, 1080 };
 bool capturing_video = false;
 bool transparency_enabled = true;
-bool stop_capture = false;
+int stop_capture = 0;
 bool video_antialias = true;
 int video_timer = 0; // used for 1 frame delays on video captures
                      // without this, its always 1 frame behind
@@ -456,11 +456,14 @@ void saturn_capture_screenshot() {
     if (keyframe_playing) {
         capturing_video = true;
         video_renderer_render(flipped);
-        if (stop_capture) {
-            capturing_video = false;
-            stop_capture = false;
-            video_renderer_finalize();
-            keyframe_playing = false;
+        if (stop_capture > 0) {
+            stop_capture--;
+            if (stop_capture == 0) {
+                capturing_video = false;
+                stop_capture = false;
+                video_renderer_finalize();
+                keyframe_playing = false;
+            }
         }
     }
     else pngutils_write_png("screenshot.png", (int)videores[0], (int)videores[1], 4, flipped, 0);
@@ -473,7 +476,8 @@ bool saturn_imgui_is_capturing_video() {
 }
 
 void saturn_imgui_stop_capture() {
-    stop_capture = true;
+    if (stop_capture > 0) return;
+    stop_capture = 2;
 }
 
 bool saturn_imgui_is_capturing_transparent_video() {
