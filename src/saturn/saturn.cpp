@@ -695,6 +695,7 @@ bool saturn_keyframe_apply(std::string id, int frame) {
         AnimationState* dest = (AnimationState*)ptr;
         dest->custom = values[0] >= 1;
         dest->id = values[1];
+        if (dest->custom) saturn_read_mcomp_animation(saturn_get_actor(timeline.marioIndex), canim_array[dest->id]);
     }
     if (timeline.type == KFTYPE_EXPRESSION) {
         Model* dest = (Model*)ptr;

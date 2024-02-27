@@ -172,6 +172,14 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
         saturn_format_read_any(stream, &frame, sizeof(InputRecordingFrame));
         actor->input_recording.push_back(frame);
     }
+    if (actor->animstate.custom) {
+        if (actor->animstate.id >= canim_array.size()) {
+            actor->animstate.custom = false;
+            actor->animstate.frame = 0;
+            actor->animstate.id = MARIO_ANIM_A_POSE;
+        }
+        else saturn_read_mcomp_animation(actor, canim_array[actor->animstate.id]);
+    }
     return true;
 }
 
@@ -205,6 +213,17 @@ bool saturn_project_keyframe_timeline_handler(SaturnFormatStream* stream, int ve
     return true;
 }
 
+bool saturn_project_custom_anim_handler(SaturnFormatStream* stream, int version) {
+    canim_array.clear();
+    while (true) {
+        char entry[256];
+        saturn_format_read_string(stream, entry, 255);
+        if (entry[0]) canim_array.push_back(entry);
+        else break;
+    }
+    return true;
+}
+
 void saturn_load_project(char* filename) {
     k_frame_keys.clear();
     saturn_clear_actors();
@@ -215,6 +234,7 @@ void saturn_load_project(char* filename) {
         { "MACT", saturn_project_mario_actor_handler },
         { "KFTL", saturn_project_keyframe_timeline_handler },
         { "LEVL", saturn_project_level_handler },
+        { "CANM", saturn_project_custom_anim_handler },
     });
     for (auto& entry : k_frame_keys) {
         saturn_keyframe_apply(entry.first, k_current_frame);
@@ -233,6 +253,12 @@ void saturn_save_project(char* filename) {
         acts |= (enabled_acts[i] << i);
     }
     saturn_format_write_int8(stream, acts);
+    saturn_format_close_section(stream);
+    saturn_format_new_section(stream, "CANM");
+    for (std::string canim : canim_array) {
+        saturn_format_write_string(stream, canim.data());
+    }
+    saturn_format_write_int8(stream, 0);
     saturn_format_close_section(stream);
     saturn_format_new_section(stream, "GENV");
     saturn_format_write_float(stream, cameraPos[0]);

@@ -36,7 +36,17 @@ namespace fs = std::filesystem;
 #include "saturn/saturn_json.h"
 #include "saturn/saturn_actors.h"
 
+typedef struct {
+    std::string name;
+    std::string author;
+    std::vector<s16> values;
+    std::vector<s16> indices;
+    bool extra;
+    int length;
+} CustomAnim;
+
 std::vector<string> canim_array;
+std::map<std::string, CustomAnim> canims;
 std::string current_anim_dir_path;
 std::vector<std::string> previous_anim_paths;
 
@@ -352,10 +362,30 @@ std::tuple<int, std::vector<s16>, std::vector<s16>> read_bone_data(Json::Value r
     return { length, values, indices };
 }
 
+void load_cached_mcomp_animation(MarioActor* actor, string cache_key) {
+    CustomAnim anim = canims[cache_key];
+    actor->animstate.customanim_name = anim.name;
+    actor->animstate.customanim_author = anim.author;
+    actor->animstate.customanim_extra = anim.extra;
+    actor->animstate.customanim_values = anim.values;
+    actor->animstate.customanim_indices = anim.indices;
+    actor->animstate.length = anim.length;
+}
+
 void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
+    if (canims.find(json_path) != canims.end()) {
+        load_cached_mcomp_animation(actor, json_path);
+        return;
+    }
     // Load the json file
     std::ifstream file(current_anim_dir_path + json_path);
-    if (!file.good()) { return; }
+    if (!file.good()) {
+        std::cout << "failed to load anim " << json_path << std::endl;
+        actor->animstate.id = MARIO_ANIM_A_POSE;
+        actor->animstate.frame = 0;
+        actor->animstate.custom = false;
+        return;
+    }
 
     // Check if we should enable chainer
     // This is only the case if we have a followup animation
@@ -392,19 +422,22 @@ void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
     Json::Value root;
     root << file;
 
-    actor->animstate.customanim_name = root["name"].asString();
-    actor->animstate.customanim_author = root["author"].asString();
+    CustomAnim anim;
+    anim.name = root["name"].asString();
+    anim.author = root["author"].asString();
     if (root.isMember("extra_bone")) {
-        if (root["extra_bone"].asString() == "true") actor->animstate.customanim_extra = true;
-        if (root["extra_bone"].asString() == "false") actor->animstate.customanim_extra = false;
-    } else { actor->animstate.customanim_extra = false; }
+        if (root["extra_bone"].asString() == "true") anim.extra = true;
+        if (root["extra_bone"].asString() == "false") anim.extra = false;
+    } else { anim.extra = false; }
     // A mess
     if (root["looping"].asString() == "true") current_canim_looping = true;
     if (root["looping"].asString() == "false") current_canim_looping = false;
     auto [ length, values, indices ] = read_bone_data(root);
-    actor->animstate.length = length;
-    actor->animstate.customanim_values = values;
-    actor->animstate.customanim_indices = indices;
+    anim.length = length;
+    anim.values = values;
+    anim.indices = indices;
+    canims.insert({ json_path, anim });
+    load_cached_mcomp_animation(actor, json_path);
     return;
 }
 

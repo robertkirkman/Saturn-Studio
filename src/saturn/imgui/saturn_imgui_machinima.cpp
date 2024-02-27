@@ -292,7 +292,7 @@ void smachinima_imgui_init() {
     Cheats.EnableCheats = true;
     Cheats.GodMode = true;
     Cheats.ExitAnywhere = true;
-    saturn_load_anim_folder("", &custom_anim_index);
+    current_anim_dir_path = "dynos/anims/";
 }
 
 bool enabled_acts[6];
@@ -635,9 +635,11 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
             saturn_file_browser_scan_directory("dynos/anims");
             saturn_file_browser_height(120);
             if (saturn_file_browser_show("animations")) {
+                std::string path = saturn_file_browser_get_selected().string();
+                if (std::find(canim_array.begin(), canim_array.end(), path) == canim_array.end()) canim_array.push_back(path);
                 if (sampling) {
                     sampling_anim_loaded = true;
-                    std::ifstream stream = std::ifstream(current_anim_dir_path / saturn_file_browser_get_selected());
+                    std::ifstream stream = std::ifstream(current_anim_dir_path / std::filesystem::path(path));
                     Json::Value value;
                     value << stream;
                     auto [ length, values, indices ] = read_bone_data(value);
@@ -654,10 +656,10 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
                     sampling_animation.length = (s16)length;
                 }
                 else {
-                    actor->animstate.id = 0;
+                    actor->animstate.id = std::find(canim_array.begin(), canim_array.end(), path) - canim_array.begin();
                     actor->animstate.custom = true;
                     actor->animstate.frame = 0;
-                    saturn_read_mcomp_animation(actor, saturn_file_browser_get_selected().string().c_str());
+                    saturn_read_mcomp_animation(actor, path.c_str());
                 }
             }
             ImGui::PopItemWidth();

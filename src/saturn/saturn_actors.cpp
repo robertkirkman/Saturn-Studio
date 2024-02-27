@@ -162,6 +162,7 @@ void bhv_mario_actor_loop() {
         o->oPosY = actor->y;
         o->oPosZ = actor->z;
         o->oFaceAngleYaw = actor->angle;
+        o->header.gfx.unk38.curAnim = &actor->anim;
         if (actor->animstate.custom) {
             o->header.gfx.unk38.curAnim->flags = 4;
             o->header.gfx.unk38.curAnim->unk02 = 0;
@@ -176,7 +177,6 @@ void bhv_mario_actor_loop() {
         else {
             load_animation(&actor->anim, actor->animstate.id);
             o->header.gfx.unk38.animID = actor->animstate.id;
-            o->header.gfx.unk38.curAnim = &actor->anim;
             o->header.gfx.unk38.curAnim->flags = 4; // prevent the anim to get a mind on its own
             actor->animstate.length = o->header.gfx.unk38.curAnim->unk08;
         }
