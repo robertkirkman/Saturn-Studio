@@ -20,8 +20,6 @@ extern "C" {
 #include "game/envfx_snow.h"
 }
 
-#include <filesystem>
-
 #include "saturn/saturn_timelines.h"
 
 #define SATURN_PROJECT_VERSION 1
@@ -153,9 +151,9 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
         saturn_format_read_string(stream, expr, 255);
         actor->model.Expressions[i].CurrentIndex = 0;
         for (int j = 0; j < actor->model.Expressions[i].Textures.size(); j++) {
-            std::filesystem::path path = actor->model.Expressions[i].Textures[j].FilePath;
-            std::filesystem::path base = actor->model.Expressions[i].FolderPath;
-            if (std::filesystem::relative(path, base) == expr) {
+            fs_relative::path path = actor->model.Expressions[i].Textures[j].FilePath;
+            fs_relative::path base = actor->model.Expressions[i].FolderPath;
+            if (fs_relative::relative(path, base) == expr) {
                 actor->model.Expressions[i].CurrentIndex = j;
                 break;
             }
@@ -228,7 +226,7 @@ void saturn_load_project(char* filename) {
     k_frame_keys.clear();
     saturn_clear_actors();
     current_project = filename;
-    saturn_format_input((char*)(std::string("dynos/projects/") + filename).c_str(), "SSPJ", {
+    saturn_format_input((char*)(std::string(sys_user_path()) + std::string("/dynos/projects/") + filename).c_str(), "SSPJ", {
         { "GENV", saturn_project_game_environment_handler },
         { "ACHR", saturn_project_autochroma_handler },
         { "MACT", saturn_project_mario_actor_handler },
@@ -345,9 +343,9 @@ void saturn_save_project(char* filename) {
             }
         }
         for (int i = 0; i < actor->model.Expressions.size(); i++) {
-            std::filesystem::path path = actor->model.Expressions[i].Textures[actor->model.Expressions[i].CurrentIndex].FilePath;
-            std::filesystem::path base = actor->model.Expressions[i].FolderPath;
-            saturn_format_write_string(stream, (char*)std::filesystem::relative(path, base).string().c_str());
+            fs_relative::path path = actor->model.Expressions[i].Textures[actor->model.Expressions[i].CurrentIndex].FilePath;
+            fs_relative::path base = actor->model.Expressions[i].FolderPath;
+            saturn_format_write_string(stream, (char*)fs_relative::relative(path, base).string().c_str());
         }
         for (int i = 0; i < 20; i++) {
             saturn_format_write_float(stream, actor->bones[i][0]);
@@ -373,7 +371,7 @@ void saturn_save_project(char* filename) {
         }
         saturn_format_close_section(stream);
     }
-    saturn_format_write((char*)(std::string("dynos/projects/") + filename).c_str(), stream);
+    saturn_format_write((char*)(std::string(sys_user_path()) + std::string("/dynos/projects/") + filename).c_str(), stream);
 }
 
 std::string project_dir;
@@ -387,14 +385,14 @@ void saturn_load_project_list() {
         // windows moment
         project_dir = "dynos\\projects\\";
     #else
-        project_dir = "dynos/projects/";
+        project_dir = std::string(sys_user_path()) + "/dynos/projects/";
     #endif
 
-    if (!std::filesystem::exists(project_dir))
+    if (!fs::exists(project_dir))
         return;
 
-    for (const auto & entry : std::filesystem::directory_iterator(project_dir)) {
-        std::filesystem::path path = entry.path();
+    for (const auto & entry : fs::directory_iterator(project_dir)) {
+        fs::path path = entry.path();
 
         if (path.filename().u8string() != "autosave.spj") {
             if (path.extension().u8string() == ".spj")

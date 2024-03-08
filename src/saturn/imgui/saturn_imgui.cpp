@@ -68,6 +68,7 @@
 extern "C" {
 #include "pc/gfx/gfx_pc.h"
 #include "pc/configfile.h"
+#include "pc/platform.h"
 #include "game/mario.h"
 #include "game/game_init.h"
 #include "game/camera.h"
@@ -215,8 +216,8 @@ ImGuiDir to_dir(std::string dir) {
 }
 
 void imgui_custom_theme(std::string theme_name) {
-    std::filesystem::path path = std::filesystem::path("dynos/themes/" + theme_name + ".json");
-    if (!std::filesystem::exists(path)) return;
+    fs::path path = fs::path(std::string(sys_user_path()) + "/dynos/themes/" + theme_name + ".json");
+    if (!fs::exists(path)) return;
     std::ifstream file = std::ifstream(path);
     Json::Value json;
     json << file;
@@ -350,7 +351,8 @@ void imgui_update_theme() {
         symbolConfig.SizePixels = 13.0f * SCALE;
         symbolConfig.GlyphMinAdvanceX = 13.0f * SCALE; // Use if you want to make the icon monospaced
         static const ImWchar icon_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
-        io.Fonts->AddFontFromFileTTF("fonts/forkawesome-webfont.ttf", symbolConfig.SizePixels, &symbolConfig, icon_ranges);
+        std::string fontPath = std::string(sys_user_path()) + "/fonts/forkawesome-webfont.ttf";
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), symbolConfig.SizePixels, &symbolConfig, icon_ranges);
     }
 
     // backwards compatibility with older theme settings
@@ -360,8 +362,8 @@ void imgui_update_theme() {
     else if (configEditorTheme == 3) editor_theme = "moviemaker";
     else if (configEditorTheme == 4) editor_theme = "dear";
     else {
-        for (const auto& entry : std::filesystem::directory_iterator("dynos/themes")) {
-            std::filesystem::path path = entry.path();
+        for (const auto& entry : fs::directory_iterator(std::string(sys_user_path()) + "/dynos/themes")) {
+            fs::path path = entry.path();
             if (path.extension().string() != ".json") continue;
             std::string name = path.filename().string();
             name = name.substr(0, name.length() - 5);
@@ -559,7 +561,7 @@ void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
 void saturn_imgui_init_backend(SDL_Window * sdl_window, SDL_GLContext ctx) {
     window = sdl_window;
 
-    imgui_config_exists = std::filesystem::exists("imgui.ini");
+    imgui_config_exists = fs::exists("imgui.ini");
 
     const char* glsl_version = "#version 120";
     ImGuiContext* imgui = ImGui::CreateContext();
@@ -578,8 +580,8 @@ void saturn_imgui_init_backend(SDL_Window * sdl_window, SDL_GLContext ctx) {
 }
 
 void saturn_load_themes() {
-    for (const auto& entry : std::filesystem::directory_iterator("dynos/themes")) {
-        std::filesystem::path path = entry.path();
+    for (const auto& entry : fs::directory_iterator(std::string(sys_user_path()) + "/dynos/themes")) {
+        fs::path path = entry.path();
         if (path.extension().string() != ".json") continue;
         std::string id = path.filename().string();
         id = id.substr(0, id.length() - 5);
@@ -631,8 +633,8 @@ bool is_ffmpeg_installed() {
     }
     paths.push_back(word);
     for (std::string p : paths) {
-        std::filesystem::path fsPath = std::filesystem::path(p) / ("ffmpeg" + suffix);
-        if (std::filesystem::exists(fsPath)) return true;
+        fs::path fsPath = fs::path(p) / ("ffmpeg" + suffix);
+        if (fs::exists(fsPath)) return true;
     }
     return false;
 }
@@ -886,7 +888,7 @@ void saturn_imgui_update() {
 
         if (ImGui::BeginMenu("Open Project")) {
             saturn_file_browser_filter_extension("spj");
-            saturn_file_browser_scan_directory("dynos/projects");
+            saturn_file_browser_scan_directory(std::string(sys_user_path()) + "/dynos/projects");
             if (saturn_file_browser_show("project")) {
                 std::string str = saturn_file_browser_get_selected().string();
                 str = str.substr(0, str.length() - 4); // trim the extension

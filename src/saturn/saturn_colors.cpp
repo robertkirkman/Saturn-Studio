@@ -24,12 +24,10 @@ extern "C" {
 }
 
 #include <dirent.h>
-#include <filesystem>
 #include <fstream>
 #include <assert.h>
 #include <stdlib.h>
 #include <array>
-namespace fs = std::filesystem;
 #include "pc/fs/fs.h"
 
 std::vector<std::string> color_code_list;
@@ -277,7 +275,7 @@ GameSharkCode LoadGSFile(std::string fileName, std::string filePath) {
             std::cout << "Loaded CC file: " << filePath << "/" << fileName << std::endl;
 
             // Read GS File
-            const std::size_t& size = std::filesystem::file_size(filePath + "/" + fileName);
+            const std::size_t& size = fs::file_size(filePath + "/" + fileName);
             std::string content(size, '\0');
             file.read(content.data(), size);
             file.close();

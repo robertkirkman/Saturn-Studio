@@ -224,21 +224,21 @@ std::vector<std::vector<std::string>> tokenize(std::string input) {
 }
 
 int textureIndex = 0;
-std::filesystem::path customlvl_texdir = std::filesystem::path(sys_user_path()) / "res" / "gfx" / "customlevel";
+fs::path customlvl_texdir = fs::path(sys_user_path()) / "res" / "gfx" / "customlevel";
 bool custom_level_flip_normals = false;
 
-void parse_materials(char* data, std::map<std::string, filesystem::path>* materials) {
+void parse_materials(char* data, std::map<std::string, fs::path>* materials) {
     auto tokens = tokenize(std::string(data));
     std::string matname = "";
     for (auto line : tokens) {
         if (line[0] == "newmtl") matname = line[1];
         if (line[0] == "map_Kd" && matname != "") {
             std::string path = std::to_string(textureIndex++) + ".png";
-            std::filesystem::path raw = std::filesystem::path(line[1]);
-            std::filesystem::path src = raw.is_absolute() ? raw : std::filesystem::path(custom_level_path).parent_path() / raw;
-            std::filesystem::path dst = customlvl_texdir / path;
-            std::filesystem::remove(dst);
-            std::filesystem::copy_file(src, dst);
+            fs::path raw = fs::path(line[1]);
+            fs::path src = raw.is_absolute() ? raw : fs::path(custom_level_path).parent_path() / raw;
+            fs::path dst = customlvl_texdir / path;
+            fs::remove(dst);
+            fs::copy_file(src, dst);
             materials->insert({ matname, "customlevel/" + path });
         }
     }
@@ -247,18 +247,18 @@ void parse_materials(char* data, std::map<std::string, filesystem::path>* materi
 void parse_custom_level(char* data) {
     auto tokens = tokenize(std::string(data));
     textureIndex = 0;
-    if (std::filesystem::exists(customlvl_texdir)) std::filesystem::remove_all(customlvl_texdir);
-    std::filesystem::create_directories(customlvl_texdir);
+    if (fs::exists(customlvl_texdir)) fs::remove_all(customlvl_texdir);
+    fs::create_directories(customlvl_texdir);
     custom_level_new();
     std::vector<std::array<float, 3>> vertices = {};
     std::vector<std::array<float, 2>> uv = {};
-    std::map<std::string, filesystem::path> materials = {};
+    std::map<std::string, fs::path> materials = {};
     for (auto line : tokens) {
         if (line.size() == 0) continue;
         if (line[0] == "mtllib") {
-            filesystem::path path = filesystem::absolute(std::filesystem::path(custom_level_dirname) / line[1]);
-            if (!filesystem::exists(path)) continue;
-            auto size = filesystem::file_size(path);
+            fs::path path = fs::absolute(fs::path(custom_level_dirname) / line[1]);
+            if (!fs::exists(path)) continue;
+            auto size = fs::file_size(path);
             char* mtldata = (char*)malloc(size);
             std::ifstream file = std::ifstream(path, std::ios::binary);
             file.read(mtldata, size);
@@ -292,7 +292,7 @@ void smachinima_imgui_init() {
     Cheats.EnableCheats = true;
     Cheats.GodMode = true;
     Cheats.ExitAnywhere = true;
-    current_anim_dir_path = "dynos/anims/";
+    current_anim_dir_path = std::string(sys_user_path()) + "/dynos/anims/";
 }
 
 bool enabled_acts[6];
@@ -522,7 +522,7 @@ void imgui_machinima_quick_options() {
         ImGui::PopItemWidth();
         if (!is_custom_level_loaded || in_custom_level) ImGui::BeginDisabled();
         if (ImGui::Button("Load Level")) {
-            auto size = filesystem::file_size(custom_level_path);
+            auto size = fs::file_size(custom_level_path);
             char* data = (char*)malloc(size);
             std::ifstream file = std::ifstream((char*)custom_level_path.c_str(), std::ios::binary);
             file.read(data, size);
@@ -535,7 +535,7 @@ void imgui_machinima_quick_options() {
         if (ImGui::Button("Load .obj")) {
             auto selection = choose_file_dialog("Select a model", { "Wavefront Model (.obj)", "*.obj", "All Files", "*" }, false);
             if (selection.size() != 0) {
-                filesystem::path path = selection[0];
+                fs::path path = selection[0];
                 is_custom_level_loaded = true;
                 custom_level_path = path.string();
                 custom_level_dirname = path.parent_path().string();
@@ -632,14 +632,14 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
         if (ImGui::BeginTabItem("MComp")) {
             ImGui::PushItemWidth(316);
             saturn_file_browser_filter_extension("json");
-            saturn_file_browser_scan_directory("dynos/anims");
+            saturn_file_browser_scan_directory(current_anim_dir_path);
             saturn_file_browser_height(120);
             if (saturn_file_browser_show("animations")) {
                 std::string path = saturn_file_browser_get_selected().string();
                 if (std::find(canim_array.begin(), canim_array.end(), path) == canim_array.end()) canim_array.push_back(path);
                 if (sampling) {
                     sampling_anim_loaded = true;
-                    std::ifstream stream = std::ifstream(current_anim_dir_path / std::filesystem::path(path));
+                    std::ifstream stream = std::ifstream(current_anim_dir_path / fs::path(path));
                     Json::Value value;
                     value << stream;
                     auto [ length, values, indices ] = read_bone_data(value);

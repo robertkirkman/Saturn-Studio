@@ -308,6 +308,9 @@ void handle_segfault(int signal) {
 int main(int argc, char *argv[]) {
     signal(SIGSEGV, handle_segfault);
     parse_cli_opts(argc, argv);
+    
+    // Copy custom assets (required in some form for AppImage, Android and OpenBSD. Tested at present in unsandboxed and AppImage configurations)
+    if (copy_custom_assets()) return 1;
 
     // Extract assets
     if (gCLIOpts.ExtractOnly) {
