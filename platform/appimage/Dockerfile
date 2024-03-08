@@ -14,7 +14,7 @@ eot
 RUN apt update
 RUN apt upgrade -y
 RUN apt build-dep -y libsdl2-dev libgtk-3-dev
-RUN apt install -y git python3 python3-pip wget gpg libgbm-dev libglew-dev ninja-build ffmpeg
+RUN apt install -y git python3 python3-pip wget gpg libgbm-dev libglew-dev ninja-build
 
 # meson - from this point on, custom builds
 RUN python3 -m pip install --upgrade meson

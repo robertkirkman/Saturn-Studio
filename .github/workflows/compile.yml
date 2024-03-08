@@ -85,7 +85,6 @@ jobs:
         mkdir -p AppDir/usr/lib/
         docker run -v ${{ github.workspace }}:/Saturn-Studio saturn-appimage-builder cp /usr/lib/x86_64-linux-gnu/libharfbuzz.so.0 AppDir/usr/lib/
         docker run -v ${{ github.workspace }}:/Saturn-Studio saturn-appimage-builder cp /usr/lib/x86_64-linux-gnu/libthai.so.0 AppDir/usr/lib/
-        docker run -v ${{ github.workspace }}:/Saturn-Studio saturn-appimage-builder cp /usr/bin/ffmpeg AppDir/usr/bin/
     - name: Build Saturn Studio AppImage in builder image
       run: docker run -e NO_STRIP='true' -v ${{ github.workspace }}:/Saturn-Studio saturn-appimage-builder /squashfs-root/AppRun --plugin gtk --icon-file res/saturn-linuxicon.png --desktop-file platform/appimage/Saturn_Studio.desktop --appdir AppDir --output appimage
     - name: Upload Artifact
