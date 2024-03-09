@@ -519,6 +519,7 @@ void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
 
 // Set up ImGui
 
+fs::path imgui_config_path;
 bool imgui_config_exists = false;
 
 ImGuiID saturn_imgui_setup_dockspace() {
@@ -561,7 +562,8 @@ void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
 void saturn_imgui_init_backend(SDL_Window * sdl_window, SDL_GLContext ctx) {
     window = sdl_window;
 
-    imgui_config_exists = fs::exists("imgui.ini");
+    imgui_config_path = fs::path(std::string(sys_user_path()) + "/imgui.ini");
+    imgui_config_exists = fs::exists(imgui_config_path);
 
     const char* glsl_version = "#version 120";
     ImGuiContext* imgui = ImGui::CreateContext();
