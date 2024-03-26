@@ -538,7 +538,9 @@ void sdynos_imgui_menu(int index) {
     }
 
     ImGui::Separator();
-    ImGui::Text(ICON_FK_LINE_CHART " Timeline Controls");
+    ImGui::Text(ICON_FK_LINE_CHART);
+    ImGui::SameLine();
+    ImGui::Text("Timeline Controls");
     ImGui::PushItemWidth(100);
     ImGui::DragInt("Position", &k_current_frame, 0.35f, 0);
     ImGui::PopItemWidth();
