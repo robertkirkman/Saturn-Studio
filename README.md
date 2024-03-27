@@ -1,3 +1,27 @@
+# Saturn Studio Android
+#### Experimental Saturn Studio for Android (in X11 mode) for [Dominicentek](https://github.com/Dominicentek). Many things are very broken and not working!
+> Bring your own graphics driver! This example is for **Adreno 6XX+ GPUs only**. the [virglrenderer-android](https://github.com/robertkirkman/sm64ex-coop?tab=readme-ov-file#how-to-get-this-mode) OpenGL ES graphics pipe has broader hardware compatibility than the Turnip Vulkan driver and Zink OpenGL 4.0+ driver, but I think it could be slightly harder to run this app on it. The llvmpipe software OpenGL implementation runs only on the CPU (software renderer), but it's the most broadly compatible. To use it, launch _without_ setting the `MESA_LOADER_DRIVER_OVERRIDE=zink` environment variable.
+- Install this app https://f-droid.org/repo/com.termux_118.apk
+- Install this app https://github.com/termux/termux-x11/releases/download/nightly/app-universal-debug.apk
+- Open both apps
+- (Optional) Strongly recommend this keyboard https://f-droid.org/repo/org.pocketworkstation.pckeyboard_1041001.apk
+- (Optional) Drag down notifications, touch Termux:X11 settings, set Termux:X11 into "direct touch" mode
+- Run these commands
+```
+termux-change-repo
+yes | pkg upgrade -y
+termux-setup-storage # if you will want to select baserom.us.z64 from anywhere at runtime
+pkg install -y x11-repo
+pkg install -y git wget make python getconf clang binutils sdl2 \
+               libglvnd-dev glu termux-x11-nightly xfce mesa-vulkan-icd-freedreno-dri3 ffmpeg xorgproto
+git clone --branch android https://github.com/robertkirkman/Saturn-Studio.git
+cd Saturn-Studio
+FILE_PICKER=1 DISCORDGAMESDK=0 DISCORDRPC=0 DISCORD_SDK=0 NO_PIE=0 TOUCH_CONTROLS=1 make -j6
+termux-x11 :0 -xstartup "xfce4-session" & sleep 10
+DISPLAY=:0 MESA_LOADER_DRIVER_OVERRIDE=zink build/us_pc/sm64.us.f3dex2e
+```
+[saturnstudioandroid.webm](https://github.com/robertkirkman/Saturn-Studio/assets/31490854/53f083c8-f9a2-429f-94d7-865fd69cf4bb)
+
 # Saturn Studio
 
 An experimental fork of [Saturn](https://github.com/Llennpie/Saturn) that has features originally planned for the original version,
