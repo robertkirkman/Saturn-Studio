@@ -248,7 +248,8 @@ const void* saturn_bind_texture(const void* input) {
 
     if (texName.find("textures/skyboxes/cloud.") != string::npos)
         return static_cast<const void*>(stack_to_heap(texName.replace(18, 5, "cloud_floor"))->c_str());
-
+    
+    if (gCurrentObject == nullptr) return input;
     MarioActor* actor = saturn_get_actor(gCurrentObject->oMarioActorIndex);
     if (actor == nullptr) return input;
 

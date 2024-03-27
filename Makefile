@@ -24,6 +24,9 @@ NON_MATCHING ?= 1
 # Build and optimize for Raspberry Pi(s)
 TARGET_RPI ?= 0
 
+# Use OpenGL ES instead of OpenGL
+USE_GLES ?= 0
+
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
 
@@ -58,6 +61,8 @@ DISCORDGAMESDK ?= 1
 DISCORDRPC ?= 1
 # Enable Game ICON
 ICON ?= 1
+# Enable touchscreen controls
+TOUCH_CONTROLS ?= 0
 
 # Various workarounds for weird toolchains
 
@@ -214,6 +219,8 @@ VERSION_CFLAGS := $(VERSION_CFLAGS) -DNON_MATCHING -DAVOID_UB
 
 ifeq ($(TARGET_RPI),1) # Define RPi to change SDL2 title & GLES2 hints
       VERSION_CFLAGS += -DUSE_GLES
+else ifeq ($(USE_GLES),1)
+  VERSION_CFLAGS += -DUSE_GLES
 endif
 
 ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
@@ -306,6 +313,7 @@ LD_SCRIPT := sm64.ld
 MIO0_DIR := $(BUILD_DIR)/bin
 SOUND_BIN_DIR := $(BUILD_DIR)/sound
 TEXTURE_DIR := textures
+CUSTOM_TEXTURE_DIR := $(BUILD_DIR)/res/gfx/$(TEXTURE_DIR)
 ACTOR_DIR := actors
 LEVEL_DIRS := $(patsubst levels/%,%,$(dir $(wildcard levels/*/header.h)))
 
@@ -582,6 +590,8 @@ else ifeq ($(findstring SDL,$(WINDOW_API)),SDL)
     BACKEND_LDFLAGS += -lglew32 -lglu32 -lopengl32
   else ifeq ($(TARGET_RPI),1)
     BACKEND_LDFLAGS += -lGLESv2
+  else ifeq ($(USE_GLES),1)
+    BACKEND_LDFLAGS += -lGLESv2
   else ifeq ($(OSX_BUILD),1)
     BACKEND_LDFLAGS += -framework OpenGL `pkg-config --libs glew`
   else
@@ -640,7 +650,11 @@ else
 
 endif
 
-CFLAGS += -Wno-error=narrowing -Wno-narrowing
+CFLAGS += -Wno-error=narrowing -Wno-narrowing 
+
+# caused by the dynos in saturn being forked away from peachypeach
+# earlier than most mario versions. rebasing might help
+CFLAGS += -Wno-error=non-pod-varargs
 
 CC_CHECK += -DGIT_HASH=\"$(GIT_HASH)\"
 CFLAGS   += -DGIT_HASH=\"$(GIT_HASH)\"
@@ -666,6 +680,14 @@ endif
 ifeq ($(NODRAWINGDISTANCE),1)
   CC_CHECK += -DNODRAWINGDISTANCE
   CFLAGS += -DNODRAWINGDISTANCE
+endif
+
+ifeq ($(WINDOW_API),SDL2)
+  # Check for SDL2 touch controls
+  ifeq ($(TOUCH_CONTROLS),1)
+    CC_CHECK += -DTOUCH_CONTROLS
+    CFLAGS += -DTOUCH_CONTROLS
+  endif
 endif
 
 # Check for Discord Rich Presence option
@@ -766,7 +788,7 @@ endif # End of LDFLAGS
 LDFLAGS += -lstdc++
 # Saturn Enable filesystem library and C++17
 CXXFLAGS := -std=c++17
-LDFLAGS += -lstdc++fs
+# LDFLAGS += -lstdc++fs
 
 # icon
 ifeq ($(WINDOWS_BUILD),1)
@@ -1124,9 +1146,11 @@ $(BUILD_DIR)/%.o: $(BUILD_DIR)/%.c
 $(BUILD_DIR)/%.o: %.s
 	$(AS) $(ASFLAGS) -MD $(BUILD_DIR)/$*.d -o $@ $<
 
+$(CUSTOM_TEXTURE_DIR): $(TEXTURE_DIR)/touchcontrols
+	mkdir -p $@
+	cp -r $< $@
 
-
-$(EXE): $(O_FILES) $(MIO0_FILES:.mio0=.o) $(SOUND_OBJ_FILES) $(ULTRA_O_FILES) $(GODDARD_O_FILES) $(BUILD_DIR)/$(RPC_LIBS) $(BUILD_DIR)/$(FONT_LIBS)
+$(EXE): $(O_FILES) $(MIO0_FILES:.mio0=.o) $(SOUND_OBJ_FILES) $(ULTRA_O_FILES) $(GODDARD_O_FILES) $(BUILD_DIR)/$(RPC_LIBS) $(BUILD_DIR)/$(FONT_LIBS) $(CUSTOM_TEXTURE_DIR)
 	$(LD) -L $(BUILD_DIR) -o $@ $(O_FILES) $(SOUND_OBJ_FILES) $(ULTRA_O_FILES) $(GODDARD_O_FILES) $(LDFLAGS)
 
 .PHONY: all clean distclean default diff test load libultra res

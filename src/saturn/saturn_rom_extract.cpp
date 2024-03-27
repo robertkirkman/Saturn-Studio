@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <cmath>
 
 #include "saturn/libs/portable-file-dialogs.h"
@@ -222,8 +223,9 @@ unsigned char* raw2i(unsigned char* raw, int width, int height, int depth) {
 
 unsigned char* raw2skybox(unsigned char* raw, int len, int use_bitfs) {
     int table_index = len - 8 * 10 * 4;
-    unsigned int table[80];
+    unsigned int table[80] = { 0 };
     for (int i = 0; i < 80; i++) {
+        if (raw[0] != '@') // this one is crashing on ARM and/or Android
         table[i] = (raw[table_index + i * 4 + 0] << 24) |
                    (raw[table_index + i * 4 + 1] << 16) |
                    (raw[table_index + i * 4 + 2] <<  8) |

@@ -15,6 +15,7 @@
 #include "goddard/renderer.h"
 #include "interaction.h"
 #include "level_update.h"
+#include "mario.h"
 #include "mario_misc.h"
 #include "memory.h"
 #include "object_helpers.h"

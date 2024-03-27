@@ -23,6 +23,9 @@
 #include "surface_collision.h"
 #include "surface_load.h"
 #include "level_table.h"
+#ifdef TOUCH_CONTROLS
+#include "pc/controller/controller_touchscreen.h"
+#endif
 #include "saturn/imgui/saturn_imgui_machinima.h"
 
 #define CMD_GET(type, offset) (*(type *) (CMD_PROCESS_OFFSET(offset) + (u8 *) sCurrentCmd))
@@ -882,6 +885,9 @@ struct LevelCommand *level_script_execute(struct LevelCommand *cmd) {
     profiler_log_thread5_time(LEVEL_SCRIPT_EXECUTE);
     init_render_image();
     render_game();
+#ifdef TOUCH_CONTROLS
+    render_touch_controls();
+#endif
     end_master_display_list();
     alloc_display_list(0);
 

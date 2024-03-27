@@ -14,6 +14,9 @@
 
 #include "controller_api.h"
 #include "controller_sdl.h"
+#ifdef TOUCH_CONTROLS
+#include "controller_touchscreen.h"
+#endif
 #include "../configfile.h"
 #include "../platform.h"
 #include "../fs/fs.h"
@@ -222,6 +225,9 @@ static void controller_sdl_read(OSContPad *pad) {
 
     for (u32 i = 0; i < SDL_CONTROLLER_BUTTON_MAX; ++i) {
         const bool new = SDL_GameControllerGetButton(sdl_cntrl, i);
+#ifdef TOUCH_CONTROLS
+        if (new) gGamepadActive = true;
+#endif
         update_button(i, new);
     }
 

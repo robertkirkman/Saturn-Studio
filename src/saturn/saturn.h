@@ -212,7 +212,7 @@ extern void schedule_animation();
 extern "C" {
 #endif
     void saturn_update(void);
-    void saturn_play_animation(MarioAnimID);
+    void saturn_play_animation(enum MarioAnimID);
     void saturn_play_keyframe();
     void saturn_print(const char*);
     const char* saturn_get_stage_name(int);
@@ -228,10 +228,14 @@ extern "C" {
 #include <filesystem>
 namespace fs_relative = std::filesystem;
 /* Test for GCC <= 8.3.0 */
+#if defined(__GNUC__) && !defined(__llvm__) && !defined(__INTEL_COMPILER) // GCC
 #if __GNUC__ < 8 || (__GNUC__ == 8 && (__GNUC_MINOR__ < 3 || __GNUC_MINOR__ == 3 && __GNUC_PATCHLEVEL__  == 0))
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
-#else
+#else // GCC > 8.3.0
+namespace fs = std::filesystem;
+#endif
+#else // not GCC
 namespace fs = std::filesystem;
 #endif
 #endif

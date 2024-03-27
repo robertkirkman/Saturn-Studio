@@ -104,3 +104,6 @@ imgui.ini
 AppDir/*
 *.AppImage*
 squashfs-root/*
+
+# Touch Controls
+!/textures/touchcontrols/*.png

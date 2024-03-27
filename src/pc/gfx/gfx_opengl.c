@@ -344,7 +344,11 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(uint32_t shad
 
         append_line(fs_buf, &fs_len, "float random(in vec3 value) {");
         append_line(fs_buf, &fs_len, "    float random = dot(sin(value), vec3(12.9898, 78.233, 37.719));");
+#ifdef USE_GLES
+        append_line(fs_buf, &fs_len, "    return fract(sin(random) * 143.7585453);");
+#else
         append_line(fs_buf, &fs_len, "    return fract(sin(random) * 143758.5453);");
+#endif
         append_line(fs_buf, &fs_len, "}");
     }
 
@@ -533,7 +537,7 @@ static void gfx_opengl_select_texture(int tile, GLuint texture_id) {
      gfx_opengl_set_texture_uniforms(opengl_prg, tile);
 }
 
-static void gfx_opengl_upload_texture(uint8_t *rgba32_buf, int width, int height) {
+static void gfx_opengl_upload_texture(const uint8_t *rgba32_buf, int width, int height) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba32_buf);
     opengl_tex[opengl_curtex]->size[0] = width;
     opengl_tex[opengl_curtex]->size[1] = height;

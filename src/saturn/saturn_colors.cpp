@@ -1,6 +1,7 @@
 #include "saturn/saturn_colors.h"
 
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <vector>
 #include <SDL2/SDL.h>
