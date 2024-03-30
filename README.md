@@ -18,7 +18,7 @@ git clone --branch android https://github.com/robertkirkman/Saturn-Studio.git
 cd Saturn-Studio
 FILE_PICKER=1 DISCORDGAMESDK=0 DISCORDRPC=0 DISCORD_SDK=0 NO_PIE=0 TOUCH_CONTROLS=1 make -j6
 termux-x11 :0 -xstartup "xfce4-session" & sleep 10
-DISPLAY=:0 MESA_LOADER_DRIVER_OVERRIDE=zink build/us_pc/sm64.us.f3dex2e
+DISPLAY=:0 MESA_LOADER_DRIVER_OVERRIDE=zink build/us_pc/saturn.us.f3dex2e
 ```
 [saturnstudioandroid.webm](https://github.com/robertkirkman/Saturn-Studio/assets/31490854/53f083c8-f9a2-429f-94d7-865fd69cf4bb)
 
