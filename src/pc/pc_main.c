@@ -215,6 +215,8 @@ void main_func(void) {
 
     configfile_load(configfile_name());
 
+    saturn_load_textures();
+
     if (gCLIOpts.FullScreen == 1)
         configWindow.fullscreen = true;
     else if (gCLIOpts.FullScreen == 2)

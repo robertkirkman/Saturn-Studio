@@ -4,6 +4,14 @@
 #include <SDL2/SDL.h>
 #include <PR/ultratypes.h>
 
+struct OrthographicRenderSettings {
+    float orthographic_scale;
+    float orthographic_offset_x;
+    float orthographic_offset_y;
+    float orthographic_rotation_x;
+    float orthographic_rotation_y;
+};
+
 #ifdef __cplusplus
 
 #include <string>
@@ -61,6 +69,7 @@ extern bool splash_finished;
 
 extern std::string editor_theme;
 extern std::vector<std::pair<std::string, std::string>> theme_list;
+extern std::vector<std::string> textures_list;
 
 extern bool k_context_popout_open;
 
@@ -72,8 +81,11 @@ extern fs::path imgui_config_path;
 
 extern "C" {
 #endif
+    struct OrthographicRenderSettings* saturn_imgui_get_ortho_settings();
     bool saturn_imgui_is_capturing_transparent_video();
     bool saturn_imgui_is_capturing_video();
+    bool saturn_imgui_is_orthographic();
+    void saturn_imgui_set_ortho(bool ortho_mode);
     void saturn_imgui_stop_capture();
     bool saturn_imgui_get_viewport(int*, int*);
     void saturn_imgui_set_frame_buffer(void* fb, bool do_capture);
@@ -82,6 +94,9 @@ extern "C" {
     void saturn_imgui_handle_events(SDL_Event *);
     void saturn_imgui_update(void);
     bool saturn_disable_sm64_input();
+    void saturn_get_textures_folder(char* out);
+    void saturn_fallback_texture(char* out, const char* path);
+    void saturn_load_textures();
 
     extern SDL_Scancode bind_to_sdl_scancode[512];
 #ifdef __cplusplus

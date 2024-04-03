@@ -54,6 +54,7 @@ public:
     bool custom_eyes = false;
     bool custom_bone = false;
     int custom_bone_iter = 0;
+    Vec3f scaler[3];
     Vec3f bones[20];
     Model model = Model();
     ColorCode colorcode;
@@ -72,6 +73,9 @@ public:
         u64 ptr = (u64)this;
         PasteGameShark(GameSharkCode().GameShark, colorcode);
         marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
+        scaler[0][0] = scaler[0][1] = scaler[0][2] =
+        scaler[1][0] = scaler[1][1] = scaler[1][2] =
+        scaler[2][0] = scaler[2][1] = scaler[2][2] = 1;
         memset(bones, 0, sizeof(bones));
     }
 };
@@ -95,6 +99,7 @@ extern "C" {
     bool saturn_rotate_head(Vec3s rotation);
     bool saturn_rotate_torso(Vec3s rotation);
     s16 saturn_actor_geo_switch(u8 item);
+    void saturn_actor_get_scaler(Vec3f scale, int index);
     float saturn_actor_get_alpha();
     bool saturn_actor_has_custom_anim_extra();
     float saturn_actor_get_shadow_scale();

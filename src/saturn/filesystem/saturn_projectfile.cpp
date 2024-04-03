@@ -4,6 +4,7 @@
 #include <map>
 
 #include "game/area.h"
+#include "saturn/imgui/saturn_imgui.h"
 #include "saturn/imgui/saturn_imgui_chroma.h"
 #include "saturn/imgui/saturn_imgui_machinima.h"
 #include "saturn_format.h"
@@ -22,7 +23,7 @@ extern "C" {
 
 #include "saturn/saturn_timelines.h"
 
-#define SATURN_PROJECT_VERSION 1
+#define SATURN_PROJECT_VERSION 2
 
 std::string current_project = "";
 int project_load_timer = 0;
@@ -53,11 +54,38 @@ bool saturn_project_game_environment_handler(SaturnFormatStream* stream, int ver
     float cpz = saturn_format_read_float(stream);
     float crx = saturn_format_read_float(stream);
     float cry = saturn_format_read_float(stream);
-    float crz = saturn_format_read_float(stream);
-    vec3f_set(cameraPos, cpx, cpy, cpz);
-    cameraYaw = cry;
-    cameraPitch = crx;
-    freezecamRoll = crz;
+    float fpx = saturn_format_read_float(stream);
+    if (version >= 2) {
+        float fpy = saturn_format_read_float(stream);
+        float fpz = saturn_format_read_float(stream);
+        float frx = saturn_format_read_float(stream);
+        float fry = saturn_format_read_float(stream);
+        float frz = saturn_format_read_float(stream);
+        float osc = saturn_format_read_float(stream);
+        float orx = saturn_format_read_float(stream);
+        float ory = saturn_format_read_float(stream);
+        float oox = saturn_format_read_float(stream);
+        float ooy = saturn_format_read_float(stream);
+        vec3f_set(cameraPos, cpx, cpy, cpz);
+        vec3f_set(freezecamPos, fpx, fpy, fpz);
+        cameraYaw = cry;
+        cameraPitch = crx;
+        freezecamYaw = fry;
+        freezecamPitch = frx;
+        freezecamRoll = frz;
+        struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
+        ortho->orthographic_scale = osc;
+        ortho->orthographic_rotation_x = orx;
+        ortho->orthographic_rotation_y = ory;
+        ortho->orthographic_offset_x = oox;
+        ortho->orthographic_offset_y = ooy;
+    }
+    else {
+        vec3f_set(cameraPos, cpx, cpy, cpz);
+        cameraYaw = cry;
+        cameraPitch = crx;
+        freezecamRoll = fpx;
+    }
     camera_fov = saturn_format_read_float(stream);
     camera_focus = saturn_format_read_float(stream);
     camVelSpeed = saturn_format_read_float(stream);
@@ -80,6 +108,7 @@ bool saturn_project_game_environment_handler(SaturnFormatStream* stream, int ver
     enable_dust_particles = saturn_format_read_bool(stream);
     time_freeze_state = saturn_format_read_int8(stream);
     gLevelEnv = saturn_format_read_int8(stream);
+    if (version >= 2) saturn_imgui_set_ortho(saturn_format_read_int8(stream));
     return true;
 }
 
@@ -108,6 +137,21 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     actor->zScale = saturn_format_read_float(stream);
     actor->spin_speed = saturn_format_read_float(stream);
     actor->alpha = saturn_format_read_float(stream);
+    if (version >= 2) {
+        actor->scaler[0][0] = saturn_format_read_float(stream);
+        actor->scaler[0][1] = saturn_format_read_float(stream);
+        actor->scaler[0][2] = saturn_format_read_float(stream);
+        actor->scaler[1][0] = saturn_format_read_float(stream);
+        actor->scaler[1][1] = saturn_format_read_float(stream);
+        actor->scaler[1][2] = saturn_format_read_float(stream);
+        actor->scaler[2][0] = saturn_format_read_float(stream);
+        actor->scaler[2][1] = saturn_format_read_float(stream);
+        actor->scaler[2][2] = saturn_format_read_float(stream);
+    }
+    else
+        actor->scaler[0][0] = actor->scaler[0][1] = actor->scaler[0][2] =
+        actor->scaler[1][0] = actor->scaler[1][1] = actor->scaler[1][2] =
+        actor->scaler[2][0] = actor->scaler[2][1] = actor->scaler[2][2] = 0;
     actor->head_rot_x = saturn_format_read_int32(stream);
     actor->head_rot_y = saturn_format_read_int32(stream);
     actor->eye_state = saturn_format_read_int32(stream);
@@ -183,7 +227,9 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
 
 bool saturn_project_keyframe_timeline_handler(SaturnFormatStream* stream, int version) {
     char id[256];
-    saturn_format_read_string(stream, id, 255);
+    char rawID[256];
+    saturn_format_read_string(stream, rawID, 255);
+    memcpy(id, rawID, 256);
     int numKeyframes = saturn_format_read_int32(stream);
     int marioIndex = saturn_format_read_int32(stream);
     if (marioIndex != -1) id[strlen(id) - 8] = 0;
@@ -203,11 +249,11 @@ bool saturn_project_keyframe_timeline_handler(SaturnFormatStream* stream, int ve
             keyframe.value.push_back(saturn_format_read_float(stream));
         }
         keyframe.curve = (InterpolationCurve)saturn_format_read_int8(stream);
-        keyframe.timelineID = id;
+        keyframe.timelineID = rawID;
         keyframe.position = saturn_format_read_int32(stream);
         keyframes.push_back(keyframe);
     }
-    k_frame_keys.insert({ id, { timeline, keyframes } });
+    k_frame_keys.insert({ rawID, { timeline, keyframes } });
     return true;
 }
 
@@ -241,6 +287,7 @@ void saturn_load_project(char* filename) {
 }
 
 void saturn_save_project(char* filename) {
+    struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
     SaturnFormatStream _stream = saturn_format_output("SSPJ", SATURN_PROJECT_VERSION);
     SaturnFormatStream* stream = &_stream;
     saturn_format_new_section(stream, "LEVL");
@@ -264,7 +311,17 @@ void saturn_save_project(char* filename) {
     saturn_format_write_float(stream, cameraPos[2]);
     saturn_format_write_float(stream, cameraPitch);
     saturn_format_write_float(stream, cameraYaw);
+    saturn_format_write_float(stream, freezecamPos[0]);
+    saturn_format_write_float(stream, freezecamPos[1]);
+    saturn_format_write_float(stream, freezecamPos[2]);
+    saturn_format_write_float(stream, freezecamPitch);
+    saturn_format_write_float(stream, freezecamYaw);
     saturn_format_write_float(stream, freezecamRoll);
+    saturn_format_write_float(stream, ortho->orthographic_scale);
+    saturn_format_write_float(stream, ortho->orthographic_rotation_x);
+    saturn_format_write_float(stream, ortho->orthographic_rotation_y);
+    saturn_format_write_float(stream, ortho->orthographic_offset_x);
+    saturn_format_write_float(stream, ortho->orthographic_offset_y);
     saturn_format_write_float(stream, camera_fov);
     saturn_format_write_float(stream, camera_focus);
     saturn_format_write_float(stream, camVelSpeed);
@@ -287,6 +344,7 @@ void saturn_save_project(char* filename) {
     saturn_format_write_bool(stream, enable_dust_particles);
     saturn_format_write_int8(stream, time_freeze_state);
     saturn_format_write_int8(stream, gLevelEnv);
+    saturn_format_write_int8(stream, saturn_imgui_is_orthographic());
     saturn_format_close_section(stream);
     if (autoChroma) {
         saturn_format_new_section(stream, "ACHR");
@@ -315,6 +373,15 @@ void saturn_save_project(char* filename) {
         saturn_format_write_float(stream, actor->zScale);
         saturn_format_write_float(stream, actor->spin_speed);
         saturn_format_write_float(stream, actor->alpha);
+        saturn_format_write_float(stream, actor->scaler[0][0]);
+        saturn_format_write_float(stream, actor->scaler[0][1]);
+        saturn_format_write_float(stream, actor->scaler[0][2]);
+        saturn_format_write_float(stream, actor->scaler[1][0]);
+        saturn_format_write_float(stream, actor->scaler[1][1]);
+        saturn_format_write_float(stream, actor->scaler[1][2]);
+        saturn_format_write_float(stream, actor->scaler[2][0]);
+        saturn_format_write_float(stream, actor->scaler[2][1]);
+        saturn_format_write_float(stream, actor->scaler[2][2]);
         saturn_format_write_int32(stream, actor->head_rot_x);
         saturn_format_write_int32(stream, actor->head_rot_y);
         saturn_format_write_int32(stream, actor->eye_state);

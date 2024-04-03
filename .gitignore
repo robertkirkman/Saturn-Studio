@@ -86,6 +86,8 @@ actors/mario/mario_logo.rgba16.png
 *.spj
 *.stm
 command_data.bin
+dynos/textures/*
+!dynos/textures/.gitkeep
 
 res/gfx
 res/sound

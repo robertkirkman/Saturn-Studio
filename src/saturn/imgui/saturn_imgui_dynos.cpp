@@ -241,7 +241,35 @@ void OpenModelSelector(MarioActor* actor) {
                     if (ImGui::Button(ICON_FK_DOWNLOAD " Refresh Packs###refresh_dynos_packs")) {
                         sDynosPacks.Clear();
                         DynOS_Opt_Init();
+                        std::vector<std::string> model_names = {};
+                        MarioActor* actor = gMarioActorList;
+                        while (actor) {
+                            if (actor->selected_model == -1) model_names.push_back("");
+                            else model_names.push_back(model_list[actor->selected_model].FolderName);
+                            actor = actor->next;
+                        }
                         model_list = GetModelList(packs_dir_path);
+                        actor = gMarioActorList;
+                        int iter = 0;
+                        while (actor) {
+                            std::string name = model_names[iter++];
+                            if (name != "") {
+                                bool cannot_find = true;
+                                for (int i = 0; i < model_list.size(); i++) {
+                                    if (model_list[i].FolderName == name) {
+                                        actor->selected_model = i;
+                                        actor->model = model_list[i];
+                                        cannot_find = false;
+                                        break;
+                                    }
+                                }
+                                if (cannot_find) {
+                                    actor->selected_model = -1;
+                                    actor->model = Model();
+                                }
+                            }
+                            actor = actor->next;
+                        }
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(); imgui_bundled_help_marker("WARNING: Experimental - this will probably lag the game.");
@@ -328,7 +356,7 @@ void sdynos_imgui_menu(int index) {
         ImGui::SliderFloat("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1, "%.0f");
         if (!empty && !actor->playback_input) ImGui::EndDisabled();
         saturn_keyframe_popout("k_inputrec_frame");
-        if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_mario_anim_frame", saturn_actor_indexof(actor)).c_str()))
+        if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_inputrec_frame", saturn_actor_indexof(actor)).c_str()))
             saturn_keyframe_helper("k_inputrec_frame", &actor->input_recording_frame, actor->input_recording.size());
         if (empty) ImGui::EndDisabled();
         ImGui::EndMenu();
@@ -399,6 +427,25 @@ void sdynos_imgui_menu(int index) {
                         actor->yScale = 1.f;
                         actor->zScale = 1.f;
                     }
+                }
+                if (link_scaling) {
+                    ImGui::SliderFloat("RH Size", &actor->scaler[0][0], -2, 2);
+                    saturn_keyframe_popout("k_rh_scale");
+                    ImGui::SliderFloat("LH Size", &actor->scaler[1][0], -2, 2);
+                    saturn_keyframe_popout("k_lh_scale");
+                    ImGui::SliderFloat("RF Size", &actor->scaler[2][0], -2, 2);
+                    saturn_keyframe_popout("k_rf_scale");
+                    vec3f_set(actor->scaler[0], actor->scaler[0][0], actor->scaler[0][0], actor->scaler[0][0]);
+                    vec3f_set(actor->scaler[1], actor->scaler[1][0], actor->scaler[1][0], actor->scaler[1][0]);
+                    vec3f_set(actor->scaler[2], actor->scaler[2][0], actor->scaler[2][0], actor->scaler[2][0]);
+                }
+                else {
+                    ImGui::SliderFloat3("RH Size", actor->scaler[0], -2, 2);
+                    saturn_keyframe_popout("k_rh_scale");
+                    ImGui::SliderFloat3("LH Size", actor->scaler[1], -2, 2);
+                    saturn_keyframe_popout("k_lh_scale");
+                    ImGui::SliderFloat3("RF Size", actor->scaler[2], -2, 2);
+                    saturn_keyframe_popout("k_rf_scale");
                 }
 
                 if (mario_exists) {

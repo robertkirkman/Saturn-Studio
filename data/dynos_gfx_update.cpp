@@ -1,3 +1,4 @@
+#include "behavior_data.h"
 #include "saturn/saturn_actors.h"
 #include "dynos.cpp.h"
 extern "C" {
@@ -36,6 +37,8 @@ static s32 RetrieveCurrentAnimationIndex(struct Object *aObject) {
     return -1;
 }
 
+std::map<SysPath, GfxData*> gfxdata = {};
+
 // Must be called twice, before and after geo_set_animation_globals
 void DynOS_Gfx_SwapAnimations(void *aPtr) {
     static Animation *pDefaultAnimation = NULL;
@@ -47,18 +50,25 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
         return;
     }
 
+    const Array<PackData *> &pDynosPacks = DynOS_Gfx_GetPacks();
+
     // Swap the current animation with the one from the Gfx data
     if (!pDefaultAnimation) {
         pDefaultAnimation = _Object->header.gfx.unk38.curAnim;
 
-        // Actor index
-        s32 _ActorIndex = DynOS_Geo_GetActorIndex(_Object->header.gfx.sharedChild->georef);
-        if (_ActorIndex == -1) {
+        // Mario actor
+        if (_Object->behavior != bhvMarioActor) return;
+        MarioActor* _Actor = saturn_get_actor(_Object->oMarioActorIndex);
+        if (!_Actor) {
+            return;
+        }
+
+        if (_Actor->selected_model == -1 || _Actor->custom_bone || _Actor->animstate.custom) {
             return;
         }
 
         // Gfx data
-        GfxData *_GfxData = DynOS_Gfx_GetActorList()[_ActorIndex].mGfxData;
+        GfxData *_GfxData = gfxdata[pDynosPacks[_Actor->selected_model]->mPath];
         if (!_GfxData) {
             return;
         }
@@ -69,15 +79,12 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
         }
 
         // Animation index
-        s32 _AnimIndex = (_Object == gMarioObject ? RetrieveCurrentMarioAnimationIndex() : RetrieveCurrentAnimationIndex(_Object));
-        if (_AnimIndex == -1) {
-            return;
-        }
+        s32 _AnimIndex = _Actor->animstate.id;
 
         // Animation data
         const AnimData *_AnimData = (const AnimData *) _GfxData->mAnimationTable[_AnimIndex].second;
         if (_AnimData) {
-            sGfxDataAnimation.flags = _AnimData->mFlags;
+            sGfxDataAnimation.flags = 4;
             sGfxDataAnimation.unk02 = _AnimData->mUnk02;
             sGfxDataAnimation.unk04 = _AnimData->mUnk04;
             sGfxDataAnimation.unk06 = _AnimData->mUnk06;
@@ -87,6 +94,7 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
             sGfxDataAnimation.index = _AnimData->mIndex.second.begin();
             sGfxDataAnimation.length = _AnimData->mLength;
             _Object->header.gfx.unk38.curAnim = &sGfxDataAnimation;
+            _Actor->animstate.length = _AnimData->mUnk0A.second;
         }
 
     // Restore the default animation
@@ -99,8 +107,6 @@ void DynOS_Gfx_SwapAnimations(void *aPtr) {
 //
 // Update models
 //
-
-std::map<SysPath, GfxData*> gfxdata = {};
 
 void DynOS_Gfx_Update() {
     if (gObjectLists) {

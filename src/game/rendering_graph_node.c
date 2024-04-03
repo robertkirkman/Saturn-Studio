@@ -314,21 +314,40 @@ static void geo_process_perspective(struct GraphNodePerspective *node) {
         f32 aspect = (f32) gCurGraphNodeRoot->width / (f32) gCurGraphNodeRoot->height;
 #endif
 
-        guPerspective(mtx, &perspNorm, node->fov, aspect, node->near, node->far, 1.0f);
+        bool interpolate = gGlobalTimer == node->prevTimestamp + 1 && gGlobalTimer != gLakituState.skipCameraInterpolationTimestamp;
+        if (saturn_imgui_is_orthographic()) {
+            struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
+            float w = 1000.f * ortho->orthographic_scale * aspect / 2;
+            float h = 1000.f * ortho->orthographic_scale          / 2;
+            guOrtho(mtx, -w, w, -h, h, -30000, 30000, 1.f);
+            if (interpolate) {
+                fovInterpolated = (node->prevFov + node->fov) / 2.0f;
+                guOrtho(mtxInterpolated, -w, w, -h, h, -30000, 30000, 1.f);
+                sPerspectivePos = gDisplayListHead;
+                sPerspectiveMtx = mtx;
+                gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtxInterpolated), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+            }
+            else {
+                gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+            }
+        }
+        else {
+            guPerspective(mtx, &perspNorm, node->fov, aspect, node->near, node->far, 1.0f);
 
-        if (gGlobalTimer == node->prevTimestamp + 1 && gGlobalTimer != gLakituState.skipCameraInterpolationTimestamp) {
+            if (interpolate) {
 
-            fovInterpolated = (node->prevFov + node->fov) / 2.0f;
-            guPerspective(mtxInterpolated, &perspNorm, fovInterpolated, aspect, node->near, node->far, 1.0f);
-            gSPPerspNormalize(gDisplayListHead++, perspNorm);
+                fovInterpolated = (node->prevFov + node->fov) / 2.0f;
+                guPerspective(mtxInterpolated, &perspNorm, fovInterpolated, aspect, node->near, node->far, 1.0f);
+                gSPPerspNormalize(gDisplayListHead++, perspNorm);
 
-            sPerspectivePos = gDisplayListHead;
-            sPerspectiveMtx = mtx;
-            gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtxInterpolated),
-                      G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-        } else {
-            gSPPerspNormalize(gDisplayListHead++, perspNorm);
-            gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+                sPerspectivePos = gDisplayListHead;
+                sPerspectiveMtx = mtx;
+                gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtxInterpolated),
+                        G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+            } else {
+                gSPPerspNormalize(gDisplayListHead++, perspNorm);
+                gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
+            }
         }
         node->prevFov = node->fov;
         node->prevTimestamp = gGlobalTimer;
@@ -1093,6 +1112,8 @@ static int obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
     if (node->node.flags & GRAPH_RENDER_INVISIBLE) {
         return FALSE;
     }
+
+    if (saturn_imgui_is_orthographic()) return TRUE;
 
     geo = node->sharedChild;
 

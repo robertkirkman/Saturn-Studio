@@ -182,7 +182,7 @@ Vec3f cameraPos = { 0, 0, 0 };
 float cameraYaw = 0;
 float cameraPitch = 0;
 
-u8 gIsCameraMounted = 0;
+u8 gIsCameraMounted = 1;
 
 /**
  * Lakitu's position and focus.

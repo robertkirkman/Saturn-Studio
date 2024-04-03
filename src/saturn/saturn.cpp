@@ -358,74 +358,90 @@ void saturn_update() {
 
 #define inv(var) ((var) * -2 + 1)
 
-    float mzoom_modif = 200;
-    if (inprec) {
-        mzoom_modif = 50;
-        mzoom_modif *= configCamCtrlMouseInprecZoomSens * inv(configCamCtrlMouseInprecZoomInv);
-    }
-    else mzoom_modif *= configCamCtrlMouseZoomSens * inv(configCamCtrlMouseZoomInv);
-    if (kb[SDL_SCANCODE_LSHIFT]) mzoom_modif /= 4;
-    if (kb[SDL_SCANCODE_LCTRL]) mzoom_modif *= 4;
-    mzoom = mouse_state.scrollwheel * mzoom_modif;
-
-    if (mouse_state.update_camera) { // mouse
-        bool pan = mouse_state.held & MOUSEBTN_MASK_L;
-        bool rotate = mouse_state.held & MOUSEBTN_MASK_R;
-        if (inprec) { pan |= rotate; rotate = false; }
-        float *x = &mmove_x, *y = &mmove_y;
-        if (rotate) { x = &mrotate_x; y = &mrotate_y; }
-        *x = mouse_state.x_diff;
-        *y = mouse_state.y_diff;
+    if (!saturn_imgui_is_orthographic()) {
+        float mzoom_modif = 200;
         if (inprec) {
-            *x *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvX);
-            *y *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvY);
-            
+            mzoom_modif = 50;
+            mzoom_modif *= configCamCtrlMouseInprecZoomSens * inv(configCamCtrlMouseInprecZoomInv);
         }
-        else if (rotate) {
-            *x *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvX);
-            *y *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvY);
+        else mzoom_modif *= configCamCtrlMouseZoomSens * inv(configCamCtrlMouseZoomInv);
+        if (kb[SDL_SCANCODE_LSHIFT]) mzoom_modif /= 4;
+        if (kb[SDL_SCANCODE_LCTRL]) mzoom_modif *= 4;
+        mzoom = mouse_state.scrollwheel * mzoom_modif;
+
+        if (mouse_state.update_camera) { // mouse
+            bool pan = mouse_state.held & MOUSEBTN_MASK_L;
+            bool rotate = mouse_state.held & MOUSEBTN_MASK_R;
+            if (inprec) { pan |= rotate; rotate = false; }
+            float *x = &mmove_x, *y = &mmove_y;
+            if (rotate) { x = &mrotate_x; y = &mrotate_y; }
+            *x = mouse_state.x_diff;
+            *y = mouse_state.y_diff;
+            if (inprec) {
+                *x *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvX);
+                *y *= 64 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseInprecRotInvY);
+                
+            }
+            else if (rotate) {
+                *x *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvX);
+                *y *= 24 * configCamCtrlMouseRotSens * inv(configCamCtrlMouseRotInvY);
+            }
+            else {
+                *x *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvX);
+                *y *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvY);
+            }
         }
-        else {
-            *x *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvX);
-            *y *= 1.5f * configCamCtrlMousePanSens * inv(configCamCtrlMousePanInvY);
+
+        if (!inprec && !saturn_disable_sm64_input()) { // keyboard
+            bool rotate = kb[SDL_SCANCODE_O];
+            bool pan = !rotate;
+            bool up = kb[SDL_SCANCODE_P] || rotate;
+
+            float *x = &kmove_x, *y = &kmove_y;
+            if (rotate) { x = &krotate_x; y = &krotate_y; }
+
+            if (up) {
+                if (kb[SDL_SCANCODE_W]) (*y)++;
+                if (kb[SDL_SCANCODE_S]) (*y)--;
+            }
+            else {
+                if (kb[SDL_SCANCODE_W] || kb[SDL_SCANCODE_S]) kzoom = 0;
+                if (kb[SDL_SCANCODE_W]) kzoom++;
+                if (kb[SDL_SCANCODE_S]) kzoom--;
+            }
+            if (kb[SDL_SCANCODE_A]) (*x)++;
+            if (kb[SDL_SCANCODE_D]) (*x)--;
+
+            float modif = 60;
+            if (kb[SDL_SCANCODE_LSHIFT]) modif /= 4;
+            if (kb[SDL_SCANCODE_LCTRL]) modif *= 4;
+            if (rotate) modif *= 8;
+            *x *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvX : configCamCtrlKeybPanInvX);
+            *y *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvY : configCamCtrlKeybPanInvY);
+            kzoom *= modif * configCamCtrlKeybZoomSens * inv(configCamCtrlKeybZoomInv);
+        }
+
+        else { // input record cbuttons
+            float speed = 1200 * configCamCtrlKeybInprecSens;
+            if (gPlayer1Controller->buttonDown & U_CBUTTONS) kmove_y -= speed * inv(configCamCtrlKeybInprecRotInvY);
+            if (gPlayer1Controller->buttonDown & D_CBUTTONS) kmove_y += speed * inv(configCamCtrlKeybInprecRotInvY);
+            if (gPlayer1Controller->buttonDown & L_CBUTTONS) kmove_x -= speed * inv(configCamCtrlKeybInprecRotInvX);
+            if (gPlayer1Controller->buttonDown & R_CBUTTONS) kmove_x += speed * inv(configCamCtrlKeybInprecRotInvX);
         }
     }
-
-    if (!inprec && !saturn_disable_sm64_input()) { // keyboard
-        bool rotate = kb[SDL_SCANCODE_O];
-        bool pan = !rotate;
-        bool up = kb[SDL_SCANCODE_P] || rotate;
-
-        float *x = &kmove_x, *y = &kmove_y;
-        if (rotate) { x = &krotate_x; y = &krotate_y; }
-
-        if (up) {
-            if (kb[SDL_SCANCODE_W]) (*y)++;
-            if (kb[SDL_SCANCODE_S]) (*y)--;
+    else {
+        struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
+        ortho->orthographic_scale -= mouse_state.scrollwheel * ortho->orthographic_scale * 0.1;
+        if (mouse_state.update_camera) {
+            if (mouse_state.held & MOUSEBTN_MASK_L) {
+                ortho->orthographic_offset_x += mouse_state.x_diff * 2.5 * ortho->orthographic_scale;
+                ortho->orthographic_offset_y += mouse_state.y_diff * 2.5 * ortho->orthographic_scale;
+            }
+            if (mouse_state.held & MOUSEBTN_MASK_R) {
+                ortho->orthographic_rotation_y += mouse_state.x_diff * 0.2;
+                ortho->orthographic_rotation_x += mouse_state.y_diff * 0.2;
+            }
         }
-        else {
-            if (kb[SDL_SCANCODE_W] || kb[SDL_SCANCODE_S]) kzoom = 0;
-            if (kb[SDL_SCANCODE_W]) kzoom++;
-            if (kb[SDL_SCANCODE_S]) kzoom--;
-        }
-        if (kb[SDL_SCANCODE_A]) (*x)++;
-        if (kb[SDL_SCANCODE_D]) (*x)--;
-
-        float modif = 60;
-        if (kb[SDL_SCANCODE_LSHIFT]) modif /= 4;
-        if (kb[SDL_SCANCODE_LCTRL]) modif *= 4;
-        if (rotate) modif *= 8;
-        *x *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvX : configCamCtrlKeybPanInvX);
-        *y *= modif * (rotate ? configCamCtrlKeybRotSens : configCamCtrlKeybPanSens) * inv(rotate ? configCamCtrlKeybRotInvY : configCamCtrlKeybPanInvY);
-        kzoom *= modif * configCamCtrlKeybZoomSens * inv(configCamCtrlKeybZoomInv);
-    }
-
-    else { // input record cbuttons
-        float speed = 1200 * configCamCtrlKeybInprecSens;
-        if (gPlayer1Controller->buttonDown & U_CBUTTONS) kmove_y -= speed * inv(configCamCtrlKeybInprecRotInvY);
-        if (gPlayer1Controller->buttonDown & D_CBUTTONS) kmove_y += speed * inv(configCamCtrlKeybInprecRotInvY);
-        if (gPlayer1Controller->buttonDown & L_CBUTTONS) kmove_x -= speed * inv(configCamCtrlKeybInprecRotInvX);
-        if (gPlayer1Controller->buttonDown & R_CBUTTONS) kmove_x += speed * inv(configCamCtrlKeybInprecRotInvX);
     }
 #undef inv
     mouse_state.scrollwheel = 0;
@@ -478,7 +494,23 @@ void saturn_update() {
     if (cameraRollRight) freezecamRoll -= camVelRSpeed * 512;
 
     if (gCamera) {
-        if (inprec) {
+        saturn_camera_object->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
+        if (saturn_imgui_is_orthographic()) {
+            struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
+            float pitch = ortho->orthographic_rotation_x, yaw  = ortho->orthographic_rotation_y;
+            float offX  = ortho->orthographic_offset_x  , offY = ortho->orthographic_offset_y  ;
+            float scale = ortho->orthographic_scale;
+            pitch = pitch / 360 * 65536;
+            yaw   = yaw   / 360 * 65536;
+            vec3f_set(gCamera->pos, 0, 0, 0);
+            gCamera->pos[0] += sins(yaw + atan2s(0, 127)) * offX * camVelSpeed;
+            gCamera->pos[2] += coss(yaw + atan2s(0, 127)) * offX * camVelSpeed;
+            gCamera->pos[1] += coss(pitch) * offY * camVelSpeed;
+            gCamera->pos[0] += sins(pitch) * coss(yaw + atan2s(0, 127)) * offY * camVelSpeed;
+            gCamera->pos[2] -= sins(pitch) * sins(yaw + atan2s(0, 127)) * offY * camVelSpeed;
+            vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, -pitch, yaw);
+        }
+        else if (inprec) {
             vec3f_copy(gCamera->pos, inpreccam_pos);
             vec3f_copy(gCamera->focus, inpreccam_focus);
         }
@@ -500,18 +532,19 @@ void saturn_update() {
         gLakituState.yaw = gCamera->yaw;
         gLakituState.roll = 0;
 
-        saturn_camera_object->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
-        if (saturn_imgui_is_capturing_video()) gLakituState.roll = freezecamRoll;
-        else if (gIsCameraMounted) {
-            vec3f_copy(cameraPos, freezecamPos);
-            cameraYaw = freezecamYaw;
-            cameraPitch = freezecamPitch;
-            gLakituState.roll = freezecamRoll;
-        }
-        else {
-            saturn_camera_object->header.gfx.node.flags &= ~GRAPH_RENDER_INVISIBLE;
-            vec3f_copy(saturn_camera_object->header.gfx.pos, freezecamPos);
-            vec3s_set(saturn_camera_object->header.gfx.angle, freezecamPitch, freezecamYaw + 0x8000, freezecamRoll);
+        if (!saturn_imgui_is_orthographic()) {
+            if (saturn_imgui_is_capturing_video()) gLakituState.roll = freezecamRoll;
+            else if (gIsCameraMounted) {
+                vec3f_copy(cameraPos, freezecamPos);
+                cameraYaw = freezecamYaw;
+                cameraPitch = freezecamPitch;
+                gLakituState.roll = freezecamRoll;
+            }
+            else {
+                saturn_camera_object->header.gfx.node.flags &= ~GRAPH_RENDER_INVISIBLE;
+                vec3f_copy(saturn_camera_object->header.gfx.pos, freezecamPos);
+                vec3s_set(saturn_camera_object->header.gfx.angle, freezecamPitch, freezecamYaw + 0x8000, freezecamRoll);
+            }
         }
     }
 
@@ -562,7 +595,7 @@ void saturn_update() {
         }
     }*/
 
-    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game && !saturn_actor_is_recording_input()) {
+    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game && !saturn_actor_is_recording_input() && !saturn_imgui_is_orthographic()) {
         Vec3f dir, hit;
         s16 yaw, pitch;
         float dist;
@@ -999,6 +1032,8 @@ bool saturn_begin_extract_rom_thread() {
     return false;
 }
 
+extern void split_skyboxes();
+
 bool saturn_do_load() {
     if (load_thread_began) return loading_finished;
     load_thread_began = true;
@@ -1012,6 +1047,7 @@ bool saturn_do_load() {
         saturn_load_locations();
         saturn_load_favorite_anims();
         saturn_fill_data_table();
+        split_skyboxes();
         saturn_launch_timer = 0;
         loading_finished = true;
     });

@@ -248,6 +248,13 @@ s16 saturn_actor_geo_switch(u8 item) {
     return 0;
 }
 
+void saturn_actor_get_scaler(Vec3f scale, int index) {
+    MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
+    if (o->behavior != bhvMarioActor) actor = nullptr;
+    if (actor == nullptr) vec3f_set(scale, 0, 0, 0);
+    else vec3f_copy(scale, actor->scaler[index]);
+}
+
 float saturn_actor_get_alpha() {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (o->behavior != bhvMarioActor) actor = nullptr;

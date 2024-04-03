@@ -73,6 +73,7 @@ extern bool         configSaturnSplash;
 extern bool         configNoWater;
 extern bool         configCUpLimit;
 extern unsigned int configEditorThemeJson;
+extern unsigned int configEditorTextures;
 extern float        camera_fov;
 extern bool         configUnstableFeatures;
 #ifdef BETTERCAMERA
