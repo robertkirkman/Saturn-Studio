@@ -283,12 +283,12 @@ unsigned char* file_processor_apply(unsigned char* data, std::pair<int, unsigned
 
 void join_skyboxes(std::string filename) {
     unsigned char* joined = (unsigned char*)malloc(32 * 32 * 10 * 8 * 4);
-    std::filesystem::path path = EXTRACT_PATH / std::filesystem::path(filename);
+    fs::path path = EXTRACT_PATH / fs::path(filename);
     for (int i = 0; i < 80; i++) {
         int x = i % 10 * 32;
         int y = i / 10 * 32;
         int w, h, channels;
-        unsigned char* tile = pngutils_read_png((std::filesystem::absolute(path).string() + "." + std::to_string(i) + ".rgba16.png").c_str(), &w, &h, &channels, 0);
+        unsigned char* tile = pngutils_read_png((fs::absolute(path).string() + "." + std::to_string(i) + ".rgba16.png").c_str(), &w, &h, &channels, 0);
         for (int j = 0; j < 32; j++) {
             int off = x + (y + j) * 32 * 10;
             memcpy(joined + off * 4, tile + j * 32 * 4, 32 * 4);
@@ -296,14 +296,14 @@ void join_skyboxes(std::string filename) {
         pngutils_free(tile);
     }
     path = path.parent_path() / "full" / (path.filename().string() + ".png");
-    std::filesystem::create_directories(path.parent_path());
+    fs::create_directories(path.parent_path());
     write_png(path.string(), joined, 32 * 10, 32 * 8, 4);
     free(joined);
 }
 
-void split_skybox(std::filesystem::path path) {
+void split_skybox(fs::path path) {
     std::string name = path.stem().string();
-    std::filesystem::path dest = path.parent_path().parent_path();
+    fs::path dest = path.parent_path().parent_path();
     int w, h, channels;
     unsigned char* joined = pngutils_read_png(path.string().c_str(), &w, &h, &channels, 0);
     for (int i = 0; i < 80; i++) {
@@ -321,13 +321,13 @@ void split_skybox(std::filesystem::path path) {
 }
 
 void split_skyboxes() {
-    for (auto entry : std::filesystem::directory_iterator(EXTRACT_PATH / "gfx" / "textures" / "skyboxes" / "full")) {
+    for (auto entry : fs::directory_iterator(EXTRACT_PATH / "gfx" / "textures" / "skyboxes" / "full")) {
         split_skybox(entry.path());
     }
-    for (auto texture_pack : std::filesystem::directory_iterator(fs::path(sys_user_path()) / "dynos/textures")) {
-        std::filesystem::path path = texture_pack.path() / "textures" / "skyboxes" / "full";
-        if (!std::filesystem::exists(path)) continue;
-        for (auto entry : std::filesystem::directory_iterator(path)) {
+    for (auto texture_pack : fs::directory_iterator(fs::path(sys_user_path()) / "dynos/textures")) {
+        fs::path path = texture_pack.path() / "textures" / "skyboxes" / "full";
+        if (!fs::exists(path)) continue;
+        for (auto entry : fs::directory_iterator(path)) {
             split_skybox(entry.path());
         }
     }
