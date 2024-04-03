@@ -632,10 +632,11 @@ void saturn_load_textures() {
         fs::create_directory(dynos_texture_dir);
     }
     for (const auto& entry : fs::directory_iterator(dynos_texture_dir)) {
-        if (!entry.is_directory()) continue;
-        std::string name = entry.path().filename().string();
+        fs::path path = entry.path();
+        if (!fs::is_directory(path)) continue;
+        std::string name = path.filename().string();
         if (string_hash(name.data(), 0, name.length()) == configEditorTextures) current_texture_id = textures_list.size();
-        textures_list.push_back(entry.path().filename().string());
+        textures_list.push_back(path.filename().string());
     }
 }
 
