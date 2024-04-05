@@ -46,6 +46,7 @@ std::map<std::string, FormatTableEntry> format_table = {
 };
 
 #define EXTRACT_PATH fs::path(sys_user_path()) / "res"
+#define EXTRACT_PATH_FS_RELATIVE fs_relative::path(sys_user_path()) / "res" // this is to force some of the code to work on GCC 8.3.0
 #define EXTRACT_ROM gCLIOpts.RomPath
 #define ROM_SIZE (8 * 1024 * 1024)
 #define ROM_CHECKSUM 0x3CE60709
@@ -283,12 +284,12 @@ unsigned char* file_processor_apply(unsigned char* data, std::pair<int, unsigned
 
 void join_skyboxes(std::string filename) {
     unsigned char* joined = (unsigned char*)malloc(32 * 32 * 10 * 8 * 4);
-    fs::path path = EXTRACT_PATH / fs::path(filename);
+    fs_relative::path path = EXTRACT_PATH_FS_RELATIVE / fs_relative::path(filename);
     for (int i = 0; i < 80; i++) {
         int x = i % 10 * 32;
         int y = i / 10 * 32;
         int w, h, channels;
-        unsigned char* tile = pngutils_read_png((fs::absolute(path).string() + "." + std::to_string(i) + ".rgba16.png").c_str(), &w, &h, &channels, 0);
+        unsigned char* tile = pngutils_read_png((fs_relative::absolute(path).string() + "." + std::to_string(i) + ".rgba16.png").c_str(), &w, &h, &channels, 0);
         for (int j = 0; j < 32; j++) {
             int off = x + (y + j) * 32 * 10;
             memcpy(joined + off * 4, tile + j * 32 * 4, 32 * 4);
@@ -296,7 +297,7 @@ void join_skyboxes(std::string filename) {
         pngutils_free(tile);
     }
     path = path.parent_path() / "full" / (path.filename().string() + ".png");
-    fs::create_directories(path.parent_path());
+    fs_relative::create_directories(path.parent_path());
     write_png(path.string(), joined, 32 * 10, 32 * 8, 4);
     free(joined);
 }
