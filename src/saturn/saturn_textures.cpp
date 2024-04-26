@@ -151,6 +151,7 @@ std::string* stack_to_heap(std::string str) {
 */
 const void* saturn_bind_texture(const void* input) {
     if (input == nullptr) return input;
+    input = saturn_texture_forward((const char*)input);
     const char* inputTexture = static_cast<const char*>(input);
     const char* outputTexture;
 

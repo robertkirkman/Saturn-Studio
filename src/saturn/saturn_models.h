@@ -87,12 +87,14 @@ class Model {
         }
 };
 
+class MarioActor;
+
 extern int current_model_id;
 extern Model current_model;
 extern Model previous_model;
 extern std::vector<Model> model_list;
 
-extern bool AnyModelsEnabled();
+extern bool AnyModelsEnabled(MarioActor*);
 extern std::vector<Model> GetModelList(std::string);
 extern Model LoadModelData(std::string);
 

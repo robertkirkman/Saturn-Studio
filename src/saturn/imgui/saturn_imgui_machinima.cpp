@@ -348,7 +348,7 @@ void imgui_machinima_quick_options() {
             imgui_bundled_tooltip((std::string(enabled_acts[i] ? "Disable" : "Enable") + " act " + std::to_string(i + 1) + " objects").c_str());
         }
 
-        auto locations = saturn_get_locations();
+        /*auto locations = saturn_get_locations();
         bool do_save = false;
         std::vector<std::string> forRemoval = {};
         if (ImGui::BeginMenu("Locations")) {
@@ -381,7 +381,7 @@ void imgui_machinima_quick_options() {
         for (std::string key : forRemoval) {
             locations->erase(key);
         }
-        if (do_save) saturn_save_locations();
+        if (do_save) saturn_save_locations();*/
     }
     ImGui::Separator();
     ImGui::Checkbox("HUD", &configHUD);

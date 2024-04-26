@@ -83,8 +83,8 @@ extern void PasteGameShark(std::string, ColorCode cc);
 extern void ApplyColorCode(GameSharkCode, MarioActor*);
 
 extern std::vector<std::string> GetColorCodeList(std::string);
-extern GameSharkCode LoadGSFile(std::string, std::string);
-extern void SaveGSFile(GameSharkCode, std::string);
+extern GameSharkCode LoadGSFile(std::string, std::string, MarioActor*);
+extern void SaveGSFile(GameSharkCode, std::string, MarioActor*, bool);
 extern void DeleteGSFile(std::string);
 
 extern std::vector<std::string> color_code_list;

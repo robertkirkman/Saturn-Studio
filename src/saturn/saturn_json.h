@@ -84,7 +84,7 @@ private:
     std::string str = "";
     double num = 0;
     ValueType type = JSONVALUE_NULL;
-    std::vector<Token> tokenize(std::ifstream& stream) {
+    std::vector<Token> tokenize(std::istream& stream) {
         std::vector<Token> tokens = {};
         TokenType type = JSONTOKEN_NONE;
         std::string value = "";
@@ -286,7 +286,7 @@ public:
         if (index < 0 || index >= (int)arr.size()) throw std::runtime_error(pfx "index " + std::to_string(index) + " out of bounds, length: " + std::to_string(arr.size()));
         return arr[index];
     }
-    void operator<<(std::ifstream& stream) {
+    void operator<<(std::istream& stream) {
         auto tokenVec = tokenize(stream);
         Token* tokens = tokenVec.data();
         Increment increment = Increment(tokenVec.size());

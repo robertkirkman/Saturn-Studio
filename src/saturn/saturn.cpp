@@ -140,6 +140,8 @@ f32 mario_headrot_speed = 10.0f;
 
 struct Object* saturn_camera_object = nullptr;
 
+bool setting_mario_struct_pos = false;
+
 extern "C" {
 #include "game/camera.h"
 #include "game/area.h"
@@ -430,16 +432,15 @@ void saturn_update() {
         }
     }
     else {
-        struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
-        ortho->orthographic_scale -= mouse_state.scrollwheel * ortho->orthographic_scale * 0.1;
+        ortho_settings.scale -= mouse_state.scrollwheel * ortho_settings.scale * 0.1;
         if (mouse_state.update_camera) {
             if (mouse_state.held & MOUSEBTN_MASK_L) {
-                ortho->orthographic_offset_x += mouse_state.x_diff * 2.5 * ortho->orthographic_scale;
-                ortho->orthographic_offset_y += mouse_state.y_diff * 2.5 * ortho->orthographic_scale;
+                ortho_settings.offset_x += mouse_state.x_diff * 2.5 * ortho_settings.scale;
+                ortho_settings.offset_y += mouse_state.y_diff * 2.5 * ortho_settings.scale;
             }
             if (mouse_state.held & MOUSEBTN_MASK_R) {
-                ortho->orthographic_rotation_y += mouse_state.x_diff * 0.2;
-                ortho->orthographic_rotation_x += mouse_state.y_diff * 0.2;
+                ortho_settings.rotation_y += mouse_state.x_diff * 0.2;
+                ortho_settings.rotation_x += mouse_state.y_diff * 0.2;
             }
         }
     }
@@ -496,10 +497,9 @@ void saturn_update() {
     if (gCamera) {
         saturn_camera_object->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
         if (saturn_imgui_is_orthographic()) {
-            struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
-            float pitch = ortho->orthographic_rotation_x, yaw  = ortho->orthographic_rotation_y;
-            float offX  = ortho->orthographic_offset_x  , offY = ortho->orthographic_offset_y  ;
-            float scale = ortho->orthographic_scale;
+            float pitch = ortho_settings.rotation_x, yaw  = ortho_settings.rotation_y;
+            float offX  = ortho_settings.offset_x  , offY = ortho_settings.offset_y  ;
+            float scale = ortho_settings.scale;
             pitch = pitch / 360 * 65536;
             yaw   = yaw   / 360 * 65536;
             vec3f_set(gCamera->pos, 0, 0, 0);
@@ -595,7 +595,27 @@ void saturn_update() {
         }
     }*/
 
-    if (mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game && !saturn_actor_is_recording_input() && !saturn_imgui_is_orthographic()) {
+    bool should_do_mouse_action = mouse_state.dist_travelled <= 3 && mouse_state.released && mouse_state.focused_on_game && !saturn_actor_is_recording_input() && !saturn_imgui_is_orthographic();
+
+    if (setting_mario_struct_pos) {
+        Vec3f dir, hit;
+        s16 yaw, pitch;
+        float dist;
+        float x = (mouse_state.x - game_viewport[0]) / game_viewport[2];
+        float y = (mouse_state.y - game_viewport[1]) / game_viewport[3];
+        struct Surface* surface = nullptr;
+        vec3f_get_dist_and_angle(gCamera->pos, gCamera->focus, &dist, &pitch, &yaw);
+        get_raycast_dir(dir, yaw, pitch, camera_fov, gfx_current_dimensions.aspect_ratio, x, y);
+        vec3f_mul(dir, 8000);
+        find_surface_on_ray(gCamera->pos, dir, &surface, hit);
+        vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
+        vec3f_copy(gMarioState->pos, hit);
+        gMarioState->fAngle = yaw;
+        if (should_do_mouse_action && (mouse_state.released & MOUSEBTN_MASK_L)) {
+            setting_mario_struct_pos = false;
+        }
+    }
+    else if (should_do_mouse_action) {
         Vec3f dir, hit;
         s16 yaw, pitch;
         float dist;

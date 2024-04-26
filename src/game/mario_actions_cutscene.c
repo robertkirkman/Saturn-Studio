@@ -546,7 +546,9 @@ s32 act_reading_sign(struct MarioState *m) {
 
 // debug free move action
 s32 act_debug_free_move(struct MarioState *m) {
-    printf("debug free move\n");
+    m->faceAngle[1] = m->fAngle;
+    vec3f_copy(m->marioObj->header.gfx.pos, m->pos);
+    vec3s_copy(m->marioObj->header.gfx.angle, m->faceAngle);
     return FALSE;
     struct Surface *surf;
     f32 floorHeight;

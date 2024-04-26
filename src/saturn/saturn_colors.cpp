@@ -1,5 +1,6 @@
 #include "saturn/saturn_colors.h"
 
+#include <sstream>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -22,6 +23,8 @@ extern "C" {
 #include "game/level_update.h"
 #include "sm64.h"
 }
+
+#include "saturn/saturn_json.h"
 
 #include <dirent.h>
 #include <fstream>
@@ -261,7 +264,7 @@ std::vector<std::string> GetColorCodeList(std::string folderPath) {
     return cc_list;
 }
 
-GameSharkCode LoadGSFile(std::string fileName, std::string filePath) {
+GameSharkCode LoadGSFile(std::string fileName, std::string filePath, MarioActor* actor) {
     GameSharkCode colorCode;
 
     if (fileName == "../default.gs") {
@@ -279,6 +282,33 @@ GameSharkCode LoadGSFile(std::string fileName, std::string filePath) {
             std::string content(size, '\0');
             file.read(content.data(), size);
             file.close();
+
+            // i hate how nested this shit is
+            int jsonBegin = content.find('{');
+            if (jsonBegin != std::string::npos) {
+                std::string json = content.substr(jsonBegin);
+                content = content.substr(0, jsonBegin - 1);
+                if (actor) {
+                    Json::Value root;
+                    std::stringstream stream = std::stringstream(json);
+                    root << stream;
+                    for (auto& entry : root.object()) {
+                        if (entry.first == "enable_custom_eyes") {
+                            actor->custom_eyes = entry.second.asBool();
+                            continue;
+                        }
+                        // why the fuck is this not a map
+                        for (auto& expr : actor->model.Expressions) {
+                            if (expr.Name != entry.first) continue;
+                            // kill me
+                            for (int i = 0; i < expr.Textures.size(); i++) {
+                                if (expr.Textures[i].FileName != entry.second.asString()) continue;
+                                expr.CurrentIndex = i;
+                            }
+                        }
+                    }
+                }
+            }
 
             // Write to CC
             colorCode.Name = fileName.substr(0, fileName.size() - 3);
@@ -300,17 +330,25 @@ GameSharkCode LoadGSFile(std::string fileName, std::string filePath) {
     return colorCode;
 }
 
-void SaveGSFile(GameSharkCode colorCode, std::string filePath) {
+void SaveGSFile(GameSharkCode colorCode, std::string filePath, MarioActor* actor, bool expr_export) {
     // Change conflicting file names
     if (colorCode.Name == "Mario" || colorCode.Name == "default")
         colorCode.Name = "Sample";
 
     // Create "/colorcodes" directory if it doesn't already exist
     if (!fs::exists(filePath))
-        fs::create_directory(filePath + "/../colorcodes");
+        fs::create_directory(filePath);
 
     std::ofstream file(filePath + "/" + colorCode.Name + ".gs");
     file << colorCode.GameShark;
+    if (actor && expr_export) {
+        file << "\n{\n";
+        for (const auto& expr : actor->model.Expressions) {
+            file << "   \"" << expr.Name << "\": \"" << expr.Textures[expr.CurrentIndex].FileName << "\",\n";
+        }
+        file << "   \"enable_custom_eyes\": " << (actor->custom_eyes ? "true" : "false") << "\n}";
+    }
+    file.close();
 }
 
 void DeleteGSFile(std::string filePath) {

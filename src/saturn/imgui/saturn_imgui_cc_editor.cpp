@@ -118,7 +118,7 @@ void ResetColorCode(bool usingModel) {
     // Model CCs will attempt to select their first color code instead
     if (usingModel && model_color_code_list.size() > 0 && current_actor->model.HasColorCodeFolder()) {
         uiCcListId = -1;
-        current_color_code = LoadGSFile(model_color_code_list[0], current_actor->model.FolderPath + "/colorcodes");
+        current_color_code = LoadGSFile(model_color_code_list[0], current_actor->model.FolderPath + "/colorcodes", usingModel ? current_actor : nullptr);
         ApplyColorCode(current_color_code, current_actor);
         if (current_color_code.Name == "default")
             current_color_code.Name = "Sample";
@@ -168,7 +168,7 @@ void OpenModelCCSelector(Model model, std::vector<std::string> list, std::string
             else uiCcListId = 0;
 
             // Overwrite current color code
-            current_color_code = LoadGSFile(list[n], model.FolderPath + "/colorcodes");
+            current_color_code = LoadGSFile(list[n], model.FolderPath + "/colorcodes", current_actor);
             ApplyColorCode(current_color_code, current_actor);
             if (label_name_lower == "default" || label_name_lower != "../default") {
                 label_name = "Sample";
@@ -266,7 +266,7 @@ void OpenCCSelector(MarioActor* actor) {
             actor->cc_index = n + 1;
 
             // Overwrite current color code
-            current_color_code = LoadGSFile(color_code_list[n], colorcodes_dir_path);
+            current_color_code = LoadGSFile(color_code_list[n], colorcodes_dir_path, current_actor);
             ApplyColorCode(current_color_code, current_actor);
             if (label_name_lower == "mario") {
                 label_name = "Sample";
@@ -440,6 +440,8 @@ void ColorPartBox(std::string name, const char* mainName, const char* shadeName,
     }
 }
 
+bool expr_export = true;
+
 void OpenCCEditor(MarioActor* actor) {
     CCChangeActor(actor);
     ImGui::PushItemWidth(100);
@@ -450,17 +452,19 @@ void OpenCCEditor(MarioActor* actor) {
 
     if (ImGui::Button(ICON_FK_FILE_TEXT " File###save_cc_to_file")) {
         UpdatePaletteFromEditor();
-        SaveGSFile(current_color_code, std::string(sys_user_path()) + "/dynos/colorcodes");
+        SaveGSFile(current_color_code, std::string(sys_user_path()) + "/dynos/colorcodes", nullptr, false);
         RefreshColorCodeList();
     }
     ImGui::Dummy(ImVec2(0, 0));
     ImGui::SameLine(150);
-    if (actor->model.ColorCodeSupport && AnyModelsEnabled()) {
+    if (actor->model.ColorCodeSupport && AnyModelsEnabled(actor)) {
         if (ImGui::Button(ICON_FK_FOLDER_OPEN_O " Model###save_cc_to_model")) {
             UpdatePaletteFromEditor();
-            SaveGSFile(current_color_code, actor->model.FolderPath + "/colorcodes");
+            SaveGSFile(current_color_code, actor->model.FolderPath + "/colorcodes", actor, expr_export);
             RefreshColorCodeList();
         }
+        ImGui::Checkbox("Export Expressions", &expr_export);
+        imgui_bundled_tooltip("Includes expression information with the model color code.");
     }
 
     ImGui::Dummy(ImVec2(0, 5));

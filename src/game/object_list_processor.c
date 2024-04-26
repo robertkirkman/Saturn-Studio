@@ -1,5 +1,7 @@
 #include <PR/ultratypes.h>
 
+#include "mario_animation_ids.h"
+#include "saturn/saturn_actors.h"
 #include "sm64.h"
 #include "area.h"
 #include "behavior_data.h"
@@ -223,19 +225,13 @@ struct ParticleProperties sParticleTypes[] = {
  * object.
  */
 void copy_mario_state_to_object(void) {
-    s32 i = 0;
-    // L is real
-    if (gCurrentObject != gMarioObject) {
-        i += 1;
-    }
+    gCurrentObject->oVelX = gMarioState->vel[0];
+    gCurrentObject->oVelY = gMarioState->vel[1];
+    gCurrentObject->oVelZ = gMarioState->vel[2];
 
-    gCurrentObject->oVelX = gMarioStates[i].vel[0];
-    gCurrentObject->oVelY = gMarioStates[i].vel[1];
-    gCurrentObject->oVelZ = gMarioStates[i].vel[2];
-
-    gCurrentObject->oPosX = gMarioStates[i].pos[0];
-    gCurrentObject->oPosY = gMarioStates[i].pos[1];
-    gCurrentObject->oPosZ = gMarioStates[i].pos[2];
+    gCurrentObject->oPosX = gMarioState->pos[0];
+    gCurrentObject->oPosY = gMarioState->pos[1];
+    gCurrentObject->oPosZ = gMarioState->pos[2];
 
     gCurrentObject->oMoveAnglePitch = gCurrentObject->header.gfx.angle[0];
     gCurrentObject->oMoveAngleYaw = gCurrentObject->header.gfx.angle[1];
@@ -245,9 +241,9 @@ void copy_mario_state_to_object(void) {
     gCurrentObject->oFaceAngleYaw = gCurrentObject->header.gfx.angle[1];
     gCurrentObject->oFaceAngleRoll = gCurrentObject->header.gfx.angle[2];
 
-    gCurrentObject->oAngleVelPitch = gMarioStates[i].angleVel[0];
-    gCurrentObject->oAngleVelYaw = gMarioStates[i].angleVel[1];
-    gCurrentObject->oAngleVelRoll = gMarioStates[i].angleVel[2];
+    gCurrentObject->oAngleVelPitch = gMarioState->angleVel[0];
+    gCurrentObject->oAngleVelYaw = gMarioState->angleVel[1];
+    gCurrentObject->oAngleVelRoll = gMarioState->angleVel[2];
 }
 
 /**
@@ -269,10 +265,10 @@ void bhv_mario_update(void) {
     u32 particleFlags = 0;
     s32 i;
 
+    if (!saturn_actor_is_recording_input()) set_mario_action(gMarioState, ACT_DEBUG_FREE_MOVE, 0);
     particleFlags = execute_mario_action(gCurrentObject);
     gCurrentObject->oMarioParticleFlags = particleFlags;
-
-    gCurrentObject->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
+    if (!saturn_actor_is_recording_input()) set_mario_animation(gMarioState, MARIO_ANIM_A_POSE);
 
     // Mario code updates MarioState's versions of position etc, so we need
     // to sync it with the Mario object

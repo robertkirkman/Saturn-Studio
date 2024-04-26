@@ -316,9 +316,8 @@ static void geo_process_perspective(struct GraphNodePerspective *node) {
 
         bool interpolate = gGlobalTimer == node->prevTimestamp + 1 && gGlobalTimer != gLakituState.skipCameraInterpolationTimestamp;
         if (saturn_imgui_is_orthographic()) {
-            struct OrthographicRenderSettings* ortho = saturn_imgui_get_ortho_settings();
-            float w = 1000.f * ortho->orthographic_scale * aspect / 2;
-            float h = 1000.f * ortho->orthographic_scale          / 2;
+            float w = 1000.f * ortho_settings.scale * aspect / 2;
+            float h = 1000.f * ortho_settings.scale          / 2;
             guOrtho(mtx, -w, w, -h, h, -30000, 30000, 1.f);
             if (interpolate) {
                 fovInterpolated = (node->prevFov + node->fov) / 2.0f;
@@ -1114,6 +1113,7 @@ static int obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
     }
 
     if (saturn_imgui_is_orthographic()) return TRUE;
+    if (gCurrentObject->behavior == bhvMario && saturn_actor_is_recording_input()) return FALSE;
 
     geo = node->sharedChild;
 
@@ -1181,7 +1181,7 @@ static void geo_process_object(struct Object *node) {
 
     gCurrentObject = node;
 
-    if (saturn_imgui_is_capturing_video() && saturn_actor_is_hidden()) return;
+    if (saturn_imgui_is_capturing_video() && (saturn_actor_is_hidden() || node->behavior == bhvMario)) return;
     saturn_actor_bone_override_begin();
 
     if (node->header.gfx.unk18 == gCurGraphNodeRoot->areaIndex) {

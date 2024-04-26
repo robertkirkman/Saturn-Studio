@@ -285,6 +285,8 @@ unsigned char* file_processor_apply(unsigned char* data, std::pair<int, unsigned
 void join_skyboxes(std::string filename) {
     unsigned char* joined = (unsigned char*)malloc(32 * 32 * 10 * 8 * 4);
     fs_relative::path path = EXTRACT_PATH_FS_RELATIVE / fs_relative::path(filename);
+    fs_relative::path joined_path = path.parent_path() / "full" / (path.filename().string() + ".png");
+    if (fs_relative::exists(joined_path)) return;
     for (int i = 0; i < 80; i++) {
         int x = i % 10 * 32;
         int y = i / 10 * 32;
@@ -296,9 +298,8 @@ void join_skyboxes(std::string filename) {
         }
         pngutils_free(tile);
     }
-    path = path.parent_path() / "full" / (path.filename().string() + ".png");
-    fs_relative::create_directories(path.parent_path());
-    write_png(path.string(), joined, 32 * 10, 32 * 8, 4);
+    fs_relative::create_directories(joined_path.parent_path());
+    write_png(joined_path.string(), joined, 32 * 10, 32 * 8, 4);
     free(joined);
 }
 

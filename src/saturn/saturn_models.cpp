@@ -10,6 +10,7 @@
 #include "saturn/saturn.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_json.h"
+#include "saturn/saturn_actors.h"
 
 #include <fstream>
 #include "pc/fs/fs.h"
@@ -28,14 +29,8 @@ Array<PackData *> &mDynosPacks = DynOS_Gfx_GetPacks();
 /*
 Returns true if any models are currently selected.
 */
-bool AnyModelsEnabled() {
-    // Cycle through each DynOS pack,
-    // Return true soon as one enabled
-    for (int i = 0; i < mDynosPacks.Count(); i++) {
-        if (DynOS_Opt_GetValue(String("dynos_pack_%d", i)))
-            return true;
-    }
-    return false;
+bool AnyModelsEnabled(MarioActor* actor) {
+    return actor->selected_model != -1;
 }
 
 int current_dynos_id;

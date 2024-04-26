@@ -39,9 +39,52 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
   * Left shift to move slower
   * Left ctrl to move faster
 
-### Installing FFmpeg
+## Building
 
-#### Windows
+### Windows
+
+1. Install [MSYS2](https://msys2.org)
+2. Once it is installed, run the **MINGW64** shell
+3. Install dependencies using this command:
+   ```
+   pacman -S git make gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-glew python3 mingw-w64-x86_64-dlfcn
+   ```
+5. Continue the steps for Linux starting from step 2
+6. After you're finished compiling, run `explorer .` to open a file explorer window in the current directory
+
+### Linux
+
+1. Install dependencies
+   * Debian
+     ```
+     sudo apt install git make gcc python3 libsdl2-dev libglew-dev
+     ```
+   * Arch
+     ```
+     sudo pacman -S git make gcc python3 sdl2 glew
+     ```
+   * Fedora
+     ```
+     sudo dnf install git make gcc python3 SDL2 glew
+     ```
+   * SUSE
+     ```
+     sudo zypper install git make gcc SDL2 glew
+     ```
+2. Clone the repository
+   ```
+   git clone https://github.com/Dominicentek/Saturn saturn-studio
+   cd saturn-studio
+   ```
+3. Compile the project
+   ```
+   make -j$(nproc)
+   ```
+4. Build files will be located in `build/us_pc`
+
+## Installing FFmpeg
+
+### Windows
 
 1. You can get ffmpeg from [here](https://www.gyan.dev/ffmpeg/builds/)
 2. Once you download it, extract the archive to C:/ffmpeg
@@ -54,7 +97,7 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 9. Apply everything
 10. Restart Saturn Studio if it's running
 
-#### Linux
+### Linux
 
 You can use your distribution's package manager
 

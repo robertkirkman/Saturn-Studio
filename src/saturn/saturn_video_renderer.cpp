@@ -21,7 +21,7 @@ int png_counter;
 
 FILE* ffmpeg;
 
-void pngseq_init(int w, int h) {
+void pngseq_init(int w, int h, bool fps60) {
     video_width = w;
     video_height = h;
     png_counter = 0;
@@ -33,10 +33,10 @@ void pngseq_render(unsigned char* data) {
     pngutils_write_png(("pngseq/" + std::to_string(++png_counter) + ".png").c_str(), video_width, video_height, 4, data, 0);
 }
 
-void webm_init(int w, int h) {
+void webm_init(int w, int h, bool fps60) {
     video_width = w;
     video_height = h;
-    std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v libvpx-vp9 -pix_fmt yuva420p video.webm";
+    std::string cmd = "ffmpeg -y -r " + std::string(fps60 ? "60" : "30") + " -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v libvpx-vp9 -pix_fmt yuva420p video.webm";
 #ifdef _WIN32
     ffmpeg = popen(cmd.c_str(), "wb");
 #else
@@ -44,10 +44,10 @@ void webm_init(int w, int h) {
 #endif
 }
 
-void mp4_init(int w, int h) {
+void mp4_init(int w, int h, bool fps60) {
     video_width = w;
     video_height = h;
-    std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v h264 -pix_fmt yuv420p video.mp4";
+    std::string cmd = "ffmpeg -y -r " + std::string(fps60 ? "60" : "30") + " -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v h264 -pix_fmt yuv420p video.mp4";
 #ifdef _WIN32
     ffmpeg = popen(cmd.c_str(), "wb");
 #else
@@ -55,7 +55,7 @@ void mp4_init(int w, int h) {
 #endif
 }
 
-void gif_init(int w, int h) {
+void gif_init(int w, int h, bool fps60) {
     video_width = w;
     video_height = h;
     std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i -  -vf \"format=rgba,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" video.gif";
@@ -66,10 +66,10 @@ void gif_init(int w, int h) {
 #endif
 }
 
-void mov_init(int w, int h) {
+void mov_init(int w, int h, bool fps60) {
     video_width = w;
     video_height = h;
-    std::string cmd = "ffmpeg -y -r 30 -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v qtrle -pix_fmt argb video.mov";
+    std::string cmd = "ffmpeg -y -r " + std::string(fps60 ? "60" : "30") + " -f rawvideo -pix_fmt rgba -s " + std::to_string(w) + "x" + std::to_string(h) + " -i - -c:v qtrle -pix_fmt argb video.mov";
 #ifdef _WIN32
     ffmpeg = popen(cmd.c_str(), "wb");
 #else
@@ -89,21 +89,21 @@ VideoRenderer renderer_pngseq = {
     pngseq_init,
     pngseq_render,
     pngseq_finalize,
-    VIDEO_RENDERER_FLAGS_TRANSPARECY,
+    VIDEO_RENDERER_FLAGS_TRANSPARECY | VIDEO_RENDERER_FLAGS_60FPS,
 };
 
 VideoRenderer renderer_webm = {
     webm_init,
     ffmpeg_render,
     ffmpeg_finalize,
-    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY,
+    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY | VIDEO_RENDERER_FLAGS_60FPS,
 };
 
 VideoRenderer renderer_mp4 = {
     mp4_init,
     ffmpeg_render,
     ffmpeg_finalize,
-    VIDEO_RENDERER_FLAGS_FFMPEG,
+    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_60FPS,
 };
 
 VideoRenderer renderer_gif = {
@@ -117,7 +117,7 @@ VideoRenderer renderer_mov = {
     mov_init,
     ffmpeg_render,
     ffmpeg_finalize,
-    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY,
+    VIDEO_RENDERER_FLAGS_FFMPEG | VIDEO_RENDERER_FLAGS_TRANSPARECY | VIDEO_RENDERER_FLAGS_60FPS,
 };
 
 std::vector<std::pair<std::string, VideoRenderer>> video_renderers =  {

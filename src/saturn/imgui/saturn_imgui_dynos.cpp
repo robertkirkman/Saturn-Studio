@@ -200,7 +200,7 @@ void OpenModelSelector(MarioActor* actor) {
                             last_model_cc_address = current_color_code.GameShark;
                         }
                     } else {
-                        if (!AnyModelsEnabled()) {
+                        if (!AnyModelsEnabled(actor)) {
                             actor->model = Model();
                             actor->selected_model = -1;
                         }
@@ -340,6 +340,7 @@ void sdynos_imgui_menu(int index) {
         bool empty = actor->input_recording.empty();
         if (empty) ImGui::Text("No recording made");
         if (ImGui::Button("Record")) {
+            set_mario_action(gMarioState, ACT_IDLE, 0);
             saturn_actor_start_recording(index);
             ImGui::CloseCurrentPopup();
         }
@@ -357,7 +358,7 @@ void sdynos_imgui_menu(int index) {
         if (!empty && !actor->playback_input) ImGui::EndDisabled();
         saturn_keyframe_popout("k_inputrec_frame");
         if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_inputrec_frame", saturn_actor_indexof(actor)).c_str()))
-            saturn_keyframe_helper("k_inputrec_frame", &actor->input_recording_frame, actor->input_recording.size());
+            saturn_keyframe_helper("k_inputrec_frame", &actor->input_recording_frame, actor->input_recording.size() - 1);
         if (empty) ImGui::EndDisabled();
         ImGui::EndMenu();
     }
@@ -399,11 +400,11 @@ void sdynos_imgui_menu(int index) {
                 ImGui::Combo("Powerup###powerup_state", &actor->powerup_state, powerups, IM_ARRAYSIZE(powerups));
                 saturn_keyframe_popout("k_switch_powerup");
                 if (actor->powerup_state & 1) ImGui::SliderFloat("Alpha", &actor->alpha, 0, 255);
-                if (AnyModelsEnabled()) ImGui::BeginDisabled();
+                if (AnyModelsEnabled(actor)) ImGui::BeginDisabled();
                 ImGui::Checkbox("M Cap Emblem", &actor->show_emblem);
                 imgui_bundled_tooltip("Enables the signature \"M\" logo on Mario's cap.");
                 saturn_keyframe_popout("k_v_cap_emblem");
-                if (AnyModelsEnabled()) ImGui::EndDisabled();
+                if (AnyModelsEnabled(actor)) ImGui::EndDisabled();
 
                 ImGui::EndTabItem();
             }

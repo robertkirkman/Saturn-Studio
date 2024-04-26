@@ -5,12 +5,14 @@
 #include <PR/ultratypes.h>
 
 struct OrthographicRenderSettings {
-    float orthographic_scale;
-    float orthographic_offset_x;
-    float orthographic_offset_y;
-    float orthographic_rotation_x;
-    float orthographic_rotation_y;
+    float scale;
+    float offset_x;
+    float offset_y;
+    float rotation_x;
+    float rotation_y;
 };
+
+extern struct OrthographicRenderSettings ortho_settings;
 
 #ifdef __cplusplus
 
@@ -81,7 +83,6 @@ extern fs::path imgui_config_path;
 
 extern "C" {
 #endif
-    struct OrthographicRenderSettings* saturn_imgui_get_ortho_settings();
     bool saturn_imgui_is_capturing_transparent_video();
     bool saturn_imgui_is_capturing_video();
     bool saturn_imgui_is_orthographic();
@@ -96,6 +97,7 @@ extern "C" {
     bool saturn_disable_sm64_input();
     void saturn_get_textures_folder(char* out);
     void saturn_fallback_texture(char* out, const char* path);
+    const char* saturn_texture_forward(const char* input);
     void saturn_load_textures();
 
     extern SDL_Scancode bind_to_sdl_scancode[512];

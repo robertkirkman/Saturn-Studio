@@ -3167,7 +3167,7 @@ void update_camera(struct Camera *c) {
     if (c->mode != CAMERA_MODE_NEWCAM)
     {
 #endif
-    camera_course_processing(c);
+    //camera_course_processing(c);
     stub_camera_3(c);
     sCButtonsPressed = find_c_buttons_pressed(sCButtonsPressed, gPlayer1Controller->buttonPressed,gPlayer1Controller->buttonDown);
 #ifdef BETTERCAMERA
@@ -3200,146 +3200,49 @@ void update_camera(struct Camera *c) {
 
         is_camera_moving = false;
 
-        if (machinimaMode) {
-            if (!machinimaKeyframing && !machinimaCopying) {
-                c->pos[1] += camVelY;
-                c->focus[1] += camVelY;
-                camVelY = approach_f32_symmetric(camVelY, 0.f, 2.f);
-                camVelY = approach_f32_asymptotic(camVelY, 0.f, 0.1f);
-            } else {
-                f32 dist;
-                s16 pitch, yaw;
-                vec3f_get_dist_and_angle(mCameraKeyPos, mCameraKeyFoc, &dist, &pitch, &yaw);
-
-                vec3f_copy(c->pos, mCameraKeyPos);
-                //vec3f_copy(c->focus, mCameraKeyFoc);
-                vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
-
-                // Zoom In / Enter C-Up
-                if (gPlayer1Controller->buttonPressed & U_CBUTTONS) {
-                    if (gCameraMovementFlags & CAM_MOVE_ZOOMED_OUT) {
-                        gCameraMovementFlags &= ~CAM_MOVE_ZOOMED_OUT;
-                    } else {
-                        set_mode_c_up(c);
-                    }
-                }
-                // Zoom Out
-                if (gPlayer1Controller->buttonPressed & D_CBUTTONS || gPlayer1Controller->buttonPressed & B_BUTTON) {
-                    //if ((gCameraMovementFlags & CAM_MOVE_ZOOMED_OUT) == 0) {
-                        exit_c_up(c);
-                    //}
-                }
-                if (c->mode == CAMERA_MODE_C_UP) {
-                    move_mario_head_c_up(c);
-                }
-            }
-
-            c->nextYaw = calculate_yaw(gLakituState.focus, gLakituState.pos);
-            c->yaw = gCamera->nextYaw;
-            //gCameraMovementFlags &= ~CAM_MOVE_FIX_IN_PLACE;
-
-            vec3f_copy(gLakituState.goalPos, c->pos);
-            vec3f_copy(gLakituState.goalFocus, c->focus);
-            vec3f_copy(gLakituState.pos, c->pos);
-            vec3f_copy(gLakituState.focus, c->focus);
-            gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
-            gLakituState.yaw = gCamera->yaw;
-        }
-        else if (sSelectionFlags & CAM_MODE_MARIO_ACTIVE) {
-            switch (c->mode) {
-                case CAMERA_MODE_BEHIND_MARIO:
-                    mode_behind_mario_camera(c);
-                    break;
-
-                case CAMERA_MODE_C_UP:
-                    mode_c_up_camera(c);
-                    break;
-
-                case CAMERA_MODE_WATER_SURFACE:
-                    mode_water_surface_camera(c);
-                    break;
-
-                case CAMERA_MODE_INSIDE_CANNON:
-                    mode_cannon_camera(c);
-                    break;
-
-#ifdef BETTERCAMERA
-                case CAMERA_MODE_NEWCAM:
-                    newcam_loop(c);
-                    break;
-#endif
-
-                default:
-                    mode_mario_camera(c);
-            }
+        if (!machinimaKeyframing && !machinimaCopying) {
+            c->pos[1] += camVelY;
+            c->focus[1] += camVelY;
+            camVelY = approach_f32_symmetric(camVelY, 0.f, 2.f);
+            camVelY = approach_f32_asymptotic(camVelY, 0.f, 0.1f);
         } else {
-            if (gMarioState->action == ACT_DEBUG_FREE_MOVE) mode_custom_fly(c);
-            else if (gCurrAreaIndex == 3 && gCurrLevelNum == LEVEL_SA) mode_8_directions_camera(c);
-            else {
-                switch (c->mode) {
-                    case CAMERA_MODE_BEHIND_MARIO:
-                        mode_behind_mario_camera(c);
-                        break;
+            f32 dist;
+            s16 pitch, yaw;
+            vec3f_get_dist_and_angle(mCameraKeyPos, mCameraKeyFoc, &dist, &pitch, &yaw);
 
-                    case CAMERA_MODE_C_UP:
-                        mode_c_up_camera(c);
-                        break;
+            vec3f_copy(c->pos, mCameraKeyPos);
+            //vec3f_copy(c->focus, mCameraKeyFoc);
+            vec3f_set_dist_and_angle(c->pos, c->focus, dist, pitch, yaw);
 
-                    case CAMERA_MODE_WATER_SURFACE:
-                        mode_water_surface_camera(c);
-                        break;
-
-                    case CAMERA_MODE_INSIDE_CANNON:
-                        mode_cannon_camera(c);
-                        break;
-
-                    case CAMERA_MODE_8_DIRECTIONS:
-                        mode_8_directions_camera(c);
-                        break;
-
-                    case CAMERA_MODE_RADIAL:
-                        mode_radial_camera(c);
-                        break;
-
-                    case CAMERA_MODE_OUTWARD_RADIAL:
-                        mode_outward_radial_camera(c);
-                        break;
-
-                    case CAMERA_MODE_CLOSE:
-                        mode_lakitu_camera(c);
-                        break;
-
-                    case CAMERA_MODE_FREE_ROAM:
-                        mode_lakitu_camera(c);
-                        break;
-                    case CAMERA_MODE_BOSS_FIGHT:
-                        mode_boss_fight_camera(c);
-                        break;
-
-                    case CAMERA_MODE_PARALLEL_TRACKING:
-                        mode_parallel_tracking_camera(c);
-                        break;
-
-                    case CAMERA_MODE_SLIDE_HOOT:
-                        mode_slide_camera(c);
-                        break;
-
-                    case CAMERA_MODE_FIXED:
-                        mode_fixed_camera(c);
-                        break;
-
-                    case CAMERA_MODE_SPIRAL_STAIRS:
-                        mode_spiral_stairs_camera(c);
-                        break;
-
-#ifdef BETTERCAMERA
-                    case CAMERA_MODE_NEWCAM:
-                        newcam_loop(c);
-                        break;
-#endif
+            // Zoom In / Enter C-Up
+            if (gPlayer1Controller->buttonPressed & U_CBUTTONS) {
+                if (gCameraMovementFlags & CAM_MOVE_ZOOMED_OUT) {
+                    gCameraMovementFlags &= ~CAM_MOVE_ZOOMED_OUT;
+                } else {
+                    set_mode_c_up(c);
                 }
             }
+            // Zoom Out
+            if (gPlayer1Controller->buttonPressed & D_CBUTTONS || gPlayer1Controller->buttonPressed & B_BUTTON) {
+                //if ((gCameraMovementFlags & CAM_MOVE_ZOOMED_OUT) == 0) {
+                    exit_c_up(c);
+                //}
+            }
+            if (c->mode == CAMERA_MODE_C_UP) {
+                move_mario_head_c_up(c);
+            }
         }
+
+        c->nextYaw = calculate_yaw(gLakituState.focus, gLakituState.pos);
+        c->yaw = gCamera->nextYaw;
+        //gCameraMovementFlags &= ~CAM_MOVE_FIX_IN_PLACE;
+
+        vec3f_copy(gLakituState.goalPos, c->pos);
+        vec3f_copy(gLakituState.goalFocus, c->focus);
+        vec3f_copy(gLakituState.pos, c->pos);
+        vec3f_copy(gLakituState.focus, c->focus);
+        gCamera->yaw = calculate_yaw(gCamera->focus, gCamera->pos);
+        gLakituState.yaw = gCamera->yaw;
     }
     // Start any Mario-related cutscenes
     start_cutscene(c, get_cutscene_from_mario_status(c));

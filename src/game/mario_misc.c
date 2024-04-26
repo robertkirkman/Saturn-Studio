@@ -676,3 +676,10 @@ Gfx *geo_mirror_mario_backface_culling(s32 callContext, struct GraphNode *node, 
     }
     return gfx;
 }
+
+Gfx *geo_switch_mario_wireframe(s32 callContext, struct GraphNode *node, UNUSED Mat4 *c) {
+    struct GraphNodeSwitchCase* switchCase = ((struct GraphNodeSwitchCase*)node);
+    if (!gCurrentObject) switchCase->selectedCase = 2;
+    else switchCase->selectedCase = gCurrentObject->behavior == bhvMario;
+    return NULL;
+}

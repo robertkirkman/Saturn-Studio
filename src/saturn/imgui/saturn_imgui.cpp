@@ -386,15 +386,16 @@ int videores[] = { 1920, 1080 };
 bool capturing_video = false;
 bool orthographic_mode = false;
 bool transparency_enabled = true;
+bool sixty_fps_enabled = true;
 int stop_capture = 0;
 int request_ortho_mode = 0;
 bool video_antialias = true;
-struct OrthographicRenderSettings ortho = (struct OrthographicRenderSettings) {
-    .orthographic_scale = 1.f,
-    .orthographic_offset_x = 0.f,
-    .orthographic_offset_y = 0.f,
-    .orthographic_rotation_x = 25.f,
-    .orthographic_rotation_y = 45.f,
+struct OrthographicRenderSettings ortho_settings = (struct OrthographicRenderSettings) {
+    .scale = 1.f,
+    .offset_x = 0.f,
+    .offset_y = 0.f,
+    .rotation_x = 25.f,
+    .rotation_y = 45.f,
 };
 int video_timer = 0; // used for 1 frame delays on video captures
                      // without this, its always 1 frame behind
@@ -402,10 +403,6 @@ int video_timer = 0; // used for 1 frame delays on video captures
 const float ANTIALIAS_MODIFIER = 1.f;
 
 bool keep_aspect_ratio = false;
-
-struct OrthographicRenderSettings* saturn_imgui_get_ortho_settings() {
-    return &ortho;
-}
 
 void saturn_get_game_bounds(float* out, ImVec2 size) {
     if (keep_aspect_ratio || saturn_imgui_is_capturing_video()) {
@@ -434,15 +431,15 @@ bool saturn_imgui_get_viewport(int* width, int* height) {
     if (width == nullptr) width = &w;
     if (height == nullptr) height = &h;
     if (capturing_video) {
-        *width = videores[0];
-        *height = videores[1];
+        *width = videores[0] * (video_antialias + 1) + video_antialias;
+        *height = videores[1] * (video_antialias + 1) + video_antialias;
         return true;
     }
     if (game_viewport[2] != -1 && game_viewport[3] != -1) {
         float bounds[4];
         saturn_get_game_bounds(bounds, ImVec2(game_viewport[2], game_viewport[3]));
-        *width  = bounds[2] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
-        *height = bounds[3] * (configWindow.enable_antialias * ANTIALIAS_MODIFIER + 1);
+        *width  = bounds[2];
+        *height = bounds[3];
         return true;
     }
     SDL_GetWindowSize(window, width, height);
@@ -457,31 +454,31 @@ void saturn_capture_screenshot() {
     if (!capturing_video) return;
     if (video_timer-- > 0) return;
     capturing_video = false;
-    int fb_size = (int)videores[0] * (int)videores[1] * 4;
-    unsigned char* image = (unsigned char*)malloc(fb_size);
-    unsigned char* flipped = (unsigned char*)malloc(fb_size);
+    int in_width = videores[0] * (video_antialias + 1) + video_antialias;
+    int in_height = videores[0] * (video_antialias + 1) + video_antialias;
+    int in_size = (int)in_width * (int)in_height * 4;
+    int out_size = (int)videores[0] * (int)videores[1] * 4;
+    unsigned char* image = (unsigned char*)malloc(in_size);
+    unsigned char* flipped = (unsigned char*)malloc(out_size);
     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)framebuffer);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
     glBindTexture(GL_TEXTURE_2D, 0);
     for (int y = 0; y < videores[1]; y++) {
         for (int x = 0; x < videores[0]; x++) {
-            int i = (y * videores[0] + x) * 4;
+            int i = (y * in_width + x) * 4;
             int j = ((videores[1] - y - 1) * videores[0] + x) * 4;
             int r = 0, g = 0, b = 0, a = 0;
             if (video_antialias) {
-                int pixels = 0;
-                for (int X = x - 1; X <= x + 1; X++) {
-                    for (int Y = y - 1; Y <= y + 1; Y++) {
-                        if (X < 0 || Y < 0 || X >= videores[0] || Y >= videores[1]) continue;
-                        int I = (Y * videores[0] + X) * 4;
+                for (int X = 0; X <= 2; X++) {
+                    for (int Y = 0; Y <= 2; Y++) {
+                        int I = ((Y + y * 2) * in_height + (X + x * 2)) * 4;
                         r += image[I + 0];
                         g += image[I + 1];
                         b += image[I + 2];
                         a += image[I + 3];
-                        pixels++;
                     }
                 }
-                r /= pixels; g /= pixels; b /= pixels; a /= pixels;
+                r /= 9.f; g /= 9.f; b /= 9.f; a /= 9.f;
             }
             else {
                 r = image[i + 0];
@@ -537,7 +534,7 @@ bool saturn_imgui_is_capturing_transparent_video() {
 
 void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
     framebuffer = fb;
-    if (do_capture) saturn_capture_screenshot();
+    if (do_capture || (sixty_fps_enabled && capturing_video && (video_renderer_flags & VIDEO_RENDERER_FLAGS_60FPS))) saturn_capture_screenshot();
 }
 
 // Set up ImGui
@@ -909,6 +906,13 @@ char saturnProjectFilename[257] = "Project";
 int current_project_id;
 char mario_search_prompt[256];
 
+void ImGui_ConditionalCheckbox(const char* label, bool* val, bool cond) {
+    bool checked = *val && cond;
+    if (!cond) ImGui::BeginDisabled();
+    if (ImGui::Checkbox(label, &checked)) *val ^= true;
+    if (!cond) ImGui::EndDisabled();
+}
+
 void saturn_imgui_update() {
     if (!splash_finished) return;
 
@@ -1051,7 +1055,15 @@ void saturn_imgui_update() {
         }
         
         if (ImGui::CollapsingHeader("Rendering")) {
-            orthographic_mode = false;
+            if (!ffmpeg_installed) {
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f);
+                if (ImGui::BeginChild("###no_ffmpeg", ImVec2(0, 48), true, ImGuiWindowFlags_NoScrollbar)) {
+                    ImGui::Text("FFmpeg isn't installed, so some");
+                    ImGui::Text("video formats aren't supported.");
+                    ImGui::EndChild();
+                }
+                ImGui::PopStyleVar();
+            }
             if (ImGui::BeginCombo("###res_preset", "Resolution Preset")) {
                 if (ImGui::Selectable("240p 4:3 (N64)")) { videores[0] =  320; videores[1] =  240; }
                 if (ImGui::Selectable("360p 4:3"))       { videores[0] =  480; videores[1] =  360; }
@@ -1064,90 +1076,77 @@ void saturn_imgui_update() {
                 if (ImGui::Selectable("8K 16:9"))        { videores[0] = 7680; videores[1] = 4320; }
                 ImGui::EndCombo();
             }
+            bool fps60_supported = (video_renderer_flags & VIDEO_RENDERER_FLAGS_60FPS);
+            bool transparency_supported = (video_renderer_flags & VIDEO_RENDERER_FLAGS_TRANSPARECY) || orthographic_mode;
             ImGui::InputInt2("Resolution", videores);
             ImGui::Checkbox("Preview Aspect Ratio", &keep_aspect_ratio);
             ImGui::Checkbox("Anti-aliasing", &video_antialias);
-            bool transparency_supported = (video_renderer_flags & VIDEO_RENDERER_FLAGS_TRANSPARECY) || orthographic_mode;
-            bool transparency_checkbox = transparency_enabled && transparency_supported;
-            if (!transparency_supported) ImGui::BeginDisabled();
-            if (ImGui::Checkbox("Transparency", &transparency_checkbox)) transparency_enabled = !transparency_enabled;
-            if (!transparency_supported) ImGui::EndDisabled();
+            ImGui_ConditionalCheckbox("60 FPS", &sixty_fps_enabled, fps60_supported && configFps60);
+            ImGui_ConditionalCheckbox("Transparency", &transparency_enabled, transparency_supported);
+            if (!fps60_supported) {
+                ImGui::Text(ICON_FK_EXCLAMATION_TRIANGLE " This video format doesn't");
+                ImGui::Text("support 60 FPS framerate");
+            }
             if (!transparency_supported) {
                 ImGui::Text(ICON_FK_EXCLAMATION_TRIANGLE " This video format doesn't");
                 ImGui::Text("support transparency");
             }
-            if (ImGui::BeginTabBar("###render_tab_bar")) {
-                ImGuiTabItemFlags flags = ImGuiTabItemFlags_None;
-                if (request_ortho_mode == 1) flags = ImGuiTabItemFlags_SetSelected;
-                if (ImGui::BeginTabItem("Normal", nullptr, flags)) {
-                    if (!ffmpeg_installed) {
-                        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f);
-                        if (ImGui::BeginChild("###no_ffmpeg", ImVec2(0, 48), true, ImGuiWindowFlags_NoScrollbar)) {
-                            ImGui::Text("FFmpeg isn't installed, so some");
-                            ImGui::Text("video formats aren't supported.");
-                            ImGui::EndChild();
-                        }
-                        ImGui::PopStyleVar();
-                    }
-                    std::vector<std::pair<int, std::string>> video_formats = video_renderer_get_formats();
-                    if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format].second.c_str())) {
-                        for (int i = 0; i < video_formats.size(); i++) {
-                            bool ffmpeg_required = video_formats[i].first & VIDEO_RENDERER_FLAGS_FFMPEG;
-                            bool is_selected = selected_video_format == i;
-                            if (!ffmpeg_installed && ffmpeg_required) ImGui::BeginDisabled();
-                            if (ImGui::Selectable(video_formats[i].second.c_str(), is_selected)) {
-                                selected_video_format = i;
-                                saturn_set_video_renderer(i);
-                            }
-                            if (is_selected) ImGui::SetItemDefaultFocus();
-                            if (!ffmpeg_installed && ffmpeg_required) ImGui::EndDisabled();
-                        }
-                        ImGui::EndCombo();
-                    }
-                    ImGui::Separator();
-                    if (ImGui::Button("Capture Screenshot (.png)")) {
-                        capturing_video = true;
-                        keyframe_playing = false;
-                        video_timer = VIDEO_FRAME_DELAY;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Render Video")) {
-                        capturing_video = true;
-                        video_timer = VIDEO_FRAME_DELAY;
-                        saturn_play_keyframe();
-                        video_renderer_init(videores[0], videores[1]);
-                    }
-                    ImGui::EndTabItem();
-                }
-                flags = ImGuiTabItemFlags_None;
-                if (request_ortho_mode == 2) flags = ImGuiTabItemFlags_SetSelected;
-                if (ImGui::BeginTabItem("Orthographic", nullptr, flags)) {
+            int curr_projection = request_ortho_mode == 0 ? orthographic_mode : request_ortho_mode - 1;
+            if (ImGui::Combo("Projection", &curr_projection,
+                "Perspective\0"
+                "Orthographic\0"
+            )) orthographic_mode = curr_projection;
+            if (orthographic_mode) {
+                if (ImGui::BeginTable("###ortho_table", 2)) {
+                    #define ORTHO_SETTING(label, variable, speed, kfid, popup) \
+                        ImGui::TableNextRow(); \
+                        ImGui::TableSetColumnIndex(0); \
+                        ImGui::DragFloat(label, &ortho_settings.variable, speed); \
+                        if (*popup) ImGui::OpenPopupOnItemClick(popup); \
+                        ImGui::TableSetColumnIndex(1); \
+                        saturn_keyframe_popout(kfid);
                     if (ImGui::BeginPopup("###ortho_yaw_presets")) {
-                        if (ImGui::Selectable("45" )) ortho.orthographic_rotation_y = 45 ;
-                        if (ImGui::Selectable("135")) ortho.orthographic_rotation_y = 135;
-                        if (ImGui::Selectable("225")) ortho.orthographic_rotation_y = 225;
-                        if (ImGui::Selectable("315")) ortho.orthographic_rotation_y = 315;
+                        if (ImGui::Selectable("45" )) ortho_settings.rotation_y = 45 ;
+                        if (ImGui::Selectable("135")) ortho_settings.rotation_y = 135;
+                        if (ImGui::Selectable("225")) ortho_settings.rotation_y = 225;
+                        if (ImGui::Selectable("315")) ortho_settings.rotation_y = 315;
                         ImGui::EndPopup();
                     }
-                    orthographic_mode = true;
-                    ImGui::PushItemWidth(150);
-                    ImGui::DragFloat("Scale", &ortho.orthographic_scale, 0.02f);
-                    ImGui::DragFloat("Yaw", &ortho.orthographic_rotation_y);
-                    ImGui::OpenPopupOnItemClick("###ortho_yaw_presets");
-                    ImGui::DragFloat("Pitch", &ortho.orthographic_rotation_x);
-                    ImGui::DragFloat("Offset X", &ortho.orthographic_offset_x, 2.5f * ortho.orthographic_scale);
-                    ImGui::DragFloat("Offset Y", &ortho.orthographic_offset_y, 2.5f * ortho.orthographic_scale);
-                    ImGui::PopItemWidth();
-                    ImGui::Separator();
-                    if (ImGui::Button("Capture")) {
-                        capturing_video = true;
-                        keyframe_playing = false;
-                        video_timer = VIDEO_FRAME_DELAY;
-                    }
-                    ImGui::EndTabItem();
+                    ORTHO_SETTING("Scale", scale, 0.02f, "k_orthoscale", "");
+                    ORTHO_SETTING("Yaw", rotation_y, 1.0f, "k_orthoyaw", "###ortho_yaw_presets");
+                    ORTHO_SETTING("Pitch", rotation_x, 1.0f, "k_orthopitch", "");
+                    ORTHO_SETTING("Offset X", offset_x, 2.5f * ortho_settings.scale, "k_orthox", "");
+                    ORTHO_SETTING("Offset Y", offset_y, 2.5f * ortho_settings.scale, "k_orthoy", "");
+                    ImGui::EndTable();
                 }
-                request_ortho_mode = 0;
-                ImGui::EndTabBar();
+            }
+            std::vector<std::pair<int, std::string>> video_formats = video_renderer_get_formats();
+            if (ImGui::BeginCombo("Video Format", video_formats[selected_video_format].second.c_str())) {
+                for (int i = 0; i < video_formats.size(); i++) {
+                    bool ffmpeg_required = video_formats[i].first & VIDEO_RENDERER_FLAGS_FFMPEG;
+                    bool is_selected = selected_video_format == i;
+                    if (!ffmpeg_installed && ffmpeg_required) ImGui::BeginDisabled();
+                    if (ImGui::Selectable(video_formats[i].second.c_str(), is_selected)) {
+                        selected_video_format = i;
+                        saturn_set_video_renderer(i);
+                    }
+                    if (is_selected) ImGui::SetItemDefaultFocus();
+                    if (!ffmpeg_installed && ffmpeg_required) ImGui::EndDisabled();
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::Separator();
+            if (ImGui::Button("Capture Screenshot (.png)")) {
+                capturing_video = true;
+                keyframe_playing = false;
+                video_timer = VIDEO_FRAME_DELAY;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Render Video")) {
+                capturing_video = true;
+                video_timer = VIDEO_FRAME_DELAY;
+                saturn_play_keyframe();
+                video_renderer_init(videores[0], videores[1], sixty_fps_enabled);
             }
         }
     } ImGui::End();
@@ -1197,6 +1196,26 @@ void saturn_imgui_update() {
             }
             if (nearest_index != -1) saturn_imgui_open_mario_menu(nearest_index);
         }
+        if (ImGui::BeginMenu("Mario Struct")) {
+            ImGui::PushItemWidth(50);
+            ImGui::DragFloat("###mariostruct_x", gMarioState->pos + 0, 1.f, 0.f, 0.f, "X");
+            ImGui::SameLine();
+            ImGui::DragFloat("###mariostruct_y", gMarioState->pos + 1, 1.f, 0.f, 0.f, "Y");
+            ImGui::SameLine();
+            ImGui::DragFloat("###mariostruct_z", gMarioState->pos + 2, 1.f, 0.f, 0.f, "Z");
+            ImGui::PopItemWidth();
+            saturn_keyframe_popout({ "k_mariostruct_x", "k_mariostruct_y", "k_mariostruct_z" });
+            ImGui::PushItemWidth(100);
+            ImGui::DragFloat("Angle###mariostruct_angle", &gMarioState->fAngle, 128.f);
+            ImGui::PopItemWidth();
+            saturn_keyframe_popout("k_mariostruct_angle");
+            ImGui::Separator();
+            if (ImGui::MenuItem("Set Position and Angle")) {
+                setting_mario_struct_pos = true;
+            }
+            ImGui::EndMenu();
+        }
+        imgui_bundled_tooltip("This Mario is used for calculations in enemy\nbehaviors and is not visible in renders.");
         ImGui::Separator();
         ImGui::InputTextWithHint("###mariosearch", ICON_FK_SEARCH " Search...", mario_search_prompt, 256);
         MarioActor* actor = gMarioActorList;
@@ -1251,6 +1270,7 @@ void saturn_imgui_update() {
                 saturn_remove_actor(mario_menu_index);
             }
             ImGui::PopStyleColor();
+            if (gIsCameraMounted) ImGui::BeginDisabled(true);
             if (ImGui::MenuItem(ICON_FK_EYE " Look at")) {
                 Vec3f mpos;
                 float dist;
@@ -1261,6 +1281,7 @@ void saturn_imgui_update() {
                 cameraPitch = pitch;
                 cameraYaw = yaw;
             }
+            if (gIsCameraMounted) ImGui::EndDisabled();
             sdynos_imgui_menu(mario_menu_index);
             ImGui::EndPopup();
         }
@@ -1473,8 +1494,10 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
         ImGui::ColorEdit4("###kfprev_color", (float*)&color, ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
     }
     if (timeline.type == KFTYPE_SWITCH) {
-        if (kf_switch_names.find(keyframe.timelineID) == kf_switch_names.end()) ImGui::Text("u forgor");
-        else ImGui::Text(kf_switch_names[keyframe.timelineID][(int)keyframe.value[0]].c_str());
+        std::string id = keyframe.timelineID;
+        if (timeline.marioIndex != -1) id = id.substr(0, id.length() - 8);
+        if (kf_switch_names.find(id) == kf_switch_names.end()) ImGui::Text("u forgor");
+        else ImGui::Text(kf_switch_names[id][(int)keyframe.value[0]].c_str());
     }
     ImVec2 window_pos = ImGui::GetMousePos();
     ImVec2 window_size = ImGui::GetWindowSize();
@@ -1567,6 +1590,8 @@ bool saturn_disable_sm64_input() {
     return ImGui::GetIO().WantTextInput;
 }
 
+std::map<std::string, std::string> texture_forwards = {};
+
 void saturn_get_textures_folder(char* out) {
     std::string path;
     if (current_texture_id == -1) path = FS_TEXTUREDIR "/";
@@ -1582,6 +1607,11 @@ void saturn_fallback_texture(char* tex, const char* path) {
     }
     std::string fallback = std::string(FS_TEXTUREDIR "/") + path;
     memcpy(tex, fallback.data(), fallback.length() + 1);
+}
+
+const char* saturn_texture_forward(const char* input) {
+    if (texture_forwards.find(input) == texture_forwards.end()) return input;
+    return texture_forwards[input].c_str();
 }
 
 template <typename T>

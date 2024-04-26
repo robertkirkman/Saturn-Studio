@@ -125,6 +125,8 @@ extern struct MouseState mouse_state;
 
 extern struct Object* saturn_camera_object;
 
+extern bool setting_mario_struct_pos;
+
 #ifdef __cplusplus
 #include <string>
 #include <vector>

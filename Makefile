@@ -779,6 +779,9 @@ ifeq ($(WINDOWS_BUILD),1)
       LDFLAGS += $(BUILD_DIR)/res/icon.o
     endif
   endif
+  LDFLAGS += -ldl
+else
+  LDFLAGS += -rdynamic
 endif
 
 # Prevent a crash with -sopt

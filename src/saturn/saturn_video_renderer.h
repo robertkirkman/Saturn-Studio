@@ -8,7 +8,7 @@
 
 #define FUNC(args...) void(*args
 
-#define FUNC_INIT       )(int w, int h)
+#define FUNC_INIT       )(int w, int h, bool fps60)
 #define FUNC_RENDER     )(unsigned char* data)
 #define FUNC_FINALIZE   )()
 
@@ -25,5 +25,6 @@ extern std::vector<std::pair<int, std::string>> video_renderer_get_formats();
 #define VIDEO_RENDERER_FLAGS_NONE        0
 #define VIDEO_RENDERER_FLAGS_TRANSPARECY (1 << 0)
 #define VIDEO_RENDERER_FLAGS_FFMPEG      (1 << 1)
+#define VIDEO_RENDERER_FLAGS_60FPS       (1 << 2)
 
 #endif
