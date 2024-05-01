@@ -3418,7 +3418,7 @@ void init_camera(struct Camera *c) {
 
     // Set the camera's starting position or start a cutscene for certain levels
     switch (gCurrLevelNum) {
-        case LEVEL_BOWSER_1:
+        /*case LEVEL_BOWSER_1:
 #ifndef VERSION_JP
             if (gCurrDemoInput == NULL) {
                 start_cutscene(c, CUTSCENE_ENTER_BOWSER_ARENA);
@@ -3434,7 +3434,7 @@ void init_camera(struct Camera *c) {
             break;
         case LEVEL_BOWSER_3:
             start_cutscene(c, CUTSCENE_ENTER_BOWSER_ARENA);
-            break;
+            break;*/
 
         //! Hardcoded position checks determine which cutscene to play when Mario enters castle grounds.
         case LEVEL_CASTLE_GROUNDS:

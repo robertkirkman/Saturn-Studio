@@ -55,7 +55,7 @@ const GeoLayout geo_bbh_000F00[] = {
                GEO_LEVEL_DISPLAY_LIST(LAYER_OPAQUE, bbh_seg7_dl_07019EF8),
                GEO_LEVEL_DISPLAY_LIST(LAYER_ALPHA, bbh_seg7_dl_0701A080),
                GEO_LEVEL_DISPLAY_LIST(LAYER_OPAQUE, bbh_seg7_dl_0701B6D0),
-               //GEO_LEVEL_DISPLAY_LIST(LAYER_OPAQUE, bbh_seg7_dl_0701E4E0), this thing creates black rectangles in some rooms
+               GEO_LEVEL_DISPLAY_LIST(LAYER_OPAQUE, bbh_seg7_dl_0701E4E0),
                GEO_LEVEL_DISPLAY_LIST(LAYER_ALPHA, bbh_seg7_dl_0701E8D8),
                GEO_LEVEL_DISPLAY_LIST(LAYER_OPAQUE, bbh_seg7_dl_0701ED18),
                GEO_LEVEL_DISPLAY_LIST(LAYER_TRANSPARENT, bbh_seg7_dl_0701EEC8),

@@ -1582,6 +1582,9 @@ void saturn_keyframe_helper(std::string id, float* value, float max) {
     if (ImGui::Button("Place Keyframe")) {
         k_current_frame += data[1];
         k_previous_frame = k_current_frame;
+        for (auto timeline : k_frame_keys) {
+            saturn_keyframe_apply(timeline.first, k_current_frame);
+        }
         *value = data[0];
     }
 }
