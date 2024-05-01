@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "pc/platform.h"
 
@@ -25,37 +27,94 @@ void close_logger() {
 
 #else // we can print to both the file and stdout on linux
 
+FILE* stream;
 FILE* orig_stdout;
-FILE* logfile;
-FILE* logger;
 
-ssize_t logger_write(void* cookie, const char* buf, size_t size) {
-    fwrite(buf, size, 1, orig_stdout);
-    fwrite(buf, size, 1, logfile);
-    return size;
-}
+struct logger
+{
+    FILE *logfile, *output;
+};
 
-int logger_close(void* cookie) {
-    fclose(logfile);
+int logger_close(
+    void *cookie
+    )
+{
+    const struct logger *logger = (struct logger *)cookie;
+
+    // fclose() returning EOF on the log file should be a failure.
+    if (fclose(logger->logfile) == EOF)
+        return -1;
+
+    free(cookie);
+
     return 0;
 }
 
-cookie_io_functions_t logger_funcs = {
-    .write = logger_write,
-    .close = logger_close,
-};
+ssize_t logger_write(
+          void    *cookie,
+    const char    *buf,
+          size_t   size
+          )
+{
+    const struct logger *logger = (struct logger *)cookie;
+    ssize_t ret;
+
+    if ((ret = write(fileno(logger->logfile), buf, size)) != -1)
+       write(fileno(logger->output), buf, size);
+
+    return ret;
+}
 
 void init_logger() {
-    char filepath[1024];
-    snprintf(filepath, 1024, "%s/latest.log", sys_user_path());
-    logfile = fopen(filepath, "w");
-    logger = fopencookie(NULL, "w", logger_funcs);
-    orig_stdout = stdout;
-    stdout = logger;
+    const char *mode = "a+";
+    char filename[1024];
+    snprintf(filename, 1024, "%s/latest.log", sys_user_path());
+    struct logger *logger;
+
+    stream = NULL; // clear stream
+
+    // Allocate memory to be passed to cookie. This structure
+    // will be passed along to one of the io_funcs when we perform
+    // a read or write.
+    if ((logger = malloc(sizeof(struct logger))) == NULL)
+        goto leave;
+
+    // Open the log file. mode is specified by the caller.
+    if ((logger->logfile = fopen(filename, mode)) == NULL)
+    {
+        // Remember to clean up anything we might've allocated should we ever fail.
+    cleanup:
+        free(logger);
+        goto leave;
+    }
+
+    setbuf(logger->logfile, NULL);
+
+    // fopencookie() gets called here. Note that this is a GNU extension, not POSIX, so logger I/O
+    // will need to be implemented differently on BSD and NT--probably by calling logger_write() and
+    // logger_close() directly.
+    if ((stream = fopencookie(
+                      logger,
+                      mode,
+                      (cookie_io_functions_t)
+                      {
+                          .write = logger_write,
+                          .close = logger_close
+                      }
+                      )) == NULL)
+    {
+        fclose(logger->logfile);
+        goto cleanup;
+    }
+
+    logger->output = stdout;
+
+leave:
+    stdout = stream;
 }
 
 void close_logger() {
-    fclose(logger);
+    fclose(stream);
     stdout = orig_stdout;
 }
 
