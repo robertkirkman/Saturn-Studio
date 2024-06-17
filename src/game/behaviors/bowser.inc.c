@@ -1242,6 +1242,11 @@ Gfx *geo_switch_bowser_eyes(s32 run, struct GraphNode *node, UNUSED Mat4 *mtx) {
     UNUSED s32 unused;
     struct Object *obj = (struct Object *) gCurGraphNodeObject;
     struct GraphNodeSwitchCase *switchCase = (struct GraphNodeSwitchCase *) node;
+    if (obj) if (obj->behavior == bhvMarioActor) {
+        if (obj->oAnimState >= 9) obj->oAnimState = 0;
+        switchCase->selectedCase = obj->oAnimState;
+        return NULL;
+    }
     if (run == TRUE) {
         if (gCurGraphNodeHeldObject != NULL)
             obj = gCurGraphNodeHeldObject->objNode;

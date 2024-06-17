@@ -4,134 +4,49 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+extern void saturn_update();
+
 #include "pc/platform.h"
 
 #ifdef _WIN32
-
 #include <io.h>
+#define TERMINAL_CHECK getenv("MSYSTEM")
+#else
+#include <unistd.h>
+#define TERMINAL_CHECK isatty(fileno(stdin))
+#endif
 
 int orig_stdout_fileno;
 FILE* logfile;
 
 void init_logger() {
-    if (getenv("MSYSTEM")) return; // we on mingw, we have the terminal available, dont init logfile
+    if (TERMINAL_CHECK) return;
     char filepath[1024];
     snprintf(filepath, 1024, "%s/latest.log", sys_user_path());
     logfile = freopen(filepath, "w", stdout);
 }
 
 void close_logger() {
-    if (getenv("MSYSTEM")) return; // we did nothing on init in mingw, no need to do anything in here
+    if (TERMINAL_CHECK) return;
     fclose(logfile);
 }
 
-#else // we can print to both the file and stdout on linux
-
-FILE* stream;
-FILE* orig_stdout;
-
-struct logger
-{
-    FILE *logfile, *output;
-};
-
-int logger_close(
-    void *cookie
-    )
-{
-    const struct logger *logger = (struct logger *)cookie;
-
-    // fclose() returning EOF on the log file should be a failure.
-    if (fclose(logger->logfile) == EOF)
-        return -1;
-
-    free(cookie);
-
-    return 0;
-}
-
-ssize_t logger_write(
-          void    *cookie,
-    const char    *buf,
-          size_t   size
-          )
-{
-    const struct logger *logger = (struct logger *)cookie;
-    ssize_t ret;
-
-    if ((ret = write(fileno(logger->logfile), buf, size)) != -1)
-       write(fileno(logger->output), buf, size);
-
-    return ret;
-}
-
-void init_logger() {
-    const char *mode = "a+";
-    char filename[1024];
-    snprintf(filename, 1024, "%s/latest.log", sys_user_path());
-    struct logger *logger;
-
-    stream = NULL; // clear stream
-
-    // Allocate memory to be passed to cookie. This structure
-    // will be passed along to one of the io_funcs when we perform
-    // a read or write.
-    if ((logger = malloc(sizeof(struct logger))) == NULL)
-        goto leave;
-
-    // Open the log file. mode is specified by the caller.
-    if ((logger->logfile = fopen(filename, mode)) == NULL)
-    {
-        // Remember to clean up anything we might've allocated should we ever fail.
-    cleanup:
-        free(logger);
-        goto leave;
-    }
-
-    setbuf(logger->logfile, NULL);
-
-    // fopencookie() gets called here. Note that this is a GNU extension, not POSIX, so logger I/O
-    // will need to be implemented differently on BSD and NT--probably by calling logger_write() and
-    // logger_close() directly.
-    if ((stream = fopencookie(
-                      logger,
-                      mode,
-                      (cookie_io_functions_t)
-                      {
-                          .write = logger_write,
-                          .close = logger_close
-                      }
-                      )) == NULL)
-    {
-        fclose(logger->logfile);
-        goto cleanup;
-    }
-
-    logger->output = stdout;
-
-leave:
-    stdout = stream;
-}
-
-void close_logger() {
-    fclose(stream);
-    stdout = orig_stdout;
-}
-
-#endif
-
 // Crash handler implementation
-// Modification of https://github.com/AloUltraExt/sm64ex-alo/blob/master/src/pc/crash/crash_handler.c
+// Based on https://github.com/AloUltraExt/sm64ex-alo/blob/master/src/pc/crash/crash_handler.c
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*(x)))
 #define PTR long long unsigned int)(uintptr_t
+#define ALLOC(x) ((x*)memset(malloc(sizeof(x)), 0, sizeof(x)))
+#define STRUCT(x) typedef struct x x; struct x
+#define MEMSTR(x) x, sizeof(x) 
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 #ifdef _WIN32
 #include <stdio.h>
 #include <windows.h>
 #include <dbghelp.h>
 #include <crtdbg.h>
-#include "dbghelp.h"
 #else
 #include <signal.h>
 #include <execinfo.h>
@@ -176,6 +91,95 @@ struct {
     { SIGSEGV, "Segmentation Fault",   "The game tried to %s at address 0x%016llX." },
     { 0,       "Unknown Exception",    "An unknown exception occured." }
 };
+#endif
+
+#ifdef _WIN32
+STRUCT(Symbol) {
+    struct Symbol* prev;
+    struct Symbol* next;
+             void* addr;
+             char  name[128];
+};
+
+static int last_char_at(const char* str, char c) {
+	int len = strlen(str);
+	for (int i = len - 1; i >= 0; i--) {
+		if (str[i] == c) return i; 
+	}
+	return -1;
+}
+
+static Symbol* load_symbols() {
+    char symbol_path[1024];
+    GetModuleFileName(NULL, symbol_path, 1023);
+	int delim = last_char_at(symbol_path, '\\');
+	if (delim == -1) delim = last_char_at(symbol_path, '/');
+	symbol_path[delim] = 0;
+	snprintf(symbol_path, 1024, "%s/symbols.map", symbol_path);
+    FILE* f = fopen(symbol_path, "r");
+    if (!f) return NULL;
+    char buf[1024];
+    Symbol* symbols = ALLOC(Symbol);
+    Symbol* head = symbols;
+    const char global_func_id[] = "(sec1)(fl0x00)(ty20)(scl2)(nx0)0x";
+    const char static_func_id[] = "(sec1)(fl0x00)(ty20)(scl3)(nx0)0x";
+    memcpy(symbols->name, MEMSTR("REF-ADDR"));
+    while (fgets(buf, 1024, f)) {
+        char no_space[1024];
+        int ptr = 0;
+        for (int i = 0; i < 1024 && buf[i]; i++) {
+            if (buf[i] <= ' ') continue;
+            no_space[ptr++] = buf[i];
+        }
+        no_space[ptr++] = 0;
+        char* gid = strstr(no_space, global_func_id);
+        char* sid = strstr(no_space, static_func_id);
+        if (!gid && !sid) continue;
+        Symbol* symbol = ALLOC(Symbol);
+        head->next = symbol;
+        symbol->prev = head;
+        head = symbol;
+        char* symbol_str = max(gid + sizeof(global_func_id) - 1, sid + sizeof(static_func_id) - 1);
+        sscanf(symbol_str, "%016llX", (unsigned long long int*)&head->addr);
+        snprintf(head->name, 128, "%s", symbol_str + 16);
+        if (memcmp(head->name, MEMSTR("saturn_update")) == 0) {
+            symbols->addr = saturn_update - (uintptr_t)head->addr;
+        }
+    }
+    fclose(f);
+    return symbols;
+}
+
+static void free_symbols(Symbol* symbols) {
+    Symbol* head = symbols;
+    while (head) {
+        Symbol* next = head->next;
+        free(head);
+        head = next;
+    }
+}
+
+static int _dladdr(void* addr, Dl_info* info, Symbol* symbols) {
+    int return_code = dladdr(addr, info);
+    if ((!return_code || !info->dli_sname) && symbols) {
+        uintptr_t offset = (uintptr_t)symbols->addr;
+        uintptr_t symbol_addr = (uintptr_t)(addr - offset);
+        uintptr_t closest = UINTPTR_MAX;
+        Symbol* head = symbols->next;
+        while (head) {
+            uintptr_t dist = symbol_addr - (uintptr_t)head->addr;
+            if (closest > dist) {
+                closest = dist;
+                info->dli_saddr = (uintptr_t)head->addr - symbol_addr + addr;
+                info->dli_sname = head->name;
+            }
+            head = head->next;
+        }
+    }
+    return return_code;
+}
+#else
+#define _dladdr(addr, info, symbols) dladdr(addr, info)
 #endif
 
 #ifdef _WIN32
@@ -256,6 +260,9 @@ static void crash_handler(int signal, siginfo_t* info, ucontext_t* context)
         printf("\nUnable to get register info\n");
     }
 #ifdef _WIN32
+    Symbol* symbols = load_symbols();
+    if (!symbols) printf("Unable to find debug symbols, some info may be missing\n");
+	printf("Address of saturn_update: 0x%016llX\n", (void*)saturn_update);
     void* stacktrace[256];
     USHORT num_frames;
     num_frames = CaptureStackBackTrace(0, 256, stacktrace, NULL);
@@ -270,7 +277,7 @@ static void crash_handler(int signal, siginfo_t* info, ucontext_t* context)
         for (int i = 0; i < num_frames; i++) {
             printf("\n#%-3d ", i);
             Dl_info info;
-            if (dladdr(stacktrace[i], &info) && info.dli_sname) {
+            if (_dladdr(stacktrace[i], &info, symbols) && info.dli_sname) {
                 printf("%s", info.dli_sname);
                 if (info.dli_saddr != 0) printf(" + 0x%lX", stacktrace[i] - info.dli_saddr);
             }
@@ -283,9 +290,16 @@ static void crash_handler(int signal, siginfo_t* info, ucontext_t* context)
     else {
         printf("Unable to get stack trace\n");
     }
+#ifdef _WIN32
+    free_symbols(symbols);
+#endif
     close_logger();
     exit(1);
+#ifdef _WIN32
+    return 0;
+#else
     return;
+#endif
 }
 
 void init_crash_handler() {

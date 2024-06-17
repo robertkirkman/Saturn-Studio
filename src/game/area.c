@@ -25,7 +25,7 @@
 #include "gfx_dimensions.h"
 
 struct SpawnInfo gPlayerSpawnInfos[1];
-struct GraphNode *D_8033A160[0x100];
+struct GraphNode *D_8033A160[0x200];
 struct Area gAreaData[8];
 
 struct WarpTransition gWarpTransition;
@@ -231,6 +231,7 @@ void clear_area_graph_nodes(void) {
 }
 
 void load_area(s32 index) {
+    gInitObjects = 0;
     if (gCurrentArea == NULL && gAreaData[index].unk04 != NULL) {
         gCurrentArea = &gAreaData[index];
         gCurrAreaIndex = gCurrentArea->index;
@@ -262,12 +263,21 @@ void unload_area(void) {
 
 void load_mario_area(void) {
     func_80320890();
-    load_area(gMarioSpawnInfo->areaIndex);
 
-    if (gCurrentArea->index == gMarioSpawnInfo->areaIndex) {
+    // fuck you nintendo for introducing this stupid studio bug that i fixed rn
+    // https://tenor.com/view/suit-up-gif-26300871
+
+    s32 area = gCurrAreaIndex;
+    if (area == 0) area = gMarioSpawnInfo->areaIndex; // <- this variable fucking sucks
+    load_area(area);
+
+    // WHY WAS THIS HERE????
+    //if (gCurrentArea->index == gMarioSpawnInfo->areaIndex) {
         gCurrentArea->flags |= 0x01;
         spawn_objects_from_info(0, gMarioSpawnInfo);
-    }
+    //}
+
+    // i really question nintendos code sometimes...
 }
 
 void unload_mario_area(void) {
@@ -297,7 +307,7 @@ void change_area(s32 index) {
     }
 }
 
-void area_update_objects(void) {
+void area_update_objects() {
     gAreaUpdateCounter++;
     update_objects(0);
 }

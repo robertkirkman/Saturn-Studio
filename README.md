@@ -17,10 +17,14 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
   - [x] Keyframing
   - [x] Misc settings
   - [x] In-game bone editor
+  - [x] Set the model to an in-game object
 - [X] Input recording/playback
 - [x] Recording transparent .webm videos (or .png sequences) directly in the editor
 - [x] Capturing transparent screenshots
 - [x] Mouse-based camera controls
+- [x] Detachable camera
+- [x] Orthographic renderer
+- [x] Ability to simulate the world
 
 ### Controls
 
@@ -86,7 +90,7 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 
 ### Windows
 
-1. You can get ffmpeg from [here](https://www.gyan.dev/ffmpeg/builds/)
+1. You can get FFmpeg from [here](https://www.gyan.dev/ffmpeg/builds/)
 2. Once you download it, extract the archive to C:/ffmpeg
 3. Make sure that there's a directory C:/ffmpeg/bin and that it contains "ffmpeg.exe"
 4. In the start menu, search for "environment variables"
@@ -96,6 +100,8 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 8. Add a new entry and type in "C:\ffmpeg\bin"
 9. Apply everything
 10. Restart Saturn Studio if it's running
+
+Alternatively, you can put the FFmpeg executables in the same directory the Saturn Studio executable is located in.
 
 ### Linux
 

@@ -323,7 +323,9 @@ void split_skybox(fs::path path) {
 }
 
 void split_skyboxes() {
-    for (auto entry : fs::directory_iterator(EXTRACT_PATH / "gfx" / "textures" / "skyboxes" / "full")) {
+    fs::path joined_skyboxes = EXTRACT_PATH / "gfx" / "textures" / "skyboxes" / "full";
+    fs::create_directories(joined_skyboxes);
+    for (auto entry : fs::directory_iterator(joined_skyboxes)) {
         split_skybox(entry.path());
     }
     for (auto texture_pack : fs::directory_iterator(fs::path(sys_user_path()) / "dynos/textures")) {

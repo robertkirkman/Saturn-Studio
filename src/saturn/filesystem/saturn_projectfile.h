@@ -7,7 +7,7 @@
 extern std::string current_project;
 
 void saturn_load_project(char* filename);
-void saturn_save_project(char* filename);
+void saturn_save_project(char* filename, struct Folder* embedded_filesystem);
 
 extern std::string project_dir;
 extern std::vector<std::string> project_array;

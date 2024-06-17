@@ -128,6 +128,8 @@ void unload_objects_from_area(UNUSED s32 unused, s32 areaIndex);
 void spawn_objects_from_info(UNUSED s32 unused, struct SpawnInfo *spawnInfo);
 void clear_objects(void);
 void update_objects(UNUSED s32 unused);
+void initialize_object(struct Object* obj);
+s32 update_objects_in_list(struct ObjectNode* list);
 
 
 #endif // OBJECT_LIST_PROCESSOR_H

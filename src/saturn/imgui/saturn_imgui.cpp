@@ -8,6 +8,7 @@
 #include <fstream>
 
 #include "game/area.h"
+#include "saturn/filesystem/saturn_embedded_filesystem.h"
 #include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn/imgui/saturn_imgui_cc_editor.h"
@@ -23,12 +24,14 @@
 #include "saturn/saturn_actors.h"
 #include "saturn/saturn_colors.h"
 #include "saturn/saturn_textures.h"
+#include "saturn/saturn_animation_ids.h"
 #include "saturn/discord/saturn_discord.h"
 #include "pc/controller/controller_keyboard.h"
 #include "data/dynos.cpp.h"
 #include "icons/IconsForkAwesome.h"
 #include "icons/IconsFontAwesome5.h"
 #include "saturn/filesystem/saturn_projectfile.h"
+#include "saturn/filesystem/saturn_windowfile.h"
 #include "saturn/saturn_json.h"
 #include "saturn/saturn_video_renderer.h"
 
@@ -541,8 +544,36 @@ void saturn_imgui_set_frame_buffer(void* fb, bool do_capture) {
 
 fs::path imgui_config_path;
 bool imgui_config_exists = false;
+std::map<std::string, bool> visible_windows = {};
 
-ImGuiID saturn_imgui_setup_dockspace() {
+void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
+    char windows_bin_path[SYS_MAX_PATH] = "";
+    strncat(windows_bin_path,  sys_user_path(), SYS_MAX_PATH - 1);
+    strncat(windows_bin_path, "/windows.bin", SYS_MAX_PATH - 1);
+    if (visible_windows.empty()) {
+        visible_windows.insert({ "Machinima", true });
+        visible_windows.insert({ "Marios", true });
+        visible_windows.insert({ "Settings", true });
+        visible_windows.insert({ "Game", true });
+        visible_windows.insert({ "Timeline###kf_timeline", true });
+        saturn_load_window_visibility(windows_bin_path, &visible_windows);
+    }
+    if (imgui_config_exists) return;
+    imgui_config_exists = true;
+    ImGuiID left, right, up, down;
+    ImGui::DockBuilderRemoveNode(dockspace);
+    ImGui::DockBuilderAddNode(dockspace, ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace, ImGui::GetWindowViewport()->Size);
+    ImGui::DockBuilderSplitNode(dockspace, ImGuiDir_Up, 0.7f, &up, &down);
+    ImGui::DockBuilderSplitNode(up, ImGuiDir_Left, 0.25f, &left, &right);
+    ImGui::DockBuilderDockWindow("Machinima", left);
+    ImGui::DockBuilderDockWindow("Marios", left);
+    ImGui::DockBuilderDockWindow("Settings", left);
+    ImGui::DockBuilderDockWindow("Game", right);
+    ImGui::DockBuilderDockWindow("Timeline###kf_timeline", down);
+}
+
+void saturn_imgui_setup_dockspace() {
     ImGuiViewport* viewport = ImGui::GetWindowViewport();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(viewport->Size);
@@ -560,24 +591,20 @@ ImGuiID saturn_imgui_setup_dockspace() {
     ImGui::PopStyleVar();
     ImGuiID dockspace = ImGui::DockSpace(ImGui::GetID("Dockspace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
     ImGui::End();
-    return dockspace;
+    saturn_imgui_create_dockspace_layout(dockspace);
 }
 
-void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
-    if (imgui_config_exists) return;
-    imgui_config_exists = true;
-    ImGuiID left, right, up, down;
-    ImGui::DockBuilderRemoveNode(dockspace);
-    ImGui::DockBuilderAddNode(dockspace, ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_DockSpace);
-    ImGui::DockBuilderSetNodeSize(dockspace, ImGui::GetWindowViewport()->Size);
-    ImGui::DockBuilderSplitNode(dockspace, ImGuiDir_Up, 0.7f, &up, &down);
-    ImGui::DockBuilderSplitNode(up, ImGuiDir_Left, 0.25f, &left, &right);
-    ImGui::DockBuilderDockWindow("Machinima", left);
-    ImGui::DockBuilderDockWindow("Marios", left);
-    ImGui::DockBuilderDockWindow("Isometric", left);
-    ImGui::DockBuilderDockWindow("Settings", left);
-    ImGui::DockBuilderDockWindow("Game", right);
-    ImGui::DockBuilderDockWindow("Timeline###kf_timeline", down);
+bool saturn_imgui_window(const char* title, ImGuiWindowFlags extra_flags = ImGuiWindowFlags_None) {
+    if (visible_windows.find(title) == visible_windows.end()) {
+        std::cout << "! Window " << title << " not registered" << std::endl;
+        return false;
+    }
+    if (!visible_windows[title]) return false;
+    if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_NoCollapse | extra_flags)) return true;
+    else {
+        ImGui::End();
+        return false;
+    }
 }
 
 void saturn_imgui_init_backend(SDL_Window * sdl_window, SDL_GLContext ctx) {
@@ -745,8 +772,8 @@ int endFrame = 0;
 int endFrameText = 0;
 
 void saturn_keyframe_window() {
-    std::string windowLabel = "Timeline###kf_timeline";
-    ImGui::Begin(windowLabel.c_str(), nullptr, ImGuiWindowFlags_NoScrollWithMouse);
+    const char* windowLabel = "Timeline###kf_timeline";
+    if (!saturn_imgui_window(windowLabel, ImGuiWindowFlags_NoScrollWithMouse)) return;
     if (ImGui::BeginPopupContextItem("Keyframe Menu Popup")) {
         k_context_popout_open = false;
         vector<Keyframe>* keyframes = &k_frame_keys[k_context_popout_keyframe.timelineID].second;
@@ -886,7 +913,7 @@ void saturn_keyframe_window() {
 
     // Auto focus (use controls without clicking window first)
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) && saturn_disable_sm64_input()) {
-        ImGui::SetWindowFocus(windowLabel.c_str());
+        ImGui::SetWindowFocus(windowLabel);
     }
 
     k_popout_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_None);
@@ -913,8 +940,16 @@ void ImGui_ConditionalCheckbox(const char* label, bool* val, bool cond) {
     if (!cond) ImGui::EndDisabled();
 }
 
+std::vector<std::string> embedded_models = {};
+std::vector<std::string> embedded_anims = {};
+std::vector<std::string> embedded_eyes = {};
+
 void saturn_imgui_update() {
     if (!splash_finished) return;
+
+    char windows_bin_path[SYS_MAX_PATH] = "";
+    strncat(windows_bin_path,  sys_user_path(), SYS_MAX_PATH - 1);
+    strncat(windows_bin_path, "/windows.bin", SYS_MAX_PATH - 1);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
@@ -924,10 +959,11 @@ void saturn_imgui_update() {
 
     camera_savestate_mult = 1.f;
 
-    ImGuiID dockspace = saturn_imgui_setup_dockspace();
+   saturn_imgui_setup_dockspace();
+
     bool is_recording = saturn_actor_is_recording_input();
     if (is_recording) ImGui::BeginDisabled();
-    if (ImGui::Begin("Machinima")) {
+    if (saturn_imgui_window("Machinima")) {
         windowCcEditor = false;
 
         if (ImGui::BeginMenu("Open Project")) {
@@ -949,12 +985,158 @@ void saturn_imgui_update() {
             bool in_custom_level = gCurrLevelNum == LEVEL_SA && gCurrAreaIndex == 3;
             if (in_custom_level) ImGui::BeginDisabled();
             if (ImGui::Button(ICON_FA_SAVE " Save###project_file_save")) {
-                saturn_save_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str());
+                struct Folder   folder;
+                struct Folder* pFolder = nullptr;
+                if (!embedded_eyes.empty() || !embedded_models.empty() || !embedded_anims.empty()) {
+                    folder.type = 1;
+                    folder.entries = {};
+                    strncpy(folder.name, "dynos", 255);
+                    if (!embedded_models.empty()) {
+                        struct Folder models_folder;
+                        models_folder.type = 1;
+                        models_folder.entries = {};
+                        strncpy(models_folder.name, "packs", 255);
+                        for (std::string model : embedded_models) {
+                            models_folder.entries.push_back(saturn_embedded_filesystem_from_local_storage(std::string(sys_user_path()) + "/dynos/packs/" + model));
+                        }
+                        folder.entries.push_back(*(struct FileEntry*)&models_folder);
+                    }
+                    if (!embedded_anims.empty()) {
+                        struct Folder anims_folder;
+                        anims_folder.type = 1;
+                        anims_folder.entries = {};
+                        strncpy(anims_folder.name, "anims", 255);
+                        for (std::string anim : embedded_anims) {
+                            fs::path path = fs::path(std::string(sys_user_path()) + "/dynos/anims") / anim;
+                            struct File animfile;
+                            animfile.type = 0;
+                            animfile.data_length = fs::file_size(path);
+                            animfile.data = (unsigned char*)malloc(animfile.data_length);
+                            strncpy(animfile.name, anim.c_str(), 255);
+                            std::ifstream stream = std::ifstream(path);
+                            stream.read((char*)animfile.data, animfile.data_length);
+                            stream.close();
+                            anims_folder.entries.push_back(*(struct FileEntry*)&animfile);
+                        }
+                        folder.entries.push_back(*(struct FileEntry*)&anims_folder);
+                    }
+                    if (!embedded_eyes.empty()) {
+                        struct Folder eyes_folder;
+                        eyes_folder.type = 1;
+                        eyes_folder.entries = {};
+                        strncpy(eyes_folder.name, "eyes", 255);
+                        for (std::string eye : embedded_eyes) {
+                            fs::path path = fs::path(std::string(sys_user_path()) + "/dynos/eyes") / eye;
+                            struct File eyefile;
+                            eyefile.type = 0;
+                            eyefile.data_length = fs::file_size(path);
+                            eyefile.data = (unsigned char*)malloc(eyefile.data_length);
+                            strncpy(eyefile.name, eye.c_str(), 255);
+                            std::ifstream stream = std::ifstream(path);
+                            stream.read((char*)eyefile.data, eyefile.data_length);
+                            stream.close();
+                            eyes_folder.entries.push_back(*(struct FileEntry*)&eyefile);
+                        }
+                        folder.entries.push_back(*(struct FileEntry*)&eyes_folder);
+                    }
+                    pFolder = &folder;
+                }
+                saturn_save_project((char*)(std::string(saturnProjectFilename) + ".spj").c_str(), pFolder);
+                saturn_embedded_filesystem_free((struct FileEntry*)pFolder);
                 saturn_load_project_list();
             }
             if (in_custom_level) ImGui::EndDisabled();
             ImGui::SameLine();
             imgui_bundled_help_marker("NOTE: Project files are currently EXPERIMENTAL and prone to crashing!");
+            if (ImGui::TreeNode("Embed Assets")) {
+                std::vector<std::string> available_models = {};
+                std::vector<std::string> available_anims = {};
+                std::vector<std::string> available_eyes = {};
+                for (int i = 0; i < saturn_actor_sizeof(); i++) {
+                    MarioActor* actor = saturn_get_actor(i);
+                    bool has_custom_eyes = true;
+                    if (actor->selected_model != -1) {
+                        if (!actor->model.UsingVanillaEyes()) has_custom_eyes = false;
+                        std::string model = actor->model.FolderName;
+                        if (std::find(available_models.begin(), available_models.end(), model) == available_models.end())
+                            available_models.push_back(model);
+                    }
+                    std::string atl = saturn_keyframe_get_mario_timeline_id("k_mario_anim", i);
+                    if (actor->animstate.custom) {
+                        std::string anim = canim_array[actor->animstate.id];
+                        if (std::find(available_anims.begin(), available_anims.end(), anim) == available_anims.end())
+                            available_anims.push_back(anim);
+                    }
+                    if (saturn_timeline_exists(atl.c_str())) {
+                        auto keyframes = k_frame_keys[atl].second;
+                        for (Keyframe kf : keyframes) {
+                            if (kf.value[0] < 1) continue; // isnt custom
+                            std::string anim = canim_array[kf.value[1]];
+                            if (std::find(available_anims.begin(), available_anims.end(), anim) == available_anims.end())
+                                available_anims.push_back(anim);
+                        }
+                    }
+                    if (has_custom_eyes) {
+                        std::string eye = actor->model.Expressions[0].Textures[actor->model.Expressions[0].CurrentIndex].DynosPath();
+                        if (std::find(available_eyes.begin(), available_eyes.end(), eye) == available_eyes.end())
+                            available_eyes.push_back(eye);
+                        std::string etl = saturn_keyframe_get_mario_timeline_id("k_mario_expr", i);
+                        if (saturn_timeline_exists(etl.c_str())) {
+                            auto keyframes = k_frame_keys[etl].second;
+                            for (Keyframe kf : keyframes) {
+                                eye = actor->model.Expressions[0].Textures[kf.value[0]].DynosPath();
+                                if (std::find(available_eyes.begin(), available_eyes.end(), eye) == available_eyes.end())
+                                    available_eyes.push_back(eye);
+                            }
+                        }
+                    }
+                }
+                if (ImGui::Button("Select All")) {
+                    embedded_models.clear();
+                    embedded_anims.clear();
+                    embedded_eyes.clear();
+                    for (std::string x : available_models) embedded_models.push_back(x);
+                    for (std::string x : available_anims ) embedded_anims .push_back(x);
+                    for (std::string x : available_eyes  ) embedded_eyes  .push_back(x);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Deselect All")) {
+                    embedded_models.clear();
+                    embedded_anims.clear();
+                    embedded_eyes.clear();
+                }
+                if (ImGui::TreeNode("Models")) {
+                    for (std::string model : available_models) {
+                        bool selected = std::find(embedded_models.begin(), embedded_models.end(), model) != embedded_models.end();
+                        if (ImGui::Checkbox(model.c_str(), &selected)) {
+                            if (selected) embedded_models.push_back(model);
+                            else embedded_models.erase(std::find(embedded_models.begin(), embedded_models.end(), model));
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Animations")) {
+                    for (std::string anim : available_anims) {
+                        bool selected = std::find(embedded_anims.begin(), embedded_anims.end(), anim) != embedded_anims.end();
+                        if (ImGui::Checkbox(anim.c_str(), &selected)) {
+                            if (selected) embedded_anims.push_back(anim);
+                            else embedded_anims.erase(std::find(embedded_anims.begin(), embedded_anims.end(), anim));
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Eyes")) {
+                    for (std::string eye : available_eyes) {
+                        bool selected = std::find(embedded_eyes.begin(), embedded_eyes.end(), eye) != embedded_eyes.end();
+                        if (ImGui::Checkbox(eye.c_str(), &selected)) {
+                            if (selected) embedded_eyes.push_back(eye);
+                            else embedded_eyes.erase(std::find(embedded_eyes.begin(), embedded_eyes.end(), eye));
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+                ImGui::TreePop();
+            }
             if (in_custom_level) ImGui::Text("Saving in a custom\nlevel isn't supported");
             ImGui::EndMenu();
         }
@@ -1149,9 +1331,10 @@ void saturn_imgui_update() {
                 video_renderer_init(videores[0], videores[1], sixty_fps_enabled);
             }
         }
-    } ImGui::End();
+        ImGui::End();
+    }
 
-    if (ImGui::Begin("Marios")) {
+    if (saturn_imgui_window("Marios")) {
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
         if (ImGui::Selectable(ICON_FK_TRASH " Delete all Marios")) {
             saturn_clear_actors();
@@ -1216,6 +1399,15 @@ void saturn_imgui_update() {
             ImGui::EndMenu();
         }
         imgui_bundled_tooltip("This Mario is used for calculations in enemy\nbehaviors and is not visible in renders.");
+        ImGui::PushItemWidth(200);
+        if (ImGui::BeginCombo("Model", saturn_object_names[current_mario_model].c_str())) {
+            for (auto model_entry : saturn_iterable_obj_list) {
+                bool selected = model_entry == current_mario_model;
+                if (ImGui::Selectable(saturn_object_names[model_entry].c_str(), selected)) current_mario_model = (ModelID)model_entry;
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
         ImGui::Separator();
         ImGui::InputTextWithHint("###mariosearch", ICON_FK_SEARCH " Search...", mario_search_prompt, 256);
         MarioActor* actor = gMarioActorList;
@@ -1236,14 +1428,16 @@ void saturn_imgui_update() {
             actor = actor->next;
             i++;
         }
-    } ImGui::End();
+        ImGui::End();
+    }
 
-    if (ImGui::Begin("Settings")) {
+    if (saturn_imgui_window("Settings")) {
         ssettings_imgui_update();
-    } ImGui::End();
+        ImGui::End();
+    }
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    if (ImGui::Begin("Game")) {
+    if (saturn_imgui_window("Game")) {
         ImVec2 window_pos = ImGui::GetWindowPos();
         ImVec2 window_size = ImGui::GetWindowSize();
         window_pos.y += 20;
@@ -1288,7 +1482,8 @@ void saturn_imgui_update() {
         if (mario_menu_do_open) ImGui::OpenPopup("Mario Menu");
         if (!ImGui::IsWindowHovered()) game_focus_timer = 0;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    } ImGui::End();
+        ImGui::End();
+    }
     ImGui::PopStyleVar();
 
     saturn_keyframe_window();
@@ -1301,6 +1496,15 @@ void saturn_imgui_update() {
         if (ImGui::BeginViewportSideBar("##SecondaryMenuBar", viewport, ImGuiDir_Up, height, window_flags)) {
             if (ImGui::BeginMenuBar()) {
                 if (is_recording) ImGui::EndDisabled();
+                if (ImGui::BeginMenu("x")) {
+                    for (auto& window : visible_windows) {
+                        if (ImGui::MenuItem(window.first.c_str(), NULL, window.second)) {
+                            window.second ^= 1;
+                            saturn_save_window_visibility(windows_bin_path, &visible_windows);
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::Text(PLATFORM_ICON);
                 if (configFps60) ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
                 else ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate / 2, 1000.0f / (ImGui::GetIO().Framerate / 2));
@@ -1388,8 +1592,6 @@ void saturn_imgui_update() {
     //ImGui::ShowDemoWindow();
     if (is_recording) ImGui::EndDisabled();
 
-    saturn_imgui_create_dockspace_layout(dockspace);
-
     is_cc_editing = windowCcEditor & support_color_codes & current_model.ColorCodeSupport;
 
     ImGui::Render();
@@ -1451,7 +1653,7 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
         bool anim_custom = keyframe.value[0] >= 1;
         int anim_id = keyframe.value[1];
         if (anim_custom) anim_name = canim_array[anim_id];
-        else anim_name = saturn_animations_list[anim_id];
+        else anim_name = saturn_animation_names[anim_id];
         ImGui::Text(anim_name.c_str());
     }
     if (timeline.type == KFTYPE_EXPRESSION) {
@@ -1496,7 +1698,11 @@ void saturn_keyframe_show_kf_content(Keyframe keyframe) {
     if (timeline.type == KFTYPE_SWITCH) {
         std::string id = keyframe.timelineID;
         if (timeline.marioIndex != -1) id = id.substr(0, id.length() - 8);
-        if (kf_switch_names.find(id) == kf_switch_names.end()) ImGui::Text("u forgor");
+        if (id == "k_anim_state") {
+            MarioActor* actor = saturn_get_actor(timeline.marioIndex);
+            ImGui::Text(saturn_obj_switches[actor->obj_model][(int)keyframe.value[0]].c_str());
+        }
+        else if (kf_switch_names.find(id) == kf_switch_names.end()) ImGui::Text("u forgor");
         else ImGui::Text(kf_switch_names[id][(int)keyframe.value[0]].c_str());
     }
     ImVec2 window_pos = ImGui::GetMousePos();
@@ -1565,13 +1771,22 @@ std::map<std::string, float*> keyframe_helper_values = {};
 
 void saturn_keyframe_helper(std::string id, float* value, float max) {
     if (keyframe_helper_values.find(id) == keyframe_helper_values.end()) {
-        float* data = (float*)malloc(sizeof(float) * 3);
+        float* data = (float*)malloc(sizeof(float) * 4);
         data[0] = max;
         data[1] = max - *value;
         data[2] = 1;
+        data[3] = max;
         keyframe_helper_values.insert({ id, data });
     }
     float* data = keyframe_helper_values[id];
+    if (data[3] != max) {
+        free(data);
+        keyframe_helper_values[id] = data = (float*)malloc(sizeof(float) * 4);
+        data[0] = max;
+        data[1] = max - *value;
+        data[2] = 1;
+        data[3] = max;
+    }
     ImGui::SeparatorText("Keyframe Helper");
     if (ImGui::SliderFloat("End Frame", data + 0, 0, max         ) |
         ImGui::SliderFloat("Duration" , data + 1, 0, max - *value) )

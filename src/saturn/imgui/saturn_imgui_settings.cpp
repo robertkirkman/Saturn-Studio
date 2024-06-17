@@ -29,6 +29,9 @@ extern "C" {
 #include "audio/load.h"
 #include "engine/math_util.h"
 #include "pc/platform.h"
+#include "buffers/buffers.h"
+#include "course_table.h"
+#include "game/save_file.h"
 }
 
 #include "icons/IconsForkAwesome.h"
@@ -427,6 +430,92 @@ void ssettings_imgui_update() {
         //imgui_bundled_tooltip("If enabled, a model-unique color code (if present) will automatically be assigned when selecting a model.");
         //ImGui::Checkbox("Always show chroma options", &configEditorAlwaysChroma);
         //imgui_bundled_tooltip("Allows the usage of CHROMA KEY features outside of the paired stage; Useful only for models and custom-compiled levels.");
+    }
+    if (ImGui::CollapsingHeader("Save File")) {
+        ImGui::SeparatorText("Stars");
+        if (ImGui::BeginTable("###savefile_table", 9)) {
+            ImGui::TableSetupColumn("###textcol", ImGuiTableColumnFlags_WidthStretch);
+            for (int i = 0; i < 8; i++) {
+                ImGui::TableSetupColumn("###textcol", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
+            }
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Level");
+            for (int i = 0; i < 8; i++) {
+                ImGui::TableNextColumn();
+                if (i == 6) {
+                    ImGui::Text("O");
+                    imgui_bundled_tooltip("100 Coin Star");
+                }
+                else if (i == 7) {
+                    ImGui::Text("C");
+                    imgui_bundled_tooltip("Cannon Unlocked");
+                }
+                else {
+                    ImGui::Text("%d", i + 1);
+                }
+            }
+            const char* course_names[] = {
+                "BOB", "WF", "JRB", "CCM", "BBH",
+                "HMC", "LLL", "SSL", "DDD", "SL",
+                "WDW", "TTM", "THI", "TTC", "RR",
+                "BITDW", "BITFS", "BITS", "PSS",
+                "COTMC", "TOTWC", "VCUTM", "WMOTR",
+                "SA", "Cake"
+            };
+            for (int i = 0; i < COURSE_COUNT; i++) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", course_names[i]);
+                u32 flags = gSaveBuffer.files[0][0].courseStars[i];
+                for (int j = 0; j < 8; j++) {
+                    ImGui::TableNextColumn();
+                    bool checked = flags & (1 << j);
+                    if (ImGui::Checkbox(("###" + std::to_string(i) + "," + std::to_string(j)).c_str(), &checked)) {
+                        u32 prev_flags = flags;
+                        if (checked) flags |= (1 << j);
+                        else flags &= ~(1 << j);
+                        gSaveBuffer.files[0][0].courseStars[i] = flags;
+                        gSaveFileModified = true;
+                        save_file_do_save(0);
+                    }
+                }
+            }
+            ImGui::EndTable();
+        }
+        ImGui::SeparatorText("Flags");
+        const char* flag_names[] = {
+            "Save File Exists",
+            "Wing Cap Unlocked",
+            "Metal Cap Unlocked",
+            "Vanish Cap Unlocked",
+            "Has Key 1",
+            "Has Key 2",
+            "Basement Unlocked",
+            "Upstairs Unlocked",
+            "DDD Moved Back",
+            "Moat Drained",
+            "Unlocked PSS Door",
+            "Unlocked WF Door",
+            "Unlocked CCM Door",
+            "Unlocked JRB Door",
+            "Unlocked BITDW Door",
+            "Unlocked BITFS Door",
+            "Cap on Ground",
+            "Cap on Klepto",
+            "Cap on Ukiki",
+            "Cap on Mr Blizzard",
+            "Unlocked 50 Star Door",
+        };
+        for (int i = 0; i < IM_ARRAYSIZE(flag_names); i++) {
+            bool checked = gSaveBuffer.files[0][0].flags & (1 << i);
+            if (ImGui::Checkbox(flag_names[i], &checked)) {
+                if (checked) gSaveBuffer.files[0][0].flags |= (1 << i);
+                else gSaveBuffer.files[0][0].flags &= ~(1 << i);
+                gSaveFileModified = true;
+                save_file_do_save(0);
+            }
+        }
     }
     if (saturn_actor_is_recording_input()) ImGui::BeginDisabled();
 }

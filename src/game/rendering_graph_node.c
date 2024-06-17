@@ -1112,8 +1112,14 @@ static int obj_is_in_view(struct GraphNodeObject *node, Mat4 matrix) {
         return FALSE;
     }
 
+    if (simulating_world) return TRUE;
     if (saturn_imgui_is_orthographic()) return TRUE;
     if (gCurrentObject->behavior == bhvMario && saturn_actor_is_recording_input()) return FALSE;
+    if ((
+        gCurrentObject->behavior != bhvMarioActor &&
+        gCurrentObject->behavior != bhvCamera &&
+        gCurrentObject->behavior != bhvMario
+    ) && autoChroma && !autoChromaObjects) return FALSE;
 
     geo = node->sharedChild;
 
@@ -1174,7 +1180,6 @@ static void interpolate_matrix(Mat4 result, Mat4 a, Mat4 b) {
  * Process an object node.
  */
 static void geo_process_object(struct Object *node) {
-    if (node->behavior != bhvMarioActor && autoChroma && !autoChromaObjects) return;
     Mat4 mtxf;
     s32 hasAnimation = (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0;
     Vec3f scaleInterpolated;
@@ -1316,6 +1321,12 @@ static void geo_process_object_parent(struct GraphNodeObjectParent *node) {
     }
     if (node->node.children != NULL) {
         geo_process_node_and_siblings(node->node.children);
+    }
+    for (int i = 0; i < saturn_actor_sizeof(); i++) {
+        struct Object* obj = saturn_actor_get_object(i);
+        if (!obj) continue;
+        if (!obj->header.gfx.sharedChild) continue;
+        geo_process_object(obj);
     }
 }
 

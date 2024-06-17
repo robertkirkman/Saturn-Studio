@@ -7,6 +7,7 @@
 #include "object_list_processor.h"
 #include "spawn_object.h"
 #include "object_helpers.h"
+#include "saturn/saturn_actors.h"
 
 struct Object *debug_print_obj_collision(struct Object *a) {
     struct Object *sp24;
@@ -233,15 +234,15 @@ u8 lineseg_intersects_cylinder(Vec3f a, Vec3f b, Vec3f p, float r, float h) {
 }
 
 struct Object* get_mario_actor_from_ray(Vec3f from, Vec3f to) {
-    struct Object* end = (struct Object*)&gObjectLists[OBJ_LIST_SATURN];
-    struct Object* curr = (struct Object*)end->header.next;
     struct Object* intersect = NULL;
     float intersect_distance = 0x10000;
-    while (curr != end) {
+    for (int i = 0; i < saturn_actor_sizeof(); i++) {
+        struct Object* obj = saturn_actor_get_object(i);
+        if (!obj) continue;
         Vec3f pos;
-        pos[0] = curr->oPosX;
-        pos[1] = curr->oPosY;
-        pos[2] = curr->oPosZ;
+        pos[0] = obj->oPosX;
+        pos[1] = obj->oPosY;
+        pos[2] = obj->oPosZ;
         if (lineseg_intersects_cylinder(from, to, pos, 37, 160)) {
             float dist = sqrtf(
                 (pos[0] - from[0]) * (pos[0] - from[0]) +
@@ -250,10 +251,10 @@ struct Object* get_mario_actor_from_ray(Vec3f from, Vec3f to) {
             );
             if ((intersect && intersect_distance > dist) || !intersect) {
                 intersect_distance = dist;
-                intersect = curr;
+                intersect = obj;
             }
         }
-        curr = (struct Object*)curr->header.next;
+        obj = (struct Object*)obj->header.next;
     }
     return intersect;
 }

@@ -9,6 +9,7 @@
 #include <iostream>
 #include "GL/glew.h"
 #include "saturn/saturn_actors.h"
+#include "saturn/saturn_animation_ids.h"
 #include "types.h"
 
 #ifdef _WIN32
@@ -200,10 +201,8 @@ void OpenModelSelector(MarioActor* actor) {
                             last_model_cc_address = current_color_code.GameShark;
                         }
                     } else {
-                        if (!AnyModelsEnabled(actor)) {
-                            actor->model = Model();
-                            actor->selected_model = -1;
-                        }
+                        actor->model = Model();
+                        actor->selected_model = -1;
                         
                         // Reset model CCs
                         model_color_code_list.clear();
@@ -309,62 +308,85 @@ void sdynos_imgui_menu(int index) {
         actor->y = find_floor_height(actor->x, actor->y + 100, actor->z);
     }
 
-    if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
-        // Color Code Selection
-        if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
-            OpenCCSelector(actor);
-            // Open File Dialog
-            if (ImGui::Button(ICON_FK_FILE_TEXT_O " Open CC Folder...###open_cc_folder"))
-                open_directory(std::string(sys_user_path()) + "/dynos/colorcodes/");
-        if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::EndDisabled();
+    if (actor->obj_model == MODEL_MARIO) {
+        if (ImGui::BeginMenu(ICON_FK_USER_CIRCLE " Edit Avatar###menu_edit_avatar")) {
+            // Color Code Selection
+            if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::BeginDisabled();
+                OpenCCSelector(actor);
+                // Open File Dialog
+                if (ImGui::Button(ICON_FK_FILE_TEXT_O " Open CC Folder...###open_cc_folder"))
+                    open_directory(std::string(sys_user_path()) + "/dynos/colorcodes/");
+            if (!actor->cc_support || !actor->model.ColorCodeSupport) ImGui::EndDisabled();
 
-        // Model Selection
-        OpenModelSelector(actor);
+            // Model Selection
+            OpenModelSelector(actor);
 
-        ImGui::EndMenu();
-    }
+            ImGui::EndMenu();
+        }
 
-    // Color Code Editor
-    if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", actor->cc_support & actor->model.ColorCodeSupport)) {
-        OpenCCEditor(actor);
-        ImGui::EndMenu();
+        // Color Code Editor
+        if (ImGui::BeginMenu(ICON_FK_PAINT_BRUSH " Color Code Editor###menu_cc_editor", actor->cc_support & actor->model.ColorCodeSupport)) {
+            OpenCCEditor(actor);
+            ImGui::EndMenu();
+        }
     }
 
     // Animation Mixtape
-    if (ImGui::BeginMenu(ICON_FK_FILM " Animation Mixtape###menu_anim_player")) {
+    if (actor->num_bones != 0) if (ImGui::BeginMenu(ICON_FK_FILM " Animation Mixtape###menu_anim_player")) {
         imgui_machinima_animation_player(actor);
         ImGui::EndMenu();
     }
-
-    if (ImGui::BeginMenu(ICON_FK_FILM " Input Recording")) {
-        bool empty = actor->input_recording.empty();
-        if (empty) ImGui::Text("No recording made");
-        if (ImGui::Button("Record")) {
-            set_mario_action(gMarioState, ACT_IDLE, 0);
-            saturn_actor_start_recording(index);
-            ImGui::CloseCurrentPopup();
+    
+    if (saturn_obj_switches.find(actor->obj_model) != saturn_obj_switches.end()) {
+        if (saturn_obj_switches[actor->obj_model][0].rfind("__ANIM_SWITCH", 0) == 0) {
+            int num_frames = std::stoi(saturn_obj_switches[actor->obj_model][0].substr(14));
+            int frame = actor->anim_state;
+            ImGui::SliderInt("Anim Frame", &frame, 0, num_frames - 1, "%d", ImGuiSliderFlags_AlwaysClamp);
+            actor->anim_state = frame;
+            saturn_keyframe_popout("k_anim_frame");
         }
-        ImGui::SameLine();
-        ImGui::BeginDisabled();
-        ImGui::Text("%s to stop", translate_bind_to_name(configKeyStopInpRec[0]));
-        ImGui::EndDisabled();
-        ImGui::Separator();
-        if (empty) ImGui::BeginDisabled();
-        bool checked = !empty && actor->playback_input;
-        if (ImGui::Checkbox("Playback", &checked)) actor->playback_input = !actor->playback_input;
-        saturn_keyframe_popout("k_inputrec_enable");
-        if (!empty && !actor->playback_input) ImGui::BeginDisabled();
-        ImGui::SliderFloat("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1, "%.0f");
-        if (!empty && !actor->playback_input) ImGui::EndDisabled();
-        saturn_keyframe_popout("k_inputrec_frame");
-        std::string timelineID = saturn_keyframe_get_mario_timeline_id("k_inputrec_frame", saturn_actor_indexof(actor));
-        if (saturn_timeline_exists(timelineID.c_str()))
-            saturn_keyframe_helper(timelineID, &actor->input_recording_frame, actor->input_recording.size() - 1);
-        if (empty) ImGui::EndDisabled();
-        ImGui::EndMenu();
+        else {
+            if (ImGui::BeginCombo("Anim State", saturn_obj_switches[actor->obj_model][actor->anim_state].c_str())) {
+                for (int i = 0; i < saturn_obj_switches[actor->obj_model].size(); i++) {
+                    bool selected = actor->anim_state == i;
+                    if (ImGui::Selectable(saturn_obj_switches[actor->obj_model][i].c_str(), selected)) actor->anim_state = i;
+                }
+                ImGui::EndCombo();
+            }
+            saturn_keyframe_popout("k_anim_state");
+        }
     }
 
-    ImGui::Separator();
+    if (actor->obj_model == MODEL_MARIO) {
+        if (ImGui::BeginMenu(ICON_FK_FILM " Input Recording")) {
+            bool empty = actor->input_recording.empty();
+            if (empty) ImGui::Text("No recording made");
+            if (ImGui::Button("Record")) {
+                set_mario_action(gMarioState, ACT_IDLE, 0);
+                saturn_actor_start_recording(index);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            ImGui::BeginDisabled();
+            ImGui::Text("%s to stop", translate_bind_to_name(configKeyStopInpRec[0]));
+            ImGui::EndDisabled();
+            ImGui::Separator();
+            if (empty) ImGui::BeginDisabled();
+            bool checked = !empty && actor->playback_input;
+            if (ImGui::Checkbox("Playback", &checked)) actor->playback_input = !actor->playback_input;
+            saturn_keyframe_popout("k_inputrec_enable");
+            if (!empty && !actor->playback_input) ImGui::BeginDisabled();
+            ImGui::SliderFloat("Frame", &actor->input_recording_frame, 0, actor->input_recording.size() - 1, "%.0f");
+            if (!empty && !actor->playback_input) ImGui::EndDisabled();
+            saturn_keyframe_popout("k_inputrec_frame");
+            std::string timelineID = saturn_keyframe_get_mario_timeline_id("k_inputrec_frame", saturn_actor_indexof(actor));
+            if (saturn_timeline_exists(timelineID.c_str()))
+                saturn_keyframe_helper(timelineID, &actor->input_recording_frame, actor->input_recording.size() - 1);
+            if (empty) ImGui::EndDisabled();
+            ImGui::EndMenu();
+        }
+        ImGui::Separator();
+    }
 
     if (!actor->model.ColorCodeSupport) ImGui::BeginDisabled();
         ImGui::Checkbox("Color Code Support", &actor->cc_support);
@@ -387,7 +409,7 @@ void sdynos_imgui_menu(int index) {
         ImGui::BeginChild("Misc.###misc_child", ImVec2(275, 175), true, ImGuiWindowFlags_None);
         if (ImGui::BeginTabBar("###misc_tabbar", ImGuiTabBarFlags_None)) {
 
-            if (ImGui::BeginTabItem("Switches###switches_scale")) {
+            if (actor->obj_model == MODEL_MARIO) if (ImGui::BeginTabItem("Switches###switches_scale")) {
                 const char* eyes[] = { "Blinking", "Open", "Half", "Closed", "Left", "Right", "Up", "Down", "Dead" };
                 ImGui::Combo("Eyes###eye_state", &actor->eye_state, eyes, IM_ARRAYSIZE(eyes));
                 saturn_keyframe_popout("k_switch_eyes");
@@ -430,24 +452,26 @@ void sdynos_imgui_menu(int index) {
                         actor->zScale = 1.f;
                     }
                 }
-                if (link_scaling) {
-                    ImGui::SliderFloat("RH Size", &actor->scaler[0][0], -2, 2);
-                    saturn_keyframe_popout("k_rh_scale");
-                    ImGui::SliderFloat("LH Size", &actor->scaler[1][0], -2, 2);
-                    saturn_keyframe_popout("k_lh_scale");
-                    ImGui::SliderFloat("RF Size", &actor->scaler[2][0], -2, 2);
-                    saturn_keyframe_popout("k_rf_scale");
-                    vec3f_set(actor->scaler[0], actor->scaler[0][0], actor->scaler[0][0], actor->scaler[0][0]);
-                    vec3f_set(actor->scaler[1], actor->scaler[1][0], actor->scaler[1][0], actor->scaler[1][0]);
-                    vec3f_set(actor->scaler[2], actor->scaler[2][0], actor->scaler[2][0], actor->scaler[2][0]);
-                }
-                else {
-                    ImGui::SliderFloat3("RH Size", actor->scaler[0], -2, 2);
-                    saturn_keyframe_popout("k_rh_scale");
-                    ImGui::SliderFloat3("LH Size", actor->scaler[1], -2, 2);
-                    saturn_keyframe_popout("k_lh_scale");
-                    ImGui::SliderFloat3("RF Size", actor->scaler[2], -2, 2);
-                    saturn_keyframe_popout("k_rf_scale");
+                if (actor->obj_model == MODEL_MARIO) {
+                    if (link_scaling) {
+                        ImGui::SliderFloat("RH Size", &actor->scaler[0][0], -2, 2);
+                        saturn_keyframe_popout("k_rh_scale");
+                        ImGui::SliderFloat("LH Size", &actor->scaler[1][0], -2, 2);
+                        saturn_keyframe_popout("k_lh_scale");
+                        ImGui::SliderFloat("RF Size", &actor->scaler[2][0], -2, 2);
+                        saturn_keyframe_popout("k_rf_scale");
+                        vec3f_set(actor->scaler[0], actor->scaler[0][0], actor->scaler[0][0], actor->scaler[0][0]);
+                        vec3f_set(actor->scaler[1], actor->scaler[1][0], actor->scaler[1][0], actor->scaler[1][0]);
+                        vec3f_set(actor->scaler[2], actor->scaler[2][0], actor->scaler[2][0], actor->scaler[2][0]);
+                    }
+                    else {
+                        ImGui::SliderFloat3("RH Size", actor->scaler[0], -2, 2);
+                        saturn_keyframe_popout("k_rh_scale");
+                        ImGui::SliderFloat3("LH Size", actor->scaler[1], -2, 2);
+                        saturn_keyframe_popout("k_lh_scale");
+                        ImGui::SliderFloat3("RF Size", actor->scaler[2], -2, 2);
+                        saturn_keyframe_popout("k_rf_scale");
+                    }
                 }
 
                 if (mario_exists) {
@@ -485,10 +509,12 @@ void sdynos_imgui_menu(int index) {
         if (ImGui::BeginTable("misc_table", 2)) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::Checkbox("Dust Particles", &enable_dust_particles);
-            imgui_bundled_tooltip("Displays dust particles when Mario moves.");
-            ImGui::Checkbox("Torso Rotations", &enable_torso_rotation);
-            imgui_bundled_tooltip("Tilts Mario's torso when he moves; Disable for a \"beta running\" effect.");
+            if (actor->obj_model == MODEL_MARIO) {
+                ImGui::Checkbox("Dust Particles", &enable_dust_particles);
+                imgui_bundled_tooltip("Displays dust particles when Mario moves.");
+                ImGui::Checkbox("Torso Rotations", &enable_torso_rotation);
+                imgui_bundled_tooltip("Tilts Mario's torso when he moves; Disable for a \"beta running\" effect.");
+            }
             ImGui::Checkbox("Hidden", &actor->hidden);
             imgui_bundled_tooltip("Makes the Mario not visible in renders.");
             saturn_keyframe_popout("k_mario_hidden");
@@ -511,7 +537,7 @@ void sdynos_imgui_menu(int index) {
 
             ImGui::EndTable();
         }
-        if (mario_exists) if (ImGui::BeginMenu("Head Rotations")) {
+        if (mario_exists && actor->obj_model == MODEL_MARIO) if (ImGui::BeginMenu("Head Rotations")) {
             ImGui::Text("C-Up Settings");
             if (ImGui::BeginTable("headrot_table", 3)) {
                 float fake_yaw = actor->head_rot_x * 360.f / 65536;
@@ -571,7 +597,7 @@ void sdynos_imgui_menu(int index) {
         ImGui::Separator();
     }
 
-    if (actor->model.CustomEyeSupport) {
+    if (actor->model.CustomEyeSupport && actor->obj_model == MODEL_MARIO) {
         // Custom Eyes Checkbox
         ImGui::Checkbox("Custom Eyes", &actor->custom_eyes);
         saturn_keyframe_popout("k_customeyes");

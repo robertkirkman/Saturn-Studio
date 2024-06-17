@@ -33,6 +33,9 @@ public:
     std::string ParentPath() {
         return FilePath.substr(0, this->FilePath.length() - this->FileName.length());
     }
+    std::string DynosPath() {
+        return FilePath.substr(std::string("dynos/eyes/").length());
+    }
     
     bool IsModelTexture = false;
 };

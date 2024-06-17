@@ -1,5 +1,6 @@
 #include <PR/ultratypes.h>
 
+#include "game/rendering_graph_node.h"
 #include "mario_animation_ids.h"
 #include "prevent_bss_reordering.h"
 #include "sm64.h"
@@ -203,6 +204,12 @@ void bhv_end_toad_loop(void) {
 s32 geo_switch_peach_eyes(s32 run, struct GraphNode *node, UNUSED s32 a2) {
     struct GraphNodeSwitchCase *switchCase = (struct GraphNodeSwitchCase *) node;
     s16 timer;
+    struct Object* obj = (struct Object*)gCurGraphNodeObject;
+    if (obj) if (obj->behavior == bhvMarioActor) {
+        if (obj->oAnimState >= 8) obj->oAnimState = 0;
+        switchCase->selectedCase = obj->oAnimState;
+        return 0;
+    }
 
     if (run == TRUE) {
         if (D_8032CBE4 == 0) {

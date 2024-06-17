@@ -8,6 +8,7 @@
 #include "saturn/imgui/saturn_imgui_chroma.h"
 #include "saturn/imgui/saturn_imgui_machinima.h"
 #include "saturn_format.h"
+#include "saturn_embedded_filesystem.h"
 
 #include "saturn/saturn.h"
 #include "saturn/saturn_actors.h"
@@ -23,7 +24,7 @@ extern "C" {
 
 #include "saturn/saturn_timelines.h"
 
-#define SATURN_PROJECT_VERSION 3
+#define SATURN_PROJECT_VERSION 4
 
 std::string current_project = "";
 int project_load_timer = 0;
@@ -161,7 +162,7 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     else
         actor->scaler[0][0] = actor->scaler[0][1] = actor->scaler[0][2] =
         actor->scaler[1][0] = actor->scaler[1][1] = actor->scaler[1][2] =
-        actor->scaler[2][0] = actor->scaler[2][1] = actor->scaler[2][2] = 0;
+        actor->scaler[2][0] = actor->scaler[2][1] = actor->scaler[2][2] = 1;
     actor->head_rot_x = saturn_format_read_int32(stream);
     actor->head_rot_y = saturn_format_read_int32(stream);
     actor->eye_state = saturn_format_read_int32(stream);
@@ -181,7 +182,10 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
     actor->animstate.custom = saturn_format_read_bool(stream);
     actor->animstate.frame = saturn_format_read_int32(stream);
     actor->animstate.id = saturn_format_read_int32(stream);
+    if (version >= 4) actor->animstate.yTransform = (s16)saturn_format_read_int16(stream);
     actor->selected_model = saturn_format_read_bool(stream) - 1;
+    if (version >= 4) actor->obj_model = (ModelID)saturn_format_read_int16(stream);
+    else actor->obj_model = MODEL_MARIO;
     for (int cc = 0; cc < 12; cc++) {
         for (int shade = 0; shade < 2; shade++) {
             actor->colorcode[cc].red  [shade] = saturn_format_read_int8(stream);
@@ -213,7 +217,9 @@ bool saturn_project_mario_actor_handler(SaturnFormatStream* stream, int version)
             }
         }
     }
-    for (int i = 0; i < 20; i++) {
+    if (version >= 4) actor->num_bones = saturn_format_read_int8(stream);
+    else actor->num_bones = 20;
+    for (int i = 0; i < actor->num_bones; i++) {
         actor->bones[i][0] = saturn_format_read_float(stream);
         actor->bones[i][1] = saturn_format_read_float(stream);
         actor->bones[i][2] = saturn_format_read_float(stream);
@@ -278,9 +284,50 @@ bool saturn_project_custom_anim_handler(SaturnFormatStream* stream, int version)
     return true;
 }
 
+bool saturn_project_simulation_handler(SaturnFormatStream* stream, int version) {
+    extern u16 gRandomSeed16;
+    gRandomSeed16 = saturn_format_read_int16(stream);
+    world_simulation_frames = saturn_format_read_int16(stream);
+    saturn_simulate(world_simulation_frames);
+    world_simulation_curr_frame = saturn_format_read_int16(stream);
+    return true;
+}
+
+struct FileEntry saturn_project_read_embedded_filesystem(SaturnFormatStream* stream) {
+    int type = saturn_format_read_int8(stream);
+    if (type == 0) {
+        struct File file;
+        file.type = type;
+        saturn_format_read_string(stream, file.name, 255);
+        file.data_length = saturn_format_read_int32(stream);
+        file.data = (unsigned char*)malloc(file.data_length);
+        saturn_format_read_any(stream, file.data, file.data_length);
+        return *(struct FileEntry*)&file;
+    }
+    else {
+        struct Folder folder;
+        folder.type = type;
+        saturn_format_read_string(stream, folder.name, 255);
+        int num_files = saturn_format_read_int32(stream);
+        for (int i = 0; i < num_files; i++) {
+            folder.entries.push_back(saturn_project_read_embedded_filesystem(stream));
+        }
+        return *(struct FileEntry*)&folder;
+    }
+}
+
+bool saturn_project_embedded_data_handler(SaturnFormatStream* stream, int version) {
+    struct FileEntry entry = saturn_project_read_embedded_filesystem(stream);
+    saturn_embedded_filesystem_to_local_storage(&entry, ".");
+    saturn_embedded_filesystem_free(&entry);
+    model_list = GetModelList(std::string(sys_user_path()) + "/dynos/packs");
+    return true;
+}
+
 void saturn_load_project(char* filename) {
     k_frame_keys.clear();
     saturn_clear_actors();
+    saturn_clear_simulation();
     actors_for_deletion.clear();
     current_project = filename;
     saturn_format_input((char*)(std::string(sys_user_path()) + std::string("/dynos/projects/") + filename).c_str(), "SSPJ", {
@@ -290,6 +337,8 @@ void saturn_load_project(char* filename) {
         { "KFTL", saturn_project_keyframe_timeline_handler },
         { "LEVL", saturn_project_level_handler },
         { "CANM", saturn_project_custom_anim_handler },
+        { "WSIM", saturn_project_simulation_handler },
+        { "EMBD", saturn_project_embedded_data_handler },
     });
     for (int index : actors_for_deletion) {
         saturn_remove_actor(index);
@@ -300,7 +349,27 @@ void saturn_load_project(char* filename) {
     std::cout << "Loaded project " << filename << std::endl;
 }
 
-void saturn_save_project(char* filename) {
+void saturn_save_embedded_filesystem(SaturnFormatStream* stream, struct FileEntry* filesystem) {
+    if (!filesystem) return;
+    saturn_format_write_int8(stream, filesystem->type);
+    saturn_format_write_string(stream, filesystem->name);
+    struct File* file = (struct File*)filesystem;
+    struct Folder* folder = (struct Folder*)filesystem;
+    switch (filesystem->type) {
+        case 0: // file
+            saturn_format_write_int32(stream, file->data_length);
+            saturn_format_write_any(stream, file->data, file->data_length);
+            break;
+        case 1: // folder
+            saturn_format_write_int32(stream, folder->entries.size());
+            for (int i = 0; i < folder->entries.size(); i++) {
+                saturn_save_embedded_filesystem(stream, &folder->entries[i]);
+            }
+            break;
+    }
+}
+
+void saturn_save_project(char* filename, struct Folder* embedded_filesystem) {
     SaturnFormatStream _stream = saturn_format_output("SSPJ", SATURN_PROJECT_VERSION);
     SaturnFormatStream* stream = &_stream;
     saturn_format_new_section(stream, "LEVL");
@@ -312,6 +381,11 @@ void saturn_save_project(char* filename) {
     }
     saturn_format_write_int8(stream, acts);
     saturn_format_close_section(stream);
+    if (embedded_filesystem) {
+        saturn_format_new_section(stream, "EMBD");
+        saturn_save_embedded_filesystem(stream, (struct FileEntry*)embedded_filesystem);
+        saturn_format_close_section(stream);
+    }
     saturn_format_new_section(stream, "CANM");
     for (std::string canim : canim_array) {
         saturn_format_write_string(stream, canim.data());
@@ -417,7 +491,9 @@ void saturn_save_project(char* filename) {
         saturn_format_write_bool(stream, actor->animstate.custom);
         saturn_format_write_int32(stream, actor->animstate.frame);
         saturn_format_write_int32(stream, actor->animstate.id);
+        saturn_format_write_int16(stream, actor->animstate.yTransform);
         saturn_format_write_bool(stream, actor->selected_model != -1);
+        saturn_format_write_int16(stream, actor->obj_model);
         for (int cc = 0; cc < 12; cc++) {
             for (int shade = 0; shade < 2; shade++) {
                 saturn_format_write_int8(stream, actor->colorcode[cc].red  [shade]);
@@ -430,7 +506,8 @@ void saturn_save_project(char* filename) {
             fs_relative::path base = actor->model.Expressions[i].FolderPath;
             saturn_format_write_string(stream, (char*)fs_relative::relative(path, base).string().c_str());
         }
-        for (int i = 0; i < 20; i++) {
+        saturn_format_write_int8(stream, actor->num_bones);
+        for (int i = 0; i < actor->num_bones; i++) {
             saturn_format_write_float(stream, actor->bones[i][0]);
             saturn_format_write_float(stream, actor->bones[i][1]);
             saturn_format_write_float(stream, actor->bones[i][2]);
@@ -452,6 +529,13 @@ void saturn_save_project(char* filename) {
             saturn_format_write_int8(stream, kf.curve);
             saturn_format_write_int32(stream, kf.position);
         }
+        saturn_format_close_section(stream);
+    }
+    if (world_simulation_data) {
+        saturn_format_new_section(stream, "WSIM");
+        saturn_format_write_int16(stream, world_simulation_seed);
+        saturn_format_write_int16(stream, world_simulation_frames);
+        saturn_format_write_int16(stream, world_simulation_curr_frame);
         saturn_format_close_section(stream);
     }
     saturn_format_write((char*)(std::string(sys_user_path()) + std::string("/dynos/projects/") + filename).c_str(), stream);

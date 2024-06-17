@@ -54,9 +54,12 @@ public:
     bool custom_eyes = false;
     bool custom_bone = false;
     int custom_bone_iter = 0;
+    float anim_state = 0;
     Vec3f scaler[3];
-    Vec3f bones[20];
+    int num_bones = 20;
+    Vec3f bones[60];
     Model model = Model();
+    ModelID obj_model;
     ColorCode colorcode;
     struct Animation anim;
     struct AnimationState animstate;
@@ -69,30 +72,23 @@ public:
     struct Object* marioObj = nullptr;
     bool exists = true;
     char name[256];
-    MarioActor() {
-        u64 ptr = (u64)this;
-        PasteGameShark(GameSharkCode().GameShark, colorcode);
-        marioObj = spawn_object(gMarioState->marioObj, MODEL_MARIO, bhvMarioActor);
-        scaler[0][0] = scaler[0][1] = scaler[0][2] =
-        scaler[1][0] = scaler[1][1] = scaler[1][2] =
-        scaler[2][0] = scaler[2][1] = scaler[2][2] = 1;
-        memset(bones, 0, sizeof(bones));
-    }
+    MarioActor();
 };
 
 extern MarioActor* gMarioActorList;
+extern ModelID current_mario_model;
 
 extern MarioActor* saturn_spawn_actor(float x, float y, float z);
 extern MarioActor* saturn_add_actor(MarioActor& actor);
 extern void saturn_remove_actor(int index);
 extern MarioActor* saturn_get_actor(int index);
 extern int saturn_actor_indexof(MarioActor* actor);
-extern int saturn_actor_sizeof();
 
 extern int recording_mario_actor;
 
 extern "C" {
 #endif
+    int saturn_actor_sizeof();
     void saturn_clear_actors();
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
@@ -113,6 +109,9 @@ extern "C" {
     void saturn_actor_stop_recording();
     bool saturn_actor_is_recording_input();
     void saturn_actor_record_new_frame();
+    struct Object* saturn_actor_get_object(int index);
+    void saturn_actor_update_all();
+
     void saturn_actor_add_model_texture(char* id, char* data, int w, int h);
     char* saturn_actor_get_model_texture(char* id, int* w, int* h);
 #ifdef __cplusplus

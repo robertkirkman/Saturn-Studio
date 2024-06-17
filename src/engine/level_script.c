@@ -382,10 +382,8 @@ static void level_cmd_load_model_from_dl(void) {
 #endif
     void *val3 = CMD_GET(void *, 4);
 
-    if (val1 < 256) {
-        gLoadedGraphNodes[val1] =
-            (struct GraphNode *) init_graph_node_display_list(sLevelPool, 0, val2, val3);
-    }
+    gLoadedGraphNodes[val1] =
+        (struct GraphNode *) init_graph_node_display_list(sLevelPool, 0, val2, val3);
 
     sCurrentCmd = CMD_NEXT;
 }
@@ -394,9 +392,7 @@ static void level_cmd_load_model_from_geo(void) {
     s16 arg0 = CMD_GET(s16, 2);
     void *arg1 = CMD_GET(void *, 4);
 
-    if (arg0 < 256) {
-        gLoadedGraphNodes[arg0] = process_geo_layout(sLevelPool, arg1);
-    }
+    gLoadedGraphNodes[arg0] = process_geo_layout(sLevelPool, arg1);
 
     sCurrentCmd = CMD_NEXT;
 }
@@ -452,22 +448,22 @@ static void level_cmd_place_object(void) {
     struct SpawnInfo *spawnInfo;
 
     if (sCurrAreaIndex != -1 && ((CMD_GET(u8, 2) & val7) || CMD_GET(u8, 2) == 0x1F)) {
-        model = CMD_GET(u8, 3);
+        model = CMD_GET(u16, 4);
         spawnInfo = alloc_only_pool_alloc(sLevelPool, sizeof(struct SpawnInfo));
 
-        spawnInfo->startPos[0] = CMD_GET(s16, 4);
-        spawnInfo->startPos[1] = CMD_GET(s16, 6);
-        spawnInfo->startPos[2] = CMD_GET(s16, 8);
+        spawnInfo->startPos[0] = CMD_GET(s16, 8);
+        spawnInfo->startPos[1] = CMD_GET(s16, 10);
+        spawnInfo->startPos[2] = CMD_GET(s16, 12);
 
-        spawnInfo->startAngle[0] = CMD_GET(s16, 10) * 0x8000 / 180;
-        spawnInfo->startAngle[1] = CMD_GET(s16, 12) * 0x8000 / 180;
-        spawnInfo->startAngle[2] = CMD_GET(s16, 14) * 0x8000 / 180;
+        spawnInfo->startAngle[0] = CMD_GET(s16, 14) * 0x8000 / 180;
+        spawnInfo->startAngle[1] = CMD_GET(s16, 16) * 0x8000 / 180;
+        spawnInfo->startAngle[2] = CMD_GET(s16, 18) * 0x8000 / 180;
 
         spawnInfo->areaIndex = sCurrAreaIndex;
         spawnInfo->activeAreaIndex = sCurrAreaIndex;
 
-        spawnInfo->behaviorArg = CMD_GET(u32, 16);
-        spawnInfo->behaviorScript = CMD_GET(void *, 20);
+        spawnInfo->behaviorArg = CMD_GET(u32, 20);
+        spawnInfo->behaviorScript = CMD_GET(void *, 24);
         spawnInfo->unk18 = gLoadedGraphNodes[model];
         spawnInfo->next = gAreas[sCurrAreaIndex].objectSpawnInfos;
 
@@ -677,7 +673,7 @@ static void level_cmd_2C(void) {
 }
 
 static void level_cmd_2D(void) {
-    area_update_objects();
+    //area_update_objects();
     sCurrentCmd = CMD_NEXT;
 }
 

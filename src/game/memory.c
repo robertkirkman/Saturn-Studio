@@ -12,6 +12,7 @@
 #include "memory.h"
 #include "segment_symbols.h"
 #include "segments.h"
+#include "saturn/saturn.h"
 
 // round up to the next multiple
 #define ALIGN4(val) (((val) + 0x3) & ~0x3)
@@ -393,12 +394,12 @@ void mem_pool_free(struct MemoryPool *pool, void *addr) {
 
 void *alloc_display_list(u32 size) {
     void *ptr = NULL;
+    if (simulating_world) return malloc(size);
 
     size = ALIGN8(size);
     if (gGfxPoolEnd - size >= (u8 *) gDisplayListHead) {
         gGfxPoolEnd -= size;
         ptr = gGfxPoolEnd;
-    } else {
     }
     return ptr;
 }

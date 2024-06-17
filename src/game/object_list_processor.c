@@ -1,5 +1,7 @@
 #include <PR/ultratypes.h>
 
+#include "game/game_init.h"
+#include "game/rendering_graph_node.h"
 #include "mario_animation_ids.h"
 #include "saturn/saturn_actors.h"
 #include "sm64.h"
@@ -174,8 +176,8 @@ struct ObjectNode gObjectListArray[16];
 s8 sObjectListUpdateOrder[] = { OBJ_LIST_SPAWNER,
                                 OBJ_LIST_SURFACE,
                                 OBJ_LIST_POLELIKE,
-                                OBJ_LIST_PLAYER,
-                                OBJ_LIST_SATURN,
+                                //OBJ_LIST_PLAYER,
+                                //OBJ_LIST_SATURN,
                                 OBJ_LIST_PUSHABLE,
                                 OBJ_LIST_GENACTOR,
                                 OBJ_LIST_DESTRUCTIVE,
@@ -268,7 +270,11 @@ void bhv_mario_update(void) {
     if (!saturn_actor_is_recording_input()) set_mario_action(gMarioState, ACT_DEBUG_FREE_MOVE, 0);
     particleFlags = execute_mario_action(gCurrentObject);
     gCurrentObject->oMarioParticleFlags = particleFlags;
-    if (!saturn_actor_is_recording_input()) set_mario_animation(gMarioState, MARIO_ANIM_A_POSE);
+    if (!saturn_actor_is_recording_input()) {
+        set_mario_animation(gMarioState, MARIO_ANIM_A_POSE);
+        cur_obj_unhide();
+    }
+    else cur_obj_hide();
 
     // Mario code updates MarioState's versions of position etc, so we need
     // to sync it with the Mario object
@@ -297,7 +303,6 @@ s32 update_objects_starting_at(struct ObjectNode *objList, struct ObjectNode *fi
 
         gCurrentObject->header.gfx.node.flags |= GRAPH_RENDER_HAS_ANIMATION;
         cur_obj_update();
-
         firstObj = firstObj->next;
         count += 1;
     }

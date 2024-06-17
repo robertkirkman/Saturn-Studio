@@ -92,7 +92,6 @@ struct Object *try_allocate_object(struct ObjectNode *destList, struct ObjectNod
         return NULL;
     }
 
-    geo_remove_child(&nextObj->gfx.node);
     geo_add_child(&gObjParentGraphNode, &nextObj->gfx.node);
 
     return (struct Object *) nextObj;
@@ -190,7 +189,6 @@ void unload_object(struct Object *obj) {
     obj->header.gfx.throwMatrix = NULL;
     func_803206F8(obj->header.gfx.cameraToObject);
     geo_remove_child(&obj->header.gfx.node);
-    geo_add_child(&gObjParentGraphNode, &obj->header.gfx.node);
 
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_BILLBOARD;
     obj->header.gfx.node.flags &= ~GRAPH_RENDER_CYLBOARD;
@@ -199,42 +197,7 @@ void unload_object(struct Object *obj) {
     deallocate_object(&gFreeObjectList, &obj->header);
 }
 
-/**
- * Attempt to allocate a new object slot into the given object list, freeing
- * an unimportant object if necessary. If this is not possible, hang using an
- * infinite loop.
- */
-struct Object *allocate_object(struct ObjectNode *objList) {
-    s32 i;
-    struct Object *obj = try_allocate_object(objList, &gFreeObjectList);
-
-    // The object list is full if the newly created pointer is NULL.
-    // If this happens, we first attempt to unload unimportant objects
-    // in order to finish allocating the object.
-    if (obj == NULL) {
-        // Look for an unimportant object to kick out.
-        struct Object *unimportantObj = find_unimportant_object();
-
-        // If no unimportant object exists, then the object pool is exhausted.
-        if (unimportantObj == NULL) {
-            // We've met with a terrible fate.
-            while (TRUE) {
-            }
-        } else {
-            // If an unimportant object does exist, unload it and take its slot.
-            unload_object(unimportantObj);
-            obj = try_allocate_object(objList, &gFreeObjectList);
-            if (gCurrentObject == obj) {
-                //! Uh oh, the unimportant object was in the middle of
-                //  updating! This could cause some interesting logic errors,
-                //  but I don't know of any unimportant objects that spawn
-                //  other objects.
-            }
-        }
-    }
-
-    // Initialize object fields
-
+void initialize_object(struct Object* obj) {
     obj->activeFlags = ACTIVE_FLAG_ACTIVE | ACTIVE_FLAG_UNK8;
     obj->parentObj = obj;
     obj->prevObj = NULL;
@@ -242,7 +205,7 @@ struct Object *allocate_object(struct ObjectNode *objList) {
     obj->numCollidedObjs = 0;
 
 #if IS_64_BIT
-    for (i = 0; i < 0x50; i++) {
+    for (int i = 0; i < 0x50; i++) {
         obj->rawData.asS32[i] = 0;
         obj->ptrData.asVoidPtr[i] = NULL;
     }
@@ -288,6 +251,44 @@ struct Object *allocate_object(struct ObjectNode *objList) {
     obj->header.gfx.pos[1] = -10000.0f;
     obj->header.gfx.pos[2] = -10000.0f;
     obj->header.gfx.throwMatrix = NULL;
+}
+
+/**
+ * Attempt to allocate a new object slot into the given object list, freeing
+ * an unimportant object if necessary. If this is not possible, hang using an
+ * infinite loop.
+ */
+struct Object *allocate_object(struct ObjectNode *objList) {
+    struct Object *obj = try_allocate_object(objList, &gFreeObjectList);
+
+    // The object list is full if the newly created pointer is NULL.
+    // If this happens, we first attempt to unload unimportant objects
+    // in order to finish allocating the object.
+    if (obj == NULL) {
+        // Look for an unimportant object to kick out.
+        struct Object *unimportantObj = find_unimportant_object();
+
+        // If no unimportant object exists, then the object pool is exhausted.
+        if (unimportantObj == NULL) {
+            // We've met with a terrible fate.
+            while (TRUE) {
+            }
+        } else {
+            // If an unimportant object does exist, unload it and take its slot.
+            unload_object(unimportantObj);
+            obj = try_allocate_object(objList, &gFreeObjectList);
+            if (gCurrentObject == obj) {
+                //! Uh oh, the unimportant object was in the middle of
+                //  updating! This could cause some interesting logic errors,
+                //  but I don't know of any unimportant objects that spawn
+                //  other objects.
+            }
+        }
+    }
+
+    // Initialize object fields
+
+    initialize_object(obj);
 
     return obj;
 }

@@ -8,6 +8,7 @@
 #include <thread>
 #include <map>
 #include <SDL2/SDL.h>
+#include "saturn/saturn_animation_ids.h"
 
 #include "PR/os_cont.h"
 #include "data/dynos.cpp.h"
@@ -29,9 +30,13 @@
 #include "saturn/saturn_actors.h"
 
 extern "C" {
+#include "game/game_init.h"
+#include "engine/graph_node.h"
+#include "game/rendering_graph_node.h"
 #include "audio/external.h"
 #include "engine/surface_collision.h"
 #include "game/object_collision.h"
+#include "game/object_list_processor.h"
 }
 
 bool mario_exists;
@@ -141,6 +146,63 @@ f32 mario_headrot_speed = 10.0f;
 struct Object* saturn_camera_object = nullptr;
 
 bool setting_mario_struct_pos = false;
+
+struct Object (*world_simulation_data)[960] = nullptr;
+int world_simulation_frames = 0;
+float world_simulation_curr_frame = 0;
+u16 world_simulation_seed = 0;
+
+extern struct Object gObjectPool[960];
+extern u16 gRandomSeed16;
+
+std::vector<Gfx*> gfxs = {};
+bool simulating_world = false;
+
+void saturn_add_alloc_dl(Gfx* gfx) {
+    gfxs.push_back(gfx);
+}
+
+void saturn_clear_simulation() {
+    if (!world_simulation_data) return;
+    memcpy(gObjectPool, world_simulation_data[0], sizeof(*world_simulation_data));
+    free(world_simulation_data);
+    world_simulation_frames = 0;
+    world_simulation_curr_frame = 0;
+    world_simulation_data = nullptr;
+}
+
+void saturn_simulate(int frames) {
+    simulating_world = true;
+    saturn_clear_simulation();
+    world_simulation_frames = frames;
+    world_simulation_data = (struct Object(*)[960])malloc(sizeof(*world_simulation_data) * frames);
+    memcpy(world_simulation_data[0], gObjectPool, sizeof(*world_simulation_data));
+    world_simulation_seed = gRandomSeed16;
+    Vec3f prevMarioStructPos;
+    float prevMarioStructAngle = gMarioState->fAngle;
+    vec3f_copy(prevMarioStructPos, gMarioState->pos);
+    for (int i = 1; i < frames; i++) {
+        saturn_keyframe_apply("k_mariostruct_x", i);
+        saturn_keyframe_apply("k_mariostruct_y", i);
+        saturn_keyframe_apply("k_mariostruct_z", i);
+        saturn_keyframe_apply("k_mariostruct_angle", i);
+        gMarioObject->oPosX = gMarioState->pos[0];
+        gMarioObject->oPosY = gMarioState->pos[1];
+        gMarioObject->oPosZ = gMarioState->pos[2];
+        area_update_objects();
+        Gfx* head = gDisplayListHead;
+        geo_process_root(gCurrentArea->unk04, NULL, NULL, 0);
+        gDisplayListHead = head;
+        for (Gfx* gfx : gfxs) {
+            free(gfx);
+        }
+        gfxs.clear();
+        memcpy(world_simulation_data[i], gObjectPool, sizeof(*world_simulation_data));
+    }
+    simulating_world = false;
+    vec3f_copy(gMarioState->pos, prevMarioStructPos);
+    gMarioState->fAngle = prevMarioStructAngle;
+}
 
 extern "C" {
 #include "game/camera.h"
@@ -297,7 +359,7 @@ void saturn_update() {
     }
 
     if (splash_finished) saturn_launch_timer++;
-    if (gCurrLevelNum == LEVEL_SA && saturn_launch_timer <= 1 && splash_finished) {
+    if (gCurrLevelNum == LEVEL_SA && saturn_launch_timer <= 2 && splash_finished) {
         gMarioState->faceAngle[1] = 0;
         if (gCamera) { // i hate the sm64 camera system aaaaaaaaaaaaaaaaaa
             float dist = 0;
@@ -630,7 +692,7 @@ void saturn_update() {
             vec3f_get_dist_and_angle(hit, gCamera->pos, &dist, &pitch, &yaw);
             MarioActor* actor = saturn_spawn_actor(hit[0], hit[1], hit[2]);
             actor->angle = yaw;
-            std::string name = "Unnamed Mario " + std::to_string(++marios_spawned);
+            std::string name = "Unnamed " + saturn_object_names[current_mario_model] + " " + std::to_string(++marios_spawned);
             memcpy(actor->name, name.c_str(), name.length() + 1);
         }
         if (mouse_state.released & MOUSEBTN_MASK_R) {
@@ -671,12 +733,15 @@ void saturn_update() {
 
     if (current_project != "") saturn_load_project((char*)current_project.c_str());
 
+    if (world_simulation_data) 
+        memcpy(gObjectPool, world_simulation_data[(int)world_simulation_curr_frame], sizeof(*world_simulation_data));
+
     // Autosave
 
     if (gCurrLevelNum != LEVEL_SA || gCurrAreaIndex != 3) {
         if (autosaveDelay <= 0) autosaveDelay = 30 * configAutosaveDelay;
         autosaveDelay--;
-        if (autosaveDelay == 0) saturn_save_project("autosave.spj");
+        if (autosaveDelay == 0) saturn_save_project("autosave.spj", nullptr);
     }
 }
 
@@ -713,6 +778,8 @@ float saturn_keyframe_setup_interpolation(std::string id, int frame, int* keyfra
 
 // applies the values from keyframes to its destination, returns true if its the last frame, false if otherwise
 bool saturn_keyframe_apply(std::string id, int frame) {
+    if (!saturn_timeline_exists(id.c_str())) return true;
+
     KeyframeTimeline timeline = k_frame_keys[id].first;
     std::vector<Keyframe> keyframes = k_frame_keys[id].second;
 

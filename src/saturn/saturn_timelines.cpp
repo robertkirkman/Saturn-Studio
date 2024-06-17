@@ -27,6 +27,7 @@ std::map<std::string, std::vector<std::string>> kf_switch_names = {
 #define CC_ENTRY(index) ARR_ENTRY(colorcode, index)
 #define BONE_ENTRY(index) ARR_ENTRY(bones, index)
 #define SCALER_ENTRY(index) ARR_ENTRY(scaler, index)
+#define OBJ_BONE(index) SATURN_KFENTRY_FLOAT("k_objbone_" #index, BONE_ENTRY(index), 3, "Bone " #index, true);
 
 // { id, { variable_ptr, type, behavior, name, precision, num_values, is_mario } }
 void saturn_fill_data_table() {
@@ -50,6 +51,8 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_headrot_y", MARIO_ENTRY(head_rot_y), 1, "Head Rotation Roll", true);
     SATURN_KFENTRY_FLOAT("k_headrot_z", MARIO_ENTRY(head_rot_z), 1, "Head Rotation Pitch", true);
     SATURN_KFENTRY_FLOAT("k_inputrec_frame", MARIO_ENTRY(input_recording_frame), 1, "Input Playback Frame", true);
+    SATURN_KFENTRY_FLOAT("k_anim_frame", MARIO_ENTRY(anim_state), 1, "Anim Frame", true);
+    SATURN_KFENTRY_SWITCH("k_anim_state", MARIO_ENTRY(anim_state), "Anim State");
     SATURN_KFENTRY_BOOL("k_inputrec_enable", MARIO_ENTRY(playback_input), "Input Playback Enable", true);
     SATURN_KFENTRY_BOOL("k_mario_hidden", MARIO_ENTRY(hidden), "Hidden", true);
     SATURN_KFENTRY_BOOL("k_hud", &configHUD, "HUD", false);
@@ -71,6 +74,7 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_orthopitch", &ortho_settings.rotation_x, 1, "Ortho Pitch", false);
     SATURN_KFENTRY_FLOAT("k_orthox", &ortho_settings.offset_x, 1, "Ortho Off X", false);
     SATURN_KFENTRY_FLOAT("k_orthoy", &ortho_settings.offset_y, 1, "Ortho Off Y", false);
+    SATURN_KFENTRY_FLOAT("k_worldsim_frame", &world_simulation_curr_frame, 1, "Simulation Frame", false);
     SATURN_KFENTRY_COLORF("k_light_col", gLightingColor, "Light Color", false);
     SATURN_KFENTRY_COLOR("k_color", &chromaColor, "Skybox Color", false);
     SATURN_KFENTRY_COLOR("k_hat", CC_ENTRY(CC_HAT), "Hat", true);
@@ -113,4 +117,65 @@ void saturn_fill_data_table() {
     SATURN_KFENTRY_FLOAT("k_mariobone_18", BONE_ENTRY(17), 3, "Upper Right Leg", true);
     SATURN_KFENTRY_FLOAT("k_mariobone_19", BONE_ENTRY(18), 3, "Lower Right Leg", true);
     SATURN_KFENTRY_FLOAT("k_mariobone_20", BONE_ENTRY(19), 3, "Right Foot", true);
+    SATURN_KFENTRY_FLOAT("k_objbone_0", BONE_ENTRY(0), 3, "Root", true);
+    OBJ_BONE(1);
+    OBJ_BONE(2);
+    OBJ_BONE(3);
+    OBJ_BONE(4);
+    OBJ_BONE(5);
+    OBJ_BONE(6);
+    OBJ_BONE(7);
+    OBJ_BONE(8);
+    OBJ_BONE(9);
+    OBJ_BONE(10);
+    OBJ_BONE(11);
+    OBJ_BONE(12);
+    OBJ_BONE(13);
+    OBJ_BONE(14);
+    OBJ_BONE(15);
+    OBJ_BONE(16);
+    OBJ_BONE(17);
+    OBJ_BONE(18);
+    OBJ_BONE(19);
+    OBJ_BONE(20);
+    OBJ_BONE(21);
+    OBJ_BONE(22);
+    OBJ_BONE(23);
+    OBJ_BONE(24);
+    OBJ_BONE(25);
+    OBJ_BONE(26);
+    OBJ_BONE(27);
+    OBJ_BONE(28);
+    OBJ_BONE(29);
+    OBJ_BONE(30);
+    OBJ_BONE(31);
+    OBJ_BONE(32);
+    OBJ_BONE(33);
+    OBJ_BONE(34);
+    OBJ_BONE(35);
+    OBJ_BONE(36);
+    OBJ_BONE(37);
+    OBJ_BONE(38);
+    OBJ_BONE(39);
+    OBJ_BONE(40);
+    OBJ_BONE(41);
+    OBJ_BONE(42);
+    OBJ_BONE(43);
+    OBJ_BONE(44);
+    OBJ_BONE(45);
+    OBJ_BONE(46);
+    OBJ_BONE(47);
+    OBJ_BONE(48);
+    OBJ_BONE(49);
+    OBJ_BONE(50);
+    OBJ_BONE(51);
+    OBJ_BONE(52);
+    OBJ_BONE(53);
+    OBJ_BONE(54);
+    OBJ_BONE(55);
+    OBJ_BONE(56);
+    OBJ_BONE(57);
+    OBJ_BONE(58);
+    OBJ_BONE(59);
+    OBJ_BONE(60);
 }

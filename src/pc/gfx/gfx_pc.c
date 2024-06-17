@@ -35,6 +35,8 @@
 #include "game/object_list_processor.h"
 #include "include/object_fields.h"
 
+#include "pc/pngutils.h"
+
 #define SUPPORT_CHECK(x) assert(x)
 
 // SCALE_M_N: upscale/downscale M-bit integer to N-bit
@@ -517,7 +519,7 @@ static void import_texture_ci8(int tile) {
 
 void load_texture(const char *fullpath) {
     int w, h;
-    u64 imgsize = 0;
+    uint64_t imgsize = 0;
 
     char* model_data = saturn_actor_get_model_texture(fullpath, &w, &h);
     if (model_data) {

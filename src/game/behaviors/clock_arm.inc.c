@@ -6,6 +6,7 @@ void bhv_rotating_clock_arm_loop(void) {
     u16 rollAngle = o->oFaceAngleRoll;
     o->oFloorHeight =
         find_floor(gMarioObject->oPosX, gMarioObject->oPosY, gMarioObject->oPosZ, &marioSurface);
+    if (!marioSurface) return;
 
     // Seems to make sure Mario is on a default surface & 4 frames pass before
     //   allowing him to change the Tick Tock Clock speed setting.

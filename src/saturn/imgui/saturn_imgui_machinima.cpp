@@ -55,7 +55,6 @@ int custom_anim_index = -1;
 int current_sanim_index = 7;
 std::string current_sanim_name = "RUNNING";
 int current_sanim_id = MARIO_ANIM_RUNNING;
-std::map<std::pair<int, std::string>, int> current_anim_map = sanim_movement;
 std::string anim_preview_name = "RUNNING";
 int current_sanim_group_index = 0;
 int current_slevel_index = 1;
@@ -193,6 +192,7 @@ void warp_to_level(int level, int area, int act = -1) {
     DynOS_Warp_ToWarpNode(levelID, area, act, warpnode);
 
     saturn_clear_actors();
+    saturn_clear_simulation();
 }
 
 int get_saturn_level_id(int level) {
@@ -298,6 +298,11 @@ void smachinima_imgui_init() {
 
 bool enabled_acts[6];
 int current_warp_area = 1;
+
+int frames_to_simulate = 300;
+
+extern struct Object gObjectPool[960];
+extern u16 gRandomSeed16;
 
 void imgui_machinima_quick_options() {
     if (ImGui::MenuItem(ICON_FK_CLOCK_O " Limit FPS",      "F4", limit_fps)) {
@@ -514,6 +519,37 @@ void imgui_machinima_quick_options() {
 
         ImGui::EndMenu();
     }
+    
+    ImGui::InputInt("###simulation_frames", &frames_to_simulate, 1, 10);
+    ImGui::SameLine();
+    if (ImGui::Button("Simulate")) {
+        gRandomSeed16 = world_simulation_seed;
+        saturn_simulate(frames_to_simulate);
+        world_simulation_curr_frame = 0;
+        if (saturn_timeline_exists("k_worldsim_frame")) k_frame_keys.erase("k_worldsim_frame");
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        const char* units[] = { "B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+        int unitIndex = 0;
+        size_t bytes = sizeof(gObjectPool) * frames_to_simulate;
+        int fraction = 0;
+        while (unitIndex < sizeof(units) / sizeof(*units) && bytes >= 1024) {
+            unitIndex++;
+            fraction = bytes % 1024;
+            bytes /= 1024;
+        }
+        if (fraction == 0) ImGui::Text("Memory Usage: %ld %s", bytes, units[unitIndex]);
+        else ImGui::Text("Memory Usage: %.2f %s", fraction / 1024.f + bytes, units[unitIndex]);
+        ImGui::EndTooltip();
+    }
+    ImGui::BeginDisabled(!world_simulation_data);
+    int frame = world_simulation_curr_frame;
+    if (ImGui::SliderInt("Simulation Frame", &frame, 0, world_simulation_frames - 1, "%d", ImGuiSliderFlags_AlwaysClamp)) {
+        world_simulation_curr_frame = frame;
+    }
+    saturn_keyframe_popout("k_worldsim_frame");
+    ImGui::EndDisabled();
 
     UNSTABLE
     if (ImGui::BeginMenu("(!) Custom Level")) {
@@ -549,7 +585,6 @@ void imgui_machinima_quick_options() {
 }
 
 static char animSearchTerm[128];
-static bool selected_groups[8] = { true, true, true, true, true, true, true, true };
 
 bool case_insensitive_contains(std::string base, std::string substr) {
     std::string lower_b = base;
@@ -561,17 +596,14 @@ bool case_insensitive_contains(std::string base, std::string substr) {
     return lower_b.find(lower_s) != std::string::npos;
 }
 
-std::vector<int> get_sorted_anim_list() {
+std::vector<int> get_sorted_anim_list(MarioActor* actor) {
     std::vector<int> anim_list = {};
     std::vector<int> fav_anim_list = {};
-    for (int i = 0; i < 8; i++) {
-        if (!selected_groups[i]) continue;
-        for (const auto& entry : sanim_maps[i]) {
-            if (!case_insensitive_contains(entry.first.second, animSearchTerm)) continue;
-            bool contains = std::find(favorite_anims.begin(), favorite_anims.end(), entry.second) != favorite_anims.end();
-            if (contains) fav_anim_list.push_back(entry.second);
-            else anim_list.push_back(entry.second);
-        }
+    for (int i = saturn_animation_obj_ranges[actor->obj_model].first; i < saturn_animation_obj_ranges[actor->obj_model].second; i++) {
+        if (!case_insensitive_contains(saturn_animation_names[i], animSearchTerm)) continue;
+        bool contains = std::find(favorite_anims.begin(), favorite_anims.end(), i) != favorite_anims.end();
+        if (contains) fav_anim_list.push_back(i);
+        else anim_list.push_back(i);
     }
     std::reverse(fav_anim_list.begin(), fav_anim_list.end());
     for (int fav : fav_anim_list) {
@@ -588,12 +620,13 @@ std::vector<s16> sampling_indices = {};
 
 void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
     if (!sampling) actor->custom_bone = false;
+    bool should_update_sample = false;
     if (ImGui::BeginTabBar("###anim_tab_bar")) {
         if (ImGui::BeginTabItem("SM64")) {
             ImGui::PushItemWidth(316);
             ImGui::InputTextWithHint("###anim_search", ICON_FK_SEARCH " Search...", animSearchTerm, 128);
             if (ImGui::BeginChild("###anim_box_child", ImVec2(316, 100), true)) {
-                std::vector<int> anim_order = get_sorted_anim_list();
+                std::vector<int> anim_order = get_sorted_anim_list(actor);
                 for (int i : anim_order) {
                     const bool is_selected = i == actor->animstate.id && !actor->animstate.custom;
                     auto position = std::find(favorite_anims.begin(), favorite_anims.end(), i);
@@ -604,11 +637,13 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
                         saturn_save_favorite_anims();
                     }
                     ImGui::SameLine();
-                    if (ImGui::Selectable(saturn_animations_list[i], is_selected)) {
+                    if (ImGui::Selectable(saturn_animation_names[i].c_str(), is_selected)) {
                         if (sampling) {
+                            auto anim = saturn_animation_data[i];
                             sampling_anim_loaded = true;
-                            load_animation(&sampling_animation, i);
+                            sampling_animation = anim.second(anim.first);
                             sampling_frame = 0;
+                            should_update_sample = true;
                         }
                         else {
                             actor->animstate.id = i;
@@ -620,14 +655,6 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
                 ImGui::EndChild();
             }
             ImGui::PopItemWidth();
-            ImGui::Checkbox("Movement",      &selected_groups[0]); ImGui::SameLine();
-            ImGui::Checkbox("Actions",       &selected_groups[1]); ImGui::SameLine();
-            ImGui::Checkbox("Automatic",     &selected_groups[2]);
-            ImGui::Checkbox("Damage/Deaths", &selected_groups[3]); ImGui::SameLine();
-            ImGui::Checkbox("Cutscenes",     &selected_groups[4]);
-            ImGui::Checkbox("Water",         &selected_groups[5]); ImGui::SameLine();
-            ImGui::Checkbox("Climbing",      &selected_groups[6]); ImGui::SameLine();
-            ImGui::Checkbox("Object",        &selected_groups[7]);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("MComp")) {
@@ -655,6 +682,7 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
                     sampling_animation.values = sampling_values.data();
                     sampling_animation.index = (const u16*)sampling_indices.data();
                     sampling_animation.length = (s16)length;
+                    should_update_sample = true;
                 }
                 else {
                     actor->animstate.id = std::find(canim_array.begin(), canim_array.end(), path) - canim_array.begin();
@@ -680,35 +708,48 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
                     actor->bones[i][2] = 0;
                 }
             }
-#define BONE_ENTRY(name) {                                                     \
-                ImGui::TableSetColumnIndex(0);                                  \
-                ImGui::DragFloat3(name, actor->bones[currbone++]);               \
-                ImGui::TableSetColumnIndex(1);                                    \
-                saturn_keyframe_popout("k_mariobone_" + std::to_string(currbone)); \
-                ImGui::TableNextRow();                                              \
+#define BONE_ENTRY(name) {                                      \
+                ImGui::TableSetColumnIndex(0);                   \
+                ImGui::PushItemWidth(200);                        \
+                ImGui::DragFloat3(name, actor->bones[currbone++]); \
+                ImGui::PopItemWidth();                              \
+                ImGui::TableSetColumnIndex(1);                       \
+                saturn_keyframe_popout(KF_BONE_ID);                   \
+                ImGui::TableNextRow();                                 \
             }
             if (ImGui::BeginTable("Bone Editor", 2)) {
                 ImGui::TableNextRow();
-                BONE_ENTRY("Root"           );
-                BONE_ENTRY("Body"           );
-                BONE_ENTRY("Torso"          );
-                BONE_ENTRY("Head"           );
-                BONE_ENTRY("Left Arm"       );
-                BONE_ENTRY("Upper Left Arm" );
-                BONE_ENTRY("Lower Left Arm" );
-                BONE_ENTRY("Left Hand"      );
-                BONE_ENTRY("Right Arm"      );
-                BONE_ENTRY("Upper Right Arm");
-                BONE_ENTRY("Lower Right Arm");
-                BONE_ENTRY("Right Hand"     );
-                BONE_ENTRY("Left Leg"       );
-                BONE_ENTRY("Upper Left Leg" );
-                BONE_ENTRY("Lower Left Leg" );
-                BONE_ENTRY("Left Foot"      );
-                BONE_ENTRY("Right Leg"      );
-                BONE_ENTRY("Upper Right Leg");
-                BONE_ENTRY("Lower Right Leg");
-                BONE_ENTRY("Right Foot"     );
+                if (actor->obj_model == MODEL_MARIO) {
+#define KF_BONE_ID "k_mariobone_" + std::to_string(currbone)
+                    BONE_ENTRY("Root"           );
+                    BONE_ENTRY("Body"           );
+                    BONE_ENTRY("Torso"          );
+                    BONE_ENTRY("Head"           );
+                    BONE_ENTRY("Left Arm"       );
+                    BONE_ENTRY("Upper Left Arm" );
+                    BONE_ENTRY("Lower Left Arm" );
+                    BONE_ENTRY("Left Hand"      );
+                    BONE_ENTRY("Right Arm"      );
+                    BONE_ENTRY("Upper Right Arm");
+                    BONE_ENTRY("Lower Right Arm");
+                    BONE_ENTRY("Right Hand"     );
+                    BONE_ENTRY("Left Leg"       );
+                    BONE_ENTRY("Upper Left Leg" );
+                    BONE_ENTRY("Lower Left Leg" );
+                    BONE_ENTRY("Left Foot"      );
+                    BONE_ENTRY("Right Leg"      );
+                    BONE_ENTRY("Upper Right Leg");
+                    BONE_ENTRY("Lower Right Leg");
+                    BONE_ENTRY("Right Foot"     );
+#undef KF_BONE_ID
+                }
+                else {
+                    for (int i = 0; i < actor->num_bones; i++) {
+#define KF_BONE_ID "k_objbone_" + std::to_string(currbone - 1)
+                        BONE_ENTRY(i == 0 ? "Root" : ("Bone " + std::to_string(i)).c_str());
+#undef KF_BONE_ID
+                    }
+                }
                 ImGui::EndTable();
             }
 #undef BONE_ENTRY
@@ -719,26 +760,21 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
     if (actor->custom_bone && !sampling) return;
     ImGui::Separator();
     if (sampling) {
-        if (!ImGui::SliderFloat("Frame", &sampling_frame, 0, sampling_animation.unk08, "%.0f")) return;
-        if (!sampling_anim_loaded) return;
-        const u16* curindex = sampling_animation.index;
-        curindex += 6;
-        for (int i = 0; i < 20; i++) {
-            for (int j = 0; j < 3; j++) {
-                int valindex = 0;
-                if (sampling_frame < curindex[0]) valindex = curindex[1] + sampling_frame;
-                else valindex = curindex[1] + curindex[0] - 1;
-                curindex += 2;
-                actor->bones[i][j] = (float)(sampling_animation.values[valindex]) * 360.f / 65536.f;
-            }
-        }
+        if (ImGui::SliderFloat("Frame", &sampling_frame, 0, sampling_animation.unk08 - 1, "%.0f")) should_update_sample = true;
+        if (!sampling_anim_loaded || !should_update_sample) return;
+        saturn_sample_animation(actor, &sampling_animation, sampling_frame);
         return;
     }
-    ImGui::SliderFloat("Frame", &actor->animstate.frame, 0, actor->animstate.length, "%.0f");
+    ImGui::SliderFloat("Frame", &actor->animstate.frame, 0, actor->animstate.length - 1, "%.0f");
     saturn_keyframe_popout("k_mario_anim_frame");
     saturn_keyframe_popout_next_line("k_mario_anim");
     if (saturn_timeline_exists(saturn_keyframe_get_mario_timeline_id("k_mario_anim_frame", saturn_actor_indexof(actor)).c_str()))
-        saturn_keyframe_helper("k_mario_anim_frame", &actor->animstate.frame, actor->animstate.length);
+        saturn_keyframe_helper("k_mario_anim_frame", &actor->animstate.frame, actor->animstate.length - 1);
+    ImGui::PushItemWidth(100);
+    ImGui::DragInt("Y Translation", &actor->animstate.yTransform, 1.0f, -32768, 32767, "%d\n", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    imgui_bundled_help_marker("Recommended to keep at default value (189) for Mario's animations; 0 for everything else");
 }
 
 /*void imgui_machinima_animation_player() {

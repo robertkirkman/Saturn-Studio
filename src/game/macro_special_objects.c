@@ -248,7 +248,7 @@ void spawn_special_objects(s16 areaIndex, s16 **specialObjList) {
 #ifdef VERSION_EU
     s16 model;
 #else
-    u8 model;
+    u16 model;
 #endif
     u8 type;
     u8 presetID;

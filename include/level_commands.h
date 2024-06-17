@@ -175,7 +175,8 @@
     CMD_W(unk8)
 
 #define OBJECT_WITH_ACTS(model, posX, posY, posZ, angleX, angleY, angleZ, behParam, beh, acts) \
-    CMD_BBBB(0x24, 0x18, acts, model), \
+    CMD_BBBB(0x24, 0x1C, acts, 0x00), \
+    CMD_HH(model, 0x0000), \
     CMD_HHHHHH(posX, posY, posZ, angleX, angleY, angleZ), \
     CMD_W(behParam), \
     CMD_PTR(beh)

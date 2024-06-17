@@ -189,6 +189,8 @@ s8 D_8032C9E0 = 0;
 u8 unused3[4];
 u8 unused4[2];
 
+int gInitObjects = 2;
+
 u16 level_control_timer(s32 timerOp) {
     switch (timerOp) {
         case TIMER_CONTROL_SHOW:
@@ -970,7 +972,7 @@ void update_hud_values(void) {
  * warp twice.
  */
 void basic_update(UNUSED s16 *arg) {
-    area_update_objects();
+    //area_update_objects();
     update_hud_values();
 
     if (gCurrentArea != NULL) {
@@ -1000,7 +1002,12 @@ s32 play_mode_normal(void) {
         gHudDisplay.timer += 1;
     }
 
-    area_update_objects();
+    if (gInitObjects < 2) {
+        gInitObjects++;
+        area_update_objects();
+    }
+    update_objects_in_list(&gObjectLists[OBJ_LIST_PLAYER]);
+    saturn_actor_update_all();
     update_hud_values();
 
     if (gCurrentArea != NULL) {

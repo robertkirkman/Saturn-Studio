@@ -50,6 +50,7 @@ struct AnimationState {
     int length;
     int customanim_numindices;
     bool customanim_extra;
+    int yTransform;
 #ifdef __cplusplus
     std::vector<s16> customanim_indices;
     std::vector<s16> customanim_values;
@@ -127,6 +128,13 @@ extern struct Object* saturn_camera_object;
 
 extern bool setting_mario_struct_pos;
 
+extern struct Object (*world_simulation_data)[960];
+extern int world_simulation_frames;
+extern float world_simulation_curr_frame;
+extern u16 world_simulation_seed;
+
+extern bool simulating_world;
+
 #ifdef __cplusplus
 #include <string>
 #include <vector>
@@ -201,6 +209,8 @@ extern int autosaveDelay;
 
 extern Vec3f stored_mario_pos;
 extern Vec3s stored_mario_angle;
+extern void saturn_clear_simulation();
+extern void saturn_simulate(int);
 extern void saturn_copy_camera(bool);
 extern void saturn_paste_camera(void);
 extern void* saturn_keyframe_get_timeline_ptr(KeyframeTimeline&);
@@ -213,8 +223,10 @@ extern void schedule_animation();
 
 extern "C" {
 #endif
+    void saturn_add_alloc_dl(Gfx* gfx);
+    void saturn_free_alloc_dl();
     void saturn_update(void);
-    void saturn_play_animation(MarioAnimID);
+    void saturn_play_animation(enum MarioAnimID anim);
     void saturn_play_keyframe();
     void saturn_print(const char*);
     const char* saturn_get_stage_name(int);
