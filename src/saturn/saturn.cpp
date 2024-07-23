@@ -172,8 +172,9 @@ void saturn_clear_simulation() {
 }
 
 void saturn_simulate(int frames) {
-    simulating_world = true;
     saturn_clear_simulation();
+    if (frames <= 0) return;
+    simulating_world = true;
     world_simulation_frames = frames;
     world_simulation_data = (struct Object(*)[960])malloc(sizeof(*world_simulation_data) * frames);
     memcpy(world_simulation_data[0], gObjectPool, sizeof(*world_simulation_data));
@@ -274,6 +275,7 @@ s16 inpreccam_yaw = 0;
 s16 inpreccam_pitch = 0;
 Vec3f inpreccam_pos;
 Vec3f inpreccam_focus;
+bool inprec_keep_angle = false;
 
 void saturn_update() {
 
@@ -515,42 +517,44 @@ void saturn_update() {
     float rotate_y = krotate_y + mrotate_y;
     float zoom = kzoom + mzoom;
 
-    if (inprec) {
-        inpreccam_yaw   += move_x * camVelRSpeed;
-        inpreccam_pitch -= move_y * camVelRSpeed;
-        inpreccam_distfrommario -= zoom;
-        if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
-        MarioActor* actor = saturn_get_actor(recording_mario_actor);
-        if (actor != nullptr) {
-            InputRecordingFrame last = actor->input_recording[actor->input_recording.size() - 1];
-            vec3f_set(inpreccam_focus, last.x, last.y + 80, last.z);
-            vec3f_set_dist_and_angle(inpreccam_focus, inpreccam_pos, inpreccam_distfrommario, inpreccam_pitch, inpreccam_yaw);
-        }
-    }
-    else {
-        Vec3f *camPos;
-        float *camYaw, *camPitch;
-        if (gIsCameraMounted) {
-            camPos = &freezecamPos;
-            camYaw = &freezecamYaw;
-            camPitch = &freezecamPitch;
+    if (!inprec || !inprec_keep_angle) {
+        if (inprec) {
+            inpreccam_yaw   += move_x * camVelRSpeed;
+            inpreccam_pitch -= move_y * camVelRSpeed;
+            inpreccam_distfrommario -= zoom;
+            if (inpreccam_distfrommario < 50) inpreccam_distfrommario = 50;
+            MarioActor* actor = saturn_get_actor(recording_mario_actor);
+            if (actor != nullptr) {
+                InputRecordingFrame last = actor->input_recording[actor->input_recording.size() - 1];
+                vec3f_set(inpreccam_focus, last.x, last.y + 80, last.z);
+                vec3f_set_dist_and_angle(inpreccam_focus, inpreccam_pos, inpreccam_distfrommario, inpreccam_pitch, inpreccam_yaw);
+            }
         }
         else {
-            camPos = &cameraPos;
-            camYaw = &cameraYaw;
-            camPitch = &cameraPitch;
+            Vec3f *camPos;
+            float *camYaw, *camPitch;
+            if (gIsCameraMounted) {
+                camPos = &freezecamPos;
+                camYaw = &freezecamYaw;
+                camPitch = &freezecamPitch;
+            }
+            else {
+                camPos = &cameraPos;
+                camYaw = &cameraYaw;
+                camPitch = &cameraPitch;
+            }
+            Vec3f offset;
+            vec3f_set(offset, 0, 0, 0);
+            offset[0] += sins(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+            offset[2] += coss(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
+            offset[1] += coss(*camPitch) * move_y * camVelSpeed;
+            offset[0] += sins(*camPitch) * coss(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+            offset[2] -= sins(*camPitch) * sins(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
+            *camYaw   += rotate_x * camVelRSpeed;
+            *camPitch += rotate_y * camVelRSpeed;
+            vec3f_add(*camPos, offset);
+            vec3f_set_dist_and_angle(*camPos, *camPos, zoom * camVelSpeed, *camPitch, *camYaw);
         }
-        Vec3f offset;
-        vec3f_set(offset, 0, 0, 0);
-        offset[0] += sins(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
-        offset[2] += coss(*camYaw + atan2s(0, 127)) * move_x * camVelSpeed;
-        offset[1] += coss(*camPitch) * move_y * camVelSpeed;
-        offset[0] += sins(*camPitch) * coss(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
-        offset[2] -= sins(*camPitch) * sins(*camYaw + atan2s(0, 127)) * move_y * camVelSpeed;
-        *camYaw   += rotate_x * camVelRSpeed;
-        *camPitch += rotate_y * camVelRSpeed;
-        vec3f_add(*camPos, offset);
-        vec3f_set_dist_and_angle(*camPos, *camPos, zoom * camVelSpeed, *camPitch, *camYaw);
     }
 
     if (cameraRollLeft) freezecamRoll += camVelRSpeed * 512;
@@ -572,7 +576,7 @@ void saturn_update() {
             gCamera->pos[2] -= sins(pitch) * sins(yaw + atan2s(0, 127)) * offY * camVelSpeed;
             vec3f_set_dist_and_angle(gCamera->pos, gCamera->focus, 100, -pitch, yaw);
         }
-        else if (inprec) {
+        else if (inprec && !inprec_keep_angle) {
             vec3f_copy(gCamera->pos, inpreccam_pos);
             vec3f_copy(gCamera->focus, inpreccam_focus);
         }
@@ -733,8 +737,10 @@ void saturn_update() {
 
     if (current_project != "") saturn_load_project((char*)current_project.c_str());
 
-    if (world_simulation_data) 
+    if (world_simulation_data) {
         memcpy(gObjectPool, world_simulation_data[(int)world_simulation_curr_frame], sizeof(*world_simulation_data));
+        gAreaUpdateCounter = world_simulation_curr_frame;
+    }
 
     // Autosave
 

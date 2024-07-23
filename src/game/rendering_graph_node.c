@@ -606,6 +606,12 @@ static void geo_process_scale(struct GraphNodeScale *node) {
     gMatStackIndex--;
 }
 
+static void apply_selected_scale(Mat4* matstack, s16 index) {
+    Vec3f scale;
+    vec3f_set(scale, 1.25f, 1.25f, 1.25f);
+    mtxf_scale_vec3f(matstack[index], matstack[index], scale);
+}
+
 /**
  * Process a billboard node. A transformation matrix is created that makes its
  * children face the camera, and it is pushed on the floating point and fixed
@@ -633,6 +639,10 @@ static void geo_process_billboard(struct GraphNodeBillboard *node) {
                          gCurGraphNodeObject->scale);
         mtxf_scale_vec3f(gMatStackInterpolated[gMatStackIndex], gMatStackInterpolated[gMatStackIndex],
                          gCurGraphNodeObject->scale);
+        if (gCurrentObject->oFlags & OBJ_FLAG_IS_SELECTED) {
+            apply_selected_scale(gMatStack, gMatStackIndex);
+            apply_selected_scale(gMatStackInterpolated, gMatStackIndex);
+        }
     }
 
     mtxf_to_mtx(mtx, gMatStack[gMatStackIndex]);
@@ -816,13 +826,13 @@ static void anim_process(Vec3f translation, Vec3s rotation, u8 *animType, s16 an
             rotation[1] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
             rotation[2] = gCurAnimData[retrieve_animation_index(animFrame, animAttribute)];
         }
-        Vec3s headrot, torsorot;
+        /*Vec3s headrot, torsorot;
         if (saturn_rotate_head(headrot)) vec3s_add(rotation, headrot);
         if (saturn_rotate_torso(torsorot)) {
             rotation[0] += torsorot[1];
             rotation[1] += torsorot[2];
             rotation[2] += torsorot[0];
-        }
+        }*/
     }
 }
 
@@ -1265,6 +1275,10 @@ static void geo_process_object(struct Object *node) {
                          node->header.gfx.scale);
         mtxf_scale_vec3f(gMatStackInterpolated[gMatStackIndex + 1], gMatStackInterpolated[gMatStackIndex + 1],
                          scaleInterpolated);
+        if (gCurrentObject->oFlags & OBJ_FLAG_IS_SELECTED) {
+            apply_selected_scale(gMatStack, gMatStackIndex + 1);
+            apply_selected_scale(gMatStackInterpolated, gMatStackIndex + 1);
+        }
         node->header.gfx.throwMatrix = &gMatStack[++gMatStackIndex];
         node->header.gfx.throwMatrixInterpolated = &gMatStackInterpolated[gMatStackIndex];
         node->header.gfx.cameraToObject[0] = gMatStack[gMatStackIndex][3][0];

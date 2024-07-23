@@ -7,7 +7,10 @@
 #include <map>
 #include <fstream>
 
+#include "behavior_data.h"
 #include "game/area.h"
+#include "model_ids.h"
+#include "object_constants.h"
 #include "saturn/filesystem/saturn_embedded_filesystem.h"
 #include "saturn/imgui/saturn_imgui_file_browser.h"
 #include "saturn/imgui/saturn_imgui_dynos.h"
@@ -34,6 +37,8 @@
 #include "saturn/filesystem/saturn_windowfile.h"
 #include "saturn/saturn_json.h"
 #include "saturn/saturn_video_renderer.h"
+#include "saturn/saturn_version.h"
+#include "types.h"
 
 #include <SDL2/SDL.h>
 
@@ -79,6 +84,7 @@ extern "C" {
 #include "engine/level_script.h"
 #include "game/object_list_processor.h"
 #include "pc/pngutils.h"
+#include "game/object_helpers.h"
 }
 
 using namespace std;
@@ -124,6 +130,28 @@ std::vector<std::string> textures_list = {};
 float game_viewport[4] = { 0, 0, -1, -1 };
 
 bool request_mario_tab = false;
+
+int sel_category = 0;
+std::vector<std::pair<const char*, std::vector<const BehaviorScript*>>> obj_categories = {
+    { "Enemies", {
+        bhvGoomba, bhvKoopa, bhvBobomb, bhvKingBobomb, bhvWhompKingBoss, bhvThwomp,
+        bhvThwomp2, bhvEnemyLakitu, bhvUnagi, bhvSnufit, bhvBubba, bhvFlyGuy,
+        bhvFlamethrower, bhvBoo, bhvMontyMole, bhvMoneybag, bhvMoneybagHidden,
+        bhvPokey, bhvPokeyBodyPart, bhvMrIBody, bhvMrI, bhvMrBlizzard,
+        bhvScuttlebug, bhvScuttlebugSpawn, bhvChuckya, bhvSmallBully, bhvSmallChillBully,
+        bhvBigBully, bhvBigBullyWithMinions, bhvBigChillBully, bhvBowser,
+        bhvPiranhaPlant, bhvSpiny, bhvSpindrift, bhvBub, bhvSushiShark, bhvSkeeter,
+        bhvHeaveHo, bhvHeaveHoThrowMario, bhvHomingAmp, bhvCirclingAmp
+    }},
+    { "Coins", {
+        bhvYellowCoin, bhvBlueCoinSliding, bhvBlueCoinJumping,
+        bhvOneCoin, bhvRedCoin, bhvMovingYellowCoin, bhvMovingBlueCoin,
+        bhvSingleCoinGetsSpawned
+    }},
+    { "Trees", {
+        bhvTree
+    }},
+};
 
 #include "saturn/saturn_timelines.h"
 
@@ -457,24 +485,24 @@ void saturn_capture_screenshot() {
     if (!capturing_video) return;
     if (video_timer-- > 0) return;
     capturing_video = false;
-    int in_width = videores[0] * (video_antialias + 1) + video_antialias;
-    int in_height = videores[0] * (video_antialias + 1) + video_antialias;
-    int in_size = (int)in_width * (int)in_height * 4;
-    int out_size = (int)videores[0] * (int)videores[1] * 4;
+    uint64_t in_width = videores[0] * (video_antialias + 1) + video_antialias;
+    uint64_t in_height = videores[0] * (video_antialias + 1) + video_antialias;
+    uint64_t in_size = (uint64_t)in_width * (uint64_t)in_height * 4;
+    uint64_t out_size = (uint64_t)videores[0] * (uint64_t)videores[1] * 4;
     unsigned char* image = (unsigned char*)malloc(in_size);
     unsigned char* flipped = (unsigned char*)malloc(out_size);
     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)framebuffer);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
     glBindTexture(GL_TEXTURE_2D, 0);
-    for (int y = 0; y < videores[1]; y++) {
-        for (int x = 0; x < videores[0]; x++) {
-            int i = (y * in_width + x) * 4;
-            int j = ((videores[1] - y - 1) * videores[0] + x) * 4;
+    for (uint64_t y = 0; y < videores[1]; y++) {
+        for (uint64_t x = 0; x < videores[0]; x++) {
+            uint64_t i = (y * in_width + x) * 4;
+            uint64_t j = ((videores[1] - y - 1) * videores[0] + x) * 4;
             int r = 0, g = 0, b = 0, a = 0;
             if (video_antialias) {
                 for (int X = 0; X <= 2; X++) {
                     for (int Y = 0; Y <= 2; Y++) {
-                        int I = ((Y + y * 2) * in_height + (X + x * 2)) * 4;
+                        uint64_t I = ((Y + y * 2) * in_height + (X + x * 2)) * 4;
                         r += image[I + 0];
                         g += image[I + 1];
                         b += image[I + 2];
@@ -556,6 +584,7 @@ void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
         visible_windows.insert({ "Settings", true });
         visible_windows.insert({ "Game", true });
         visible_windows.insert({ "Timeline###kf_timeline", true });
+        visible_windows.insert({ "Objects", true });
         saturn_load_window_visibility(windows_bin_path, &visible_windows);
     }
     if (imgui_config_exists) return;
@@ -568,6 +597,7 @@ void saturn_imgui_create_dockspace_layout(ImGuiID dockspace) {
     ImGui::DockBuilderSplitNode(up, ImGuiDir_Left, 0.25f, &left, &right);
     ImGui::DockBuilderDockWindow("Machinima", left);
     ImGui::DockBuilderDockWindow("Marios", left);
+    ImGui::DockBuilderDockWindow("Objects", left);
     ImGui::DockBuilderDockWindow("Settings", left);
     ImGui::DockBuilderDockWindow("Game", right);
     ImGui::DockBuilderDockWindow("Timeline###kf_timeline", down);
@@ -754,6 +784,19 @@ void saturn_imgui_handle_events(SDL_Event * event) {
         break;
     }
     smachinima_imgui_controls(event);
+}
+
+extern s8 sObjectListUpdateOrder[];
+void for_each_obj(std::function<void(struct Object*)> func) {
+    for (int index, i = 0; (index = sObjectListUpdateOrder[i]) != -1; i++) {
+        struct ObjectNode* list = &gObjectLists[index];
+        struct ObjectNode* curr = list->next;
+        while (list != curr) {
+            struct Object* obj = (struct Object*)curr;
+            func(obj);
+            curr = curr->next;
+        }
+    }
 }
 
 void saturn_keyframe_sort(std::vector<Keyframe>* keyframes) {
@@ -943,6 +986,8 @@ void ImGui_ConditionalCheckbox(const char* label, bool* val, bool cond) {
 std::vector<std::string> embedded_models = {};
 std::vector<std::string> embedded_anims = {};
 std::vector<std::string> embedded_eyes = {};
+
+int num_objects_as_actors = 0;
 
 void saturn_imgui_update() {
     if (!splash_finished) return;
@@ -1169,9 +1214,26 @@ void saturn_imgui_update() {
                 if (ImGui::BeginMenu("Options###camera_options")) {
                     camera_savestate_mult = 0.f;
                     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-                    ImGui::BeginChild("###model_metadata", ImVec2(200, 90), true, ImGuiWindowFlags_NoScrollbar);
-                    ImGui::TextDisabled("pos %.f, %.f, %.f", cameraPos[0], cameraPos[1], cameraPos[2]);
-                    ImGui::TextDisabled("rot %.f, %.f, %.f", cameraYaw, cameraPitch, freezecamRoll);
+                    ImGui::BeginChild("###model_metadata", ImVec2(250, 90), true, ImGuiWindowFlags_NoScrollbar);
+                    float *pos, *yaw, *pitch;
+                    if (gIsCameraMounted) {
+                        pos = freezecamPos;
+                        yaw = &freezecamYaw;
+                        pitch = &freezecamPitch;
+                    }
+                    else {
+                        pos = cameraPos;
+                        yaw = &cameraYaw;
+                        pitch = &cameraPitch;
+                    }
+                    float rot[] = { *yaw, *pitch, freezecamRoll };
+                    ImGui::PushItemWidth(200);
+                    ImGui::DragFloat3("pos", pos, 5.f);
+                    ImGui::DragFloat3("rot", rot, 128.f);
+                    ImGui::PopItemWidth();
+                    *yaw = rot[0];
+                    *pitch = rot[1];
+                    freezecamRoll = rot[2];
                     if (ImGui::Button(ICON_FK_FILES_O " Copy###copy_camera")) {
                         saturn_copy_camera(copy_relative);
                         if (copy_relative) saturn_paste_camera();
@@ -1380,6 +1442,7 @@ void saturn_imgui_update() {
             if (nearest_index != -1) saturn_imgui_open_mario_menu(nearest_index);
         }
         if (ImGui::BeginMenu("Mario Struct")) {
+            extern bool mstruct_hidden;
             ImGui::PushItemWidth(50);
             ImGui::DragFloat("###mariostruct_x", gMarioState->pos + 0, 1.f, 0.f, 0.f, "X");
             ImGui::SameLine();
@@ -1392,6 +1455,7 @@ void saturn_imgui_update() {
             ImGui::DragFloat("Angle###mariostruct_angle", &gMarioState->fAngle, 128.f);
             ImGui::PopItemWidth();
             saturn_keyframe_popout("k_mariostruct_angle");
+            ImGui::Checkbox("Hidden", &mstruct_hidden);
             ImGui::Separator();
             if (ImGui::MenuItem("Set Position and Angle")) {
                 setting_mario_struct_pos = true;
@@ -1428,6 +1492,63 @@ void saturn_imgui_update() {
             actor = actor->next;
             i++;
         }
+        ImGui::End();
+    }
+
+    if (saturn_imgui_window("Objects")) {
+        if (world_simulation_data) {
+            ImGui::Text("A simulation is active");
+            ImGui::Separator();
+        }
+        ImGui::BeginDisabled(world_simulation_data);
+        if (ImGui::BeginCombo("###despawn_category_chooser", obj_categories[sel_category].first)) {
+            for (int i = 0; i < obj_categories.size(); i++) {
+                bool selected = sel_category == i;
+                if (ImGui::Selectable(obj_categories[i].first, selected)) {
+                    sel_category = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Despawn")) {
+            for (const BehaviorScript* bhv : obj_categories[sel_category].second) {
+                for_each_obj([&](struct Object* obj) {
+                    if (obj->behavior != bhv) return;
+                    obj->header.gfx.node.flags |= GRAPH_RENDER_INVISIBLE;
+                    obj_mark_for_deletion(obj);
+                });
+            }
+        }
+        ImGui::Separator();
+        bool any_objects = false;
+        int iter = 0;
+        for_each_obj([&](struct Object* obj) {
+            if (obj->header.gfx.node.flags & GRAPH_RENDER_INVISIBLE) return;
+            for (int modelID : saturn_iterable_obj_list) {
+                if (obj->header.gfx.sharedChild != gLoadedGraphNodes[modelID]) continue;
+                if (ImGui::Selectable((saturn_object_names[modelID] + "###model_id_" + std::to_string(iter++)).c_str())) {
+                    enum ModelID prev_mario_model = current_mario_model;
+                    current_mario_model = (enum ModelID)modelID;
+                    MarioActor* actor = saturn_spawn_actor(obj->oPosX, obj->oPosY, obj->oPosZ);
+                    current_mario_model = prev_mario_model;
+                    actor->angle = obj->oFaceAngleYaw;
+                    actor->obj_model = (enum ModelID)modelID;
+                    std::string name = saturn_object_names[modelID] + " Object " + std::to_string(++num_objects_as_actors);
+                    memcpy(actor->name, name.c_str(), name.length() + 1);
+                    struct Object* currobj = gCurrentObject;
+                    gCurrentObject = obj;
+                    cur_obj_hide();
+                    gCurrentObject = currobj;
+                }
+                if (ImGui::IsItemHovered()) obj->oFlags |= OBJ_FLAG_IS_SELECTED;
+                else obj->oFlags &= ~OBJ_FLAG_IS_SELECTED;
+                any_objects = true;
+                break;
+            }
+        });
+        if (!any_objects) ImGui::Text("There aren't any objects\nyou can create actors from\nin this level.");
+        ImGui::EndDisabled();
         ImGui::End();
     }
 
@@ -1505,17 +1626,16 @@ void saturn_imgui_update() {
                     }
                     ImGui::EndMenu();
                 }
-                ImGui::Text(PLATFORM_ICON);
+                ImGui::Text(PLATFORM_ICON " " SATURN_VERSION "     ");
                 if (configFps60) ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
                 else ImGui::TextDisabled("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate / 2, 1000.0f / (ImGui::GetIO().Framerate / 2));
                 ImGui::Text("     ");
 #ifdef GIT_BRANCH
 #ifdef GIT_HASH
-                ImGui::TextDisabled(ICON_FK_GITHUB " " GIT_BRANCH " " GIT_HASH);
+                ImGui::TextDisabled(ICON_FK_GITHUB " " GIT_BRANCH " " GIT_HASH "     ");
 #endif
 #endif
                 if (is_recording) {
-                    ImGui::SameLine(450);
                     if (ImGui::BeginMenu("Input Recording")) {
                         ImGui::PushItemWidth(150);
                         ImGui::SliderFloat(ICON_FK_SKATE " Walkpoint###run_speed", &run_speed, 0.f, 127.f, "%.0f");

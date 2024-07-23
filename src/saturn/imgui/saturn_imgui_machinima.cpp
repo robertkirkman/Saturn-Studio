@@ -1,5 +1,7 @@
 #include "saturn_imgui_machinima.h"
 
+#include <cstdarg>
+#include <functional>
 #include <string>
 #include <iostream>
 #include <algorithm>
@@ -45,6 +47,7 @@ extern "C" {
 #include "include/behavior_data.h"
 #include "game/object_helpers.h"
 #include "game/custom_level.h"
+#include "game/object_list_processor.h"
 }
 
 #include "saturn/saturn_json.h"
@@ -304,6 +307,11 @@ int frames_to_simulate = 300;
 extern struct Object gObjectPool[960];
 extern u16 gRandomSeed16;
 
+char animname[256];
+char animauthor[256];
+bool animlooping = false;
+int animformat = 0;
+
 void imgui_machinima_quick_options() {
     if (ImGui::MenuItem(ICON_FK_CLOCK_O " Limit FPS",      "F4", limit_fps)) {
         limit_fps = !limit_fps;
@@ -519,13 +527,19 @@ void imgui_machinima_quick_options() {
 
         ImGui::EndMenu();
     }
-    
+
     ImGui::InputInt("###simulation_frames", &frames_to_simulate, 1, 10);
     ImGui::SameLine();
     if (ImGui::Button("Simulate")) {
         gRandomSeed16 = world_simulation_seed;
         saturn_simulate(frames_to_simulate);
         world_simulation_curr_frame = 0;
+        if (saturn_timeline_exists("k_worldsim_frame")) k_frame_keys.erase("k_worldsim_frame");
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!world_simulation_data);
+    if (ImGui::Button(ICON_FK_TRASH)) {
+        saturn_clear_simulation();
         if (saturn_timeline_exists("k_worldsim_frame")) k_frame_keys.erase("k_worldsim_frame");
     }
     if (ImGui::IsItemHovered()) {
@@ -543,7 +557,6 @@ void imgui_machinima_quick_options() {
         else ImGui::Text("Memory Usage: %.2f %s", fraction / 1024.f + bytes, units[unitIndex]);
         ImGui::EndTooltip();
     }
-    ImGui::BeginDisabled(!world_simulation_data);
     int frame = world_simulation_curr_frame;
     if (ImGui::SliderInt("Simulation Frame", &frame, 0, world_simulation_frames - 1, "%d", ImGuiSliderFlags_AlwaysClamp)) {
         world_simulation_curr_frame = frame;
@@ -611,6 +624,86 @@ std::vector<int> get_sorted_anim_list(MarioActor* actor) {
     }
     return anim_list;
 }
+
+void get_animation_rotations(MarioActor* actor, float* dst, int frame) {
+    for (auto timeline : k_frame_keys) {
+        saturn_keyframe_apply(timeline.first, frame);
+    }
+    for (int i = 0; i < 60; i++) {
+        dst[i * 3 + 0] = actor->bones[i][0];
+        dst[i * 3 + 1] = actor->bones[i][1];
+        dst[i * 3 + 2] = actor->bones[i][2];
+    }
+}
+
+std::string format_string(const char* fmt, ...) {
+    char dst[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(dst, 1024, fmt, args);
+    va_end(args);
+    return dst;
+}
+
+std::string create_anim_json(int frames, u16* indices, u16* values, int num_indices, int num_values) {
+    std::string json = "{\n";
+    json += format_string("    \"name\": \"%s\",\n", Json::escaped_str(animname).c_str());
+    json += format_string("    \"author\": \"%s\",\n", Json::escaped_str(animauthor).c_str());
+    json += format_string("    \"looping\": \"%s\",\n", animlooping ? "true" : "false");
+    json += format_string("    \"length\": %d,\n", frames);
+    json += format_string("    \"nodes\": 0,\n");
+    json += format_string("    \"indices\": [");
+    for (int i = 0; i < num_indices; i++) {
+        if (i % 6 == 0) json += "\n        ";
+        json += format_string("\"0x%02X\",\"0x%02X\",", (indices[i] >> 8) & 0xFF, indices[i] & 0xFF);
+    }
+    json += "\n    ],\n";
+    json += "    \"values\": [";
+    for (int i = 0; i < num_values; i++) {
+        json += format_string("\"0x%02X\",\"0x%02X\",", (values[i] >> 8) & 0xFF, values[i] & 0xFF);
+        if (i % 6 == 0 && i + 1 != num_values) json += "\n        ";
+    }
+    json += "\n    ]\n}\n";
+    return json;
+}
+
+std::string create_anim_c(int frames, u16* indices, u16* values, int num_indices, int num_values) {
+    std::string c = format_string("static const struct Animation %s[] = {\n", animname);
+    c += format_string("    %d,\n", animlooping ? 0 : 1);
+    c += format_string("    0,\n");
+    c += format_string("    0,\n");
+    c += format_string("    0,\n");
+    c += format_string("    0x%02X,\n", frames);
+    c += format_string("    ANIMINDEX_NUMPARTS(anim_indices),\n");
+    c += format_string("    anim_values,\n");
+    c += format_string("    anim_indices,\n");
+    c += format_string("    0,\n");
+    c += format_string("};\n\nstatic const u16 %s_indices[] = {", animname);
+    for (int i = 0; i < num_indices; i++) {
+        if (i % 6 == 0) c += "\n    ";
+        c += format_string("0x%04X, ", indices[i]);
+    }
+    c += format_string("\n};\n\nstatic const s16 %s_values[] = {", animname);
+    for (int i = 0; i < num_values; i++) {
+        if (i % 6 == 0) c += "\n    ";
+        c += format_string("0x%04X, ", values[i]);
+    }
+    c += format_string("\n};\n");
+    return c;
+}
+
+#define ANIM_EXT(ext) { "." #ext, "*." #ext, #ext " files", create_anim_##ext }
+struct AnimationFormat {
+    const char* combo_item;
+    const char* filter;
+    const char* filter_name;
+    std::function<std::string(int, u16*, u16*, int, int)> encode;
+};
+
+std::vector<struct AnimationFormat> anim_formats = {
+    ANIM_EXT(json),
+    ANIM_EXT(c)
+};
 
 struct Animation sampling_animation;
 float sampling_frame = 0;
@@ -697,17 +790,90 @@ void imgui_machinima_animation_player(MarioActor* actor, bool sampling) {
         if (!sampling) if (ImGui::BeginTabItem("Custom")) {
             actor->custom_bone = true;
             int currbone = 0;
+            if (ImGui::TreeNode("Export")) {
+                ImGui::InputText("Name", animname, 256);
+                ImGui::InputText("Author", animauthor, 256);
+                ImGui::Checkbox("Looping", &animlooping);
+                if (ImGui::Button("Export")) {
+                    int frames = 1;
+                    for (int i = 1; i <= 20; i++) {
+                        std::string timelineID = saturn_keyframe_get_mario_timeline_id("k_mariobone_" + std::to_string(i), saturn_actor_indexof(actor));
+                        if (saturn_timeline_exists(timelineID.c_str())) {
+                            for (auto kf : k_frame_keys[timelineID].second) {
+                                if (frames < kf.position) frames = kf.position + 1;
+                            }
+                        }
+                    }
+                    for (int i = 0; i < 60; i++) {
+                        std::string timelineID = saturn_keyframe_get_mario_timeline_id("k_objbone_" + std::to_string(i), saturn_actor_indexof(actor));
+                        if (saturn_timeline_exists(timelineID.c_str())) {
+                            for (auto kf : k_frame_keys[timelineID].second) {
+                                if (frames < kf.position) frames = kf.position + 1;
+                            }
+                        }
+                    }
+                    int num_indices = 6 * (actor->num_bones + 1);
+                    int num_values = 3 * actor->num_bones * frames + 1;
+                    u16* indices = (u16*)malloc(sizeof(u16) * num_indices);
+                    u16* values = (u16*)malloc(sizeof(u16) * num_values);
+                    indices[0] = indices[2] = indices[4] = 1;
+                    indices[1] = indices[3] = indices[5] = 0;
+                    values[0] = 0;
+                    float rotations[3 * 60];
+                    for (int i = 0; i < actor->num_bones; i++) {
+                        indices[(i + 1) * 6 + 0] = indices[(i + 1) * 6 + 2] = indices[(i + 1) * 6 + 4] = frames;
+                        indices[(i + 1) * 6 + 1] = (i * 3 + 0) * frames + 1;
+                        indices[(i + 1) * 6 + 3] = (i * 3 + 1) * frames + 1;
+                        indices[(i + 1) * 6 + 5] = (i * 3 + 2) * frames + 1;
+                    }
+                    for (int i = 0; i < frames; i++) {
+                        get_animation_rotations(actor, rotations, i);
+                        for (int j = 0; j < actor->num_bones; j++) {
+                            values[(j * 3 + 0) * frames + i + 1] = rotations[j * 3 + 0] / 360.f * 65536;
+                            values[(j * 3 + 1) * frames + i + 1] = rotations[j * 3 + 1] / 360.f * 65536;
+                            values[(j * 3 + 2) * frames + i + 1] = rotations[j * 3 + 2] / 360.f * 65536;
+                        }
+                    }
+                    for (auto timeline : k_frame_keys) {
+                        saturn_keyframe_apply(timeline.first, k_current_frame);
+                    }
+                    std::string data = anim_formats[animformat].encode(frames, indices, values, num_indices, num_values);
+                    std::string filepath = save_file_dialog("Save Animation", { anim_formats[animformat].filter_name, anim_formats[animformat].filter, "All Files", "*" });
+                    std::ofstream stream = std::ofstream(filepath, std::ios::binary);
+                    stream.write(data.c_str(), data.length());
+                    stream.close();
+                    free(indices);
+                    free(values);
+                }
+                ImGui::SameLine();
+                ImGui::Text("as");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(80);
+                if (ImGui::BeginCombo("###animformat", anim_formats[animformat].combo_item)) {
+                    for (int i = 0; i < anim_formats.size(); i++) {
+                        bool selected = i == animformat;
+                        if (ImGui::Selectable(anim_formats[i].combo_item, selected)) animformat = i;
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::PopItemWidth();
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
             if (ImGui::BeginMenu("Sample")) {
                 imgui_machinima_animation_player(actor, true);
                 ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Reset")) {
-                for (int i = 0; i < 20; i++) {
-                    actor->bones[i][0] = 0;
-                    actor->bones[i][1] = 0;
-                    actor->bones[i][2] = 0;
+            if (ImGui::Button("Randomize")) {
+                for (int i = 0; i < 60; i++) {
+                    actor->bones[i][0] = (rand() % 65536) / 65536.f * 360;
+                    actor->bones[i][1] = (rand() % 65536) / 65536.f * 360;
+                    actor->bones[i][2] = (rand() % 65536) / 65536.f * 360;
                 }
             }
+            ImGui::SameLine();
+            if (ImGui::Button("Next Frame")) k_current_frame++;
+
 #define BONE_ENTRY(name) {                                      \
                 ImGui::TableSetColumnIndex(0);                   \
                 ImGui::PushItemWidth(200);                        \

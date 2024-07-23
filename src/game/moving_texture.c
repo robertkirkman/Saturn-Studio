@@ -332,13 +332,8 @@ Gfx *geo_wdw_set_initial_water_level(s32 callContext, UNUSED struct GraphNode *n
  * This ensures water / sand flow stops when the game pauses.
  */
 Gfx *geo_movtex_pause_control(s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 mtx) {
-    if (callContext != GEO_CONTEXT_RENDER) {
-        gMovtexCounterPrev = gAreaUpdateCounter - 1;
-        gMovtexCounter = gAreaUpdateCounter;
-    } else {
-        gMovtexCounterPrev = gMovtexCounter;
-        gMovtexCounter = gAreaUpdateCounter;
-    }
+    gMovtexCounterPrev = gMovtexCounter;
+    gMovtexCounter = gAreaUpdateCounter;
     return NULL;
 }
 
@@ -426,9 +421,7 @@ Gfx *movtex_gen_from_quad(s16 y, struct MovtexQuad *quad) {
         return NULL;
     }
     gfx = gfxHead;
-    if (gMovtexCounter != gMovtexCounterPrev) {
-        quad->rot += rotspeed;
-    }
+    quad->rot += rotspeed * (gMovtexCounter - gMovtexCounterPrev);
     rot = quad->rot;
     if (rotDir == ROTATE_CLOCKWISE) {
         movtex_make_quad_vertex(verts, 0, x1, y, z1, rot, 0, scale, alpha);
@@ -689,15 +682,13 @@ void update_moving_texture_offset(s16 *movtexVerts, s32 attr) {
     s16 movSpeed = movtexVerts[MOVTEX_ATTR_SPEED];
     s16 *curOffset = movtexVerts + attr;
 
-    if (gMovtexCounter != gMovtexCounterPrev) {
-        *curOffset += movSpeed;
-        // note that texture coordinates are 6.10 fixed point, so this does modulo 1
-        if (*curOffset >= 1024) {
-            *curOffset -= 1024;
-        }
-        if (*curOffset <= -1024) {
-            *curOffset += 1024;
-        }
+    *curOffset += movSpeed * (gMovtexCounter - gMovtexCounterPrev);
+    // note that texture coordinates are 6.10 fixed point, so this does modulo 1
+    if (*curOffset >= 1024) {
+        *curOffset -= 1024;
+    }
+    if (*curOffset <= -1024) {
+        *curOffset += 1024;
     }
 }
 

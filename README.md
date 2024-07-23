@@ -51,7 +51,7 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
 2. Once it is installed, run the **MINGW64** shell
 3. Install dependencies using this command:
    ```
-   pacman -S git make gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-glew python3 mingw-w64-x86_64-dlfcn
+   pacman -S git make mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-glew python3 mingw-w64-x86_64-dlfcn
    ```
 5. Continue the steps for Linux starting from step 2
 6. After you're finished compiling, run `explorer .` to open a file explorer window in the current directory
@@ -77,7 +77,7 @@ Donate to sm64rise, the creator of Saturn, [here](https://ko-fi.com/J3J05B5WR).
      ```
 2. Clone the repository
    ```
-   git clone https://github.com/Dominicentek/Saturn saturn-studio
+   git clone https://github.com/Dominicentek/saturn-studio
    cd saturn-studio
    ```
 3. Compile the project

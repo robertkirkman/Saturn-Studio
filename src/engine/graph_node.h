@@ -102,6 +102,10 @@ struct GraphNodeOrthoProjection
     /*0x14*/ f32 scale;
 };
 
+// windef.h my behated
+#undef near
+#undef far
+
 /** A node that sets up a perspective projection. Used for drawing the
  *  game world. It does not set up the camera position, that is done by
  *  the child of this node, which has type GraphNodeCamera.

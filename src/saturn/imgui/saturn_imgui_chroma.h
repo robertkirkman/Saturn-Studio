@@ -1,14 +1,31 @@
 #ifndef SaturnImGuiChroma
 #define SaturnImGuiChroma
 
-#include "saturn/libs/imgui/imgui_internal.h"
 #include "SDL2/SDL.h"
+
+struct ImageRef {
+    bool loaded;
+    float scale;
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
+extern bool use_imageref;
+extern struct ImageRef imageref;
+
+#ifdef __cplusplus
+
+#include <string>
+#include "saturn/libs/imgui/imgui_internal.h"
+
+extern std::string imageref_filename;
 
 extern bool renderFloor;
 extern int currentChromaArea;
 extern ImVec4 uiChromaColor;
 
-#ifdef __cplusplus
 extern "C" {
 #endif
     void schroma_imgui_init(void);

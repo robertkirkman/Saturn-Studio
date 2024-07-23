@@ -250,37 +250,29 @@ void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int 
     *b = (*b * additive) + intensity * cc[ccIndex].blue[shadeIndex];
 }
 
-bool saturn_rotate_head(Vec3s rotation) {
+void saturn_rotate_head(Vec3s rotation) {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor != nullptr) {
-        if (actor->custom_bone_iter != 3) actor = nullptr;
-        if (actor != nullptr) {
-            vec3s_set(rotation,
-                actor->head_rot_x,
-                actor->head_rot_y,
-                actor->head_rot_z
-            );
-            return true;
-        }
+        vec3s_set(rotation,
+            actor->head_rot_x,
+            actor->head_rot_y,
+            actor->head_rot_z
+        );
+        return;
     }
     vec3s_set(rotation, 0, 0, 0);
-    return false;
 }
 
-bool saturn_rotate_torso(Vec3s rotation) {
+void saturn_rotate_torso(Vec3s rotation) {
     MarioActor* actor = saturn_get_actor(o->oMarioActorIndex);
     if (o->behavior != bhvMarioActor) actor = nullptr;
     if (actor != nullptr) {
-        if (actor->custom_bone_iter != 1) actor = nullptr;
-        if (actor != nullptr) {
-            vec3s_copy(rotation, actor->torsoAngle);
-            return true;
-        }
+        vec3s_copy(rotation, actor->torsoAngle);
+        return;
     }
     if (recording_mario_actor == o->oMarioActorIndex) vec3s_copy(rotation, gMarioState->marioBodyState->torsoAngle);
     else vec3s_set(rotation, 0, 0, 0);
-    return false;
 }
 
 s16 saturn_actor_geo_switch(u8 item) {

@@ -92,8 +92,8 @@ extern "C" {
     void saturn_clear_actors();
     void bhv_mario_actor_loop();
     void override_cc_color(int* r, int* g, int* b, int ccIndex, int marioIndex, int shadeIndex, float intensity, bool additive);
-    bool saturn_rotate_head(Vec3s rotation);
-    bool saturn_rotate_torso(Vec3s rotation);
+    void saturn_rotate_head(Vec3s rotation);
+    void saturn_rotate_torso(Vec3s rotation);
     s16 saturn_actor_geo_switch(u8 item);
     void saturn_actor_get_scaler(Vec3f scale, int index);
     float saturn_actor_get_alpha();

@@ -375,7 +375,7 @@ Gfx *geo_switch_mario_eyes(s32 callContext, struct GraphNode *node, UNUSED Mat4 
     if (callContext == GEO_CONTEXT_RENDER) {
         s16 eye = saturn_actor_geo_switch(ACTOR_SWITCH_EYE);
         if (eye == 0) { // force_blink
-            blinkFrame = ((switchCase->numCases * 32 + gAreaUpdateCounter) >> 1) & 0x1F;
+            blinkFrame = ((switchCase->numCases * 32 + gGlobalTimer) >> 1) & 0x1F;
             if (blinkFrame < 7) {
                 switchCase->selectedCase = gMarioBlinkAnimation[blinkFrame];
             } else {
@@ -423,9 +423,11 @@ Gfx *geo_mario_tilt_torso(s32 callContext, struct GraphNode *node, UNUSED Mat4 *
             && action != ACT_RIDING_SHELL_GROUND) {
             vec3s_copy(bodyState->torsoAngle, gVec3sZero);
         }
-        rotNode->rotation[0] = 0;
-        rotNode->rotation[1] = 0;
-        rotNode->rotation[2] = 0;
+        Vec3s tilt;
+        saturn_rotate_torso(tilt);
+        rotNode->rotation[0] = tilt[1];
+        rotNode->rotation[1] = tilt[2];
+        rotNode->rotation[2] = tilt[0];
     }
     return NULL;
 }
@@ -450,6 +452,11 @@ Gfx *geo_mario_head_rotation(s32 callContext, struct GraphNode *node, UNUSED Mat
             rotNode->rotation[1] = bodyState->headAngle[2];
             rotNode->rotation[2] = bodyState->headAngle[0];
         }
+        else vec3s_set(rotNode->rotation, 0, 0, 0);
+        Vec3s extra;
+        saturn_rotate_head(extra);
+        vec3s_add(rotNode->rotation, extra);
+        vec3s_copy(rotNode->prevRotation, rotNode->rotation);
     }
     return NULL;
 }

@@ -39,6 +39,7 @@ namespace Json {
     };
     class Value;
     class Increment;
+    static std::string escaped_str(std::string str);
 }
 
 struct Json::Token {
@@ -247,35 +248,15 @@ private:
         std::cout << "JSON parse error (at line " << std::to_string(line_num) << "): " << msg << std::endl;
         throw std::runtime_error(pfx "Failed to parse JSON");
     }
-    std::string escaped_str(std::string str) {
-        std::string escaped = "";
-        for (int i = 0; i < (int)str.length(); i++) {
-            switch (str[i]) {
-                case '\"': escaped += "\\\""; break;
-                case '\\': escaped += "\\\\"; break;
-                case '\b': escaped += "\\b"; break;
-                case '\f': escaped += "\\f"; break;
-                case '\n': escaped += "\\n"; break;
-                case '\r': escaped += "\\r"; break;
-                case '\t': escaped += "\\t"; break;
-                default:
-                    if (str[i] >= 32 && str[i] <= 126) escaped += str[i];
-                    else {
-                        std::stringstream stream;
-                        stream << std::hex << std::setw(4) << std::setfill('0') << (int)str[i];
-                        escaped += stream.str();
-                    }
-                    break;
-            }
-        }
-        return escaped;
-    }
     std::string strnum(double x) {
         int integer = (int)x;
         if (x == integer) return std::to_string(integer);
         return std::to_string(x);
     }
 public:
+    Value(ValueType type = JSONVALUE_NULL) {
+        this->type = type;
+    }
     Value operator [](std::string key) {
         if (type != JSONVALUE_OBJECT) throw std::runtime_error(pfx "not an object");
         if (!isMember(key)) throw std::runtime_error(pfx "key doesn't exist");
@@ -325,13 +306,30 @@ public:
         if (type == JSONVALUE_ARRAY) return arr.size();
         throw std::runtime_error(pfx "not a sizeable type");
     }
-    void put(std::string name, Json::Value value) {
+    Value* put(std::string name, Json::Value value) {
         if (type != JSONVALUE_OBJECT) throw std::runtime_error(pfx "not an object");
         obj.insert({ name, value });
+        return this;
     }
-    void put(Json::Value value) {
+    Value* put(Json::Value value) {
         if (type != JSONVALUE_ARRAY) throw std::runtime_error(pfx "not an array");
         arr.push_back(value);
+        return this;
+    }
+    Value* assignString(std::string str) {
+        if (type != JSONVALUE_STRING) throw std::runtime_error(pfx "not a string");
+        this->str = str;
+        return this;
+    }
+    Value* assignNumber(double num) {
+        if (type != JSONVALUE_NUMBER) throw std::runtime_error(pfx "not a number");
+        this->num = num;
+        return this;
+    }
+    Value* assignBool(bool val) {
+        if (type != JSONVALUE_BOOL) throw std::runtime_error(pfx "not a bool");
+        this->num = val;
+        return this;
     }
     auto array() {
         if (type != JSONVALUE_ARRAY) throw std::runtime_error(pfx "not an array");
@@ -394,6 +392,30 @@ public:
         return type;
     }
 };
+
+static std::string Json::escaped_str(std::string str) {
+    std::string escaped = "";
+    for (int i = 0; i < (int)str.length(); i++) {
+        switch (str[i]) {
+            case '\"': escaped += "\\\""; break;
+            case '\\': escaped += "\\\\"; break;
+            case '\b': escaped += "\\b"; break;
+            case '\f': escaped += "\\f"; break;
+            case '\n': escaped += "\\n"; break;
+            case '\r': escaped += "\\r"; break;
+            case '\t': escaped += "\\t"; break;
+            default:
+                if (str[i] >= 32 && str[i] <= 126) escaped += str[i];
+                else {
+                    std::stringstream stream;
+                    stream << std::hex << std::setw(4) << std::setfill('0') << (int)str[i];
+                    escaped += stream.str();
+                }
+                break;
+        }
+    }
+    return escaped;
+}
 
 #undef is_alphanumeric
 #undef is_letter

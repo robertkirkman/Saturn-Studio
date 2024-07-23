@@ -1,8 +1,10 @@
 #include "saturn_imgui_chroma.h"
 
+#include <SDL2/SDL_opengl.h>
 #include <string>
 #include <iostream>
 
+#include "saturn/imgui/saturn_imgui_dynos.h"
 #include "saturn/libs/imgui/imgui.h"
 #include "saturn/libs/imgui/imgui_internal.h"
 #include "saturn/libs/imgui/imgui_impl_sdl.h"
@@ -18,6 +20,7 @@
 extern "C" {
 #include "pc/gfx/gfx_pc.h"
 #include "pc/configfile.h"
+#include "pc/pngutils.h"
 #include "game/mario.h"
 #include "game/camera.h"
 #include "game/level_update.h"
@@ -34,6 +37,10 @@ using namespace std;
 ImVec4 uiChromaColor =              ImVec4(0.0f / 255.0f, 255.0f / 255.0f, 0.0f / 255.0f, 255.0f / 255.0f);
 bool renderFloor = false;
 int currentChromaArea = 1;
+
+bool use_imageref = false;
+std::string imageref_filename = "";
+struct ImageRef imageref = { .scale = 1 };
 
 void set_chroma_color() {
     int r5 = ((int)(uiChromaColor.x * 255) * 31 / 255);
@@ -109,6 +116,30 @@ void schroma_imgui_update() {
         const char* mSkyboxSettings[] = { "Ocean Sky", "Flaming Sky", "Underwater City", "Below Clouds", "Snow Mountains", "Desert", "Haunted", "Green Sky", "Above Clouds", "Purple Sky" };
         ImGui::Combo("###skybox_background", (int*)&gChromaKeyBackground, mSkyboxSettings, IM_ARRAYSIZE(mSkyboxSettings));
         currentChromaArea = gCurrAreaIndex;
+    }
+
+    ImGui::Checkbox("Reference Image", &use_imageref);
+    if (use_imageref) {
+        if (ImGui::Button("Browse")) {
+            std::vector<std::string> str = choose_file_dialog("Open Image", { "PNG image", "*.png", "All Files", "*" }, false);
+            if (str.size() != 0) {
+                std::filesystem::path dest = std::filesystem::path(sys_user_path()) / "res" / "gfx" / "_IMAGEREF.rgba32.png";
+                if (std::filesystem::exists(dest)) std::filesystem::remove(dest);
+                std::filesystem::copy_file(str[0], dest);
+                imageref_filename = std::filesystem::path(str[0]).filename().string();
+                imageref.loaded = true;
+                int c;
+                unsigned char* img = pngutils_read_png(str[0].c_str(), &imageref.width, &imageref.height, &c, 4);
+                pngutils_free(img);
+                gfx_precache_textures();
+            }
+        }
+        ImGui::SameLine();
+        if (!imageref.loaded) ImGui::Text("No file selected");
+        else ImGui::Text("%s", imageref_filename.c_str());
+        ImGui::SliderFloat("Scale", &imageref.scale, 0.1, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::DragInt("Offset X", &imageref.x);
+        ImGui::DragInt("Offset Y", &imageref.y);
     }
 
     ImGui::Dummy(ImVec2(0, 5));

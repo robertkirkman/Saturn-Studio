@@ -260,6 +260,8 @@ void spawn_particle(u32 activeParticleFlag, s16 model, const BehaviorScript *beh
     }
 }
 
+bool mstruct_hidden = false;
+
 /**
  * Mario's primary behavior update function.
  */
@@ -272,7 +274,8 @@ void bhv_mario_update(void) {
     gCurrentObject->oMarioParticleFlags = particleFlags;
     if (!saturn_actor_is_recording_input()) {
         set_mario_animation(gMarioState, MARIO_ANIM_A_POSE);
-        cur_obj_unhide();
+        if (mstruct_hidden) cur_obj_hide();
+        else cur_obj_unhide();
     }
     else cur_obj_hide();
 

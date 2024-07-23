@@ -76,6 +76,10 @@ std::vector<std::string> choose_file_dialog(std::string windowTitle, std::vector
     return pfd::open_file(windowTitle, ".", filetypes, multiselect ? pfd::opt::multiselect : pfd::opt::none).result();
 }
 
+std::string save_file_dialog(std::string windowTitle, std::vector<std::string> filetypes) {
+    return pfd::save_file(windowTitle, ".", filetypes, pfd::opt::none).result();
+}
+
 void open_directory(std::string path) {
 #if defined(_WIN32) // Windows
     ShellExecuteA(NULL, "open", ("\"" + path + "\"").c_str(), NULL, NULL, SW_SHOWNORMAL);
@@ -370,6 +374,7 @@ void sdynos_imgui_menu(int index) {
             ImGui::BeginDisabled();
             ImGui::Text("%s to stop", translate_bind_to_name(configKeyStopInpRec[0]));
             ImGui::EndDisabled();
+            ImGui::Checkbox("Keep Angle", &inprec_keep_angle);
             ImGui::Separator();
             if (empty) ImGui::BeginDisabled();
             bool checked = !empty && actor->playback_input;

@@ -6,6 +6,8 @@
 #include "gfx_dimensions.h"
 #include "level_update.h"
 #include "memory.h"
+#include "pc/gfx/gfx_pc.h"
+#include "saturn/imgui/saturn_imgui_chroma.h"
 #include "save_file.h"
 #include "segment2.h"
 #include "sm64.h"
@@ -340,11 +342,40 @@ void *create_skybox_ortho_matrix(s8 player) {
     return mtx;
 }
 
+Gfx* create_imageref() {
+    if (!use_imageref || !imageref.loaded) return NULL;
+    float x = imageref.x * (2.f / gfx_current_dimensions.width) * (4.f / 3.f);
+    float y = imageref.y * (2.f / gfx_current_dimensions.height);
+    float w = imageref.scale * ((float)imageref.width / imageref.height);
+    float h = imageref.scale * (4.f / 3.f);
+    Mtx* mtx = alloc_display_list(sizeof(Mtx));
+    Vtx* vtx = alloc_display_list(4 * sizeof(Vtx));
+    Gfx* dl = alloc_display_list(100 * sizeof(Gfx));
+    Gfx* head = dl;
+    mtxf_identity(mtx->m);
+    make_vertex(vtx, 0, x - w / 2, y + h / 2, -1, 0, 0, 255, 255, 255, 255);
+    make_vertex(vtx, 1, x - w / 2, y - h / 2, -1, 0, 32 << 5, 255, 255, 255, 255);
+    make_vertex(vtx, 2, x + w / 2, y - h / 2, -1, 32 << 5, 32 << 5, 255, 255, 255, 255);
+    make_vertex(vtx, 3, x + w / 2, y + h / 2, -1, 32 << 5, 0, 255, 255, 255, 255);
+    gSPDisplayList(head++, dl_skybox_begin);
+	gDPSetCombineLERP(head++, 0, 0, 0, TEXEL0, 0, 0, 0, ENVIRONMENT, 0, 0, 0, TEXEL0, 0, 0, 0, ENVIRONMENT);
+    gDPSetEnvColor(head++, 255, 255, 255, 255);
+    gSPMatrix(head++, mtx, G_MTX_PROJECTION | G_MTX_MUL);
+    gSPDisplayList(head++, dl_skybox_tile_tex_settings);
+    gLoadBlockTexture(head++, 32, 32, G_IM_FMT_RGBA, "_IMAGEREF.rgba32.png");
+    gSPVertex(head++, vtx, 4, 0);
+    gSP2Triangles(head++, 0, 1, 2, 0, 0, 2, 3, 0);
+    gSPPopMatrix(head++, G_MTX_PROJECTION);
+    gSPDisplayList(head++, dl_skybox_end);
+    gSPEndDisplayList(head++);
+    return dl;
+}
+
 /**
  * Creates the skybox's display list, then draws the 3x3 grid of tiles.
  */
 Gfx *init_skybox_display_list(s8 player, s8 background, s8 colorIndex) {
-    s32 dlCommandCount = 5 + (3 * 3) * 7; // 5 for the start and end, plus 9 skybox tiles
+    s32 dlCommandCount = 6 + (3 * 3) * 7; // 6 for the start and end, plus 9 skybox tiles
     void *skybox = alloc_display_list(dlCommandCount * sizeof(Gfx));
     Gfx *dlist = skybox;
 
@@ -352,12 +383,13 @@ Gfx *init_skybox_display_list(s8 player, s8 background, s8 colorIndex) {
         return NULL;
     } else {
         Mtx *ortho = create_skybox_ortho_matrix(player);
-
+        Gfx *imageref = create_imageref();
         gSPDisplayList(dlist++, dl_skybox_begin);
         gSPMatrix(dlist++, VIRTUAL_TO_PHYSICAL(ortho), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
         gSPDisplayList(dlist++, dl_skybox_tile_tex_settings);
         draw_skybox_tile_grid(&dlist, background, player, colorIndex);
         gSPDisplayList(dlist++, dl_skybox_end);
+        if (imageref) gSPDisplayList(dlist++, imageref);
         gSPEndDisplayList(dlist);
     }
     return skybox;

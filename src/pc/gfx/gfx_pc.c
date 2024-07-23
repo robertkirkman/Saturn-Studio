@@ -854,7 +854,7 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
             OVERRIDE = COLOR_CLOSE_TO(0x7F, 0x00, 0x40) SPARK;      // leg top
             OVERRIDE = COLOR_CLOSE_TO(0x40, 0x00, 0x7F) SPARK;      // leg bottom
             bool mario_sideburn = COLOR_CLOSE_TO(0x73, 0x06, 0x00); // creator mario sideburn
-            bool chroma_floor   = COLOR_CLOSE_TO(0x3F, 0x31, 0x39); // chroma floor
+            bool chroma_floor   = COLOR_CLOSE_TO(0x3F, 0x32, 0x19); // chroma floor
             cc_overrides[CC_HAIR] |= mario_sideburn;
 
             override_index = 0;
@@ -922,6 +922,12 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
                         g += intensity * lightg;
                         b += intensity * lightb;
                     }
+
+                    if (chroma_floor) {
+                        r = chromaColor.red[1];
+                        g = chromaColor.green[1];
+                        b = chromaColor.blue[1];
+                    } 
                 }
             }
 

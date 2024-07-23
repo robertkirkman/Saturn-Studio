@@ -11,6 +11,7 @@
 extern bool is_gameshark_open;
 
 extern std::vector<std::string> choose_file_dialog(std::string windowTitle, std::vector<std::string> filetypes, bool multiselect);
+extern std::string save_file_dialog(std::string windowTitle, std::vector<std::string> filetypes);
 
 extern "C" {
 #endif

@@ -7,6 +7,7 @@
 extern void saturn_update();
 
 #include "pc/platform.h"
+#include "saturn/saturn_version.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -189,6 +190,10 @@ static void crash_handler(int signal, siginfo_t* info, ucontext_t* context)
 #endif
 {
     printf("=== SATURN CRASH REPORT ===\n");
+#if defined(GIT_HASH) && defined(GIT_BRANCH)
+    printf(GIT_BRANCH " " GIT_HASH "\n");
+#endif
+    printf("Version: " SATURN_VERSION "\n");
 #ifdef _WIN32
     if (exception && exception->ExceptionRecord) {
         PEXCEPTION_RECORD err = exception->ExceptionRecord;
