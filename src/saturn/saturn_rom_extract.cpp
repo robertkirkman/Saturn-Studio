@@ -22,6 +22,8 @@ extern "C" {
 }
 
 std::string currently_extracting = "";
+std::string rom_path = "";
+bool prompting_for_rom = false;
 
 enum FormatEnum {
     FMT_RGBA,
@@ -47,7 +49,6 @@ std::map<std::string, FormatTableEntry> format_table = {
 
 #define EXTRACT_PATH fs::path(sys_user_path()) / "res"
 #define EXTRACT_PATH_FS_RELATIVE fs_relative::path(sys_user_path()) / "res" // this is to force some of the code to work on GCC 8.3.0
-#define EXTRACT_ROM gCLIOpts.RomPath
 #define ROM_SIZE (8 * 1024 * 1024)
 #define ROM_CHECKSUM 0x3CE60709
 
@@ -348,7 +349,6 @@ void split_skyboxes() {
 
 int saturn_rom_status(fs::path extract_dest, std::vector<std::string>* todo, int type) {
     bool needs_extract = false;
-    bool needs_rom = false;
     for (const auto& entry : assets) {
         if ((entry.metadata.size() == 0) && !(type & EXTRACT_TYPE_SOUND)) continue;
         int textype = TEXTYPE_OTHER;
@@ -379,7 +379,6 @@ int saturn_rom_status(fs::path extract_dest, std::vector<std::string>* todo, int
             if (todo != nullptr) todo->push_back(entry.path);
         }
     }
-    needs_rom = needs_extract;
     if (type & EXTRACT_TYPE_SATURN) {
         for (const auto& entry : saturn_assets) {
             if (!fs::exists(extract_dest / entry.path)) {
@@ -389,19 +388,36 @@ int saturn_rom_status(fs::path extract_dest, std::vector<std::string>* todo, int
         }
     }
     if (!needs_extract) return ROM_OK;
-    if (needs_rom && !fs::exists(EXTRACT_ROM)) {
 #ifdef FILE_PICKER
+    if (!fs::exists(gCLIOpts.RomPath)) {
         open_file_picker();
-#endif
-        if (!fs::exists(EXTRACT_ROM)) return ROM_MISSING;
     }
-    if (fs::file_size(EXTRACT_ROM) != ROM_SIZE) return ROM_INVALID;
-    std::ifstream stream = std::ifstream(EXTRACT_ROM, std::ios::binary);
-    unsigned char* data = (unsigned char*)malloc(ROM_SIZE);
-    stream.read((char*)data, ROM_SIZE);
-    stream.close();
-    unsigned int checksum = crc32(data, ROM_SIZE);
-    if (checksum != ROM_CHECKSUM) return ROM_INVALID;
+#else
+    prompting_for_rom = true;
+#endif
+    while (true) {
+        rom_path = std::string(gCLIOpts.RomPath);
+        while (prompting_for_rom) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        if (!fs::exists(rom_path)) {
+            pfd::message("Error", "A ROM at the specified path could not be found", pfd::choice::ok, pfd::icon::error).result();
+            prompting_for_rom = true;
+            continue;
+        }
+        uint32_t size = fs::file_size(rom_path);
+        std::ifstream stream = std::ifstream(rom_path, std::ios::binary);
+        unsigned char* data = (unsigned char*)malloc(size);
+        stream.read((char*)data, size);
+        stream.close();
+        unsigned int checksum = crc32(data, size);
+        if (checksum != ROM_CHECKSUM) {
+            pfd::message("Error", "The specified ROM is invalid.\nMake sure it's not corrupted, extended or from the wrong region.", pfd::choice::ok, pfd::icon::error).result();
+            prompting_for_rom = true;
+            continue;
+        }
+        break;
+    }
     return ROM_NEED_EXTRACT;
 }
 
@@ -456,17 +472,8 @@ int saturn_extract_rom(int type) {
     std::vector<std::string> todo = {};
     int status = saturn_rom_status(extract_dest, &todo, type);
 
-    if (status == ROM_OK) return ROM_OK;
-    if (status == ROM_MISSING) {
-        pfd::message("Missing ROM", "Cannot find sm64.z64\n\nPlease select your unmodified US Super Mario 64 z64 ROM by placing \"sm64.z64\" in the current working directory, using the --rom argument, or using the GTK file picker.", pfd::choice::ok);
-        return ROM_MISSING;
-    }
-    if (status == ROM_INVALID) {
-        pfd::message("Invalid ROM", "Couldn't verify sm64.z64\n\nThe file may be corrupted, extended, or from the wrong region. Use an unmodified US version of SM64.", pfd::choice::ok);
-        return ROM_INVALID;
-    }
     extraction_progress = 0;
-    std::ifstream stream = std::ifstream(EXTRACT_ROM, std::ios::binary);
+    std::ifstream stream = std::ifstream(rom_path, std::ios::binary);
     unsigned char* data = (unsigned char*)malloc(ROM_SIZE);
     stream.read((char*)data, ROM_SIZE);
     stream.close();

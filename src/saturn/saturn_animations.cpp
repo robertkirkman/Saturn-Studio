@@ -162,15 +162,15 @@ void load_cached_mcomp_animation(MarioActor* actor, string cache_key) {
     actor->animstate.length = anim.length;
 }
 
-void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
-    if (canims.find(json_path) != canims.end()) {
-        load_cached_mcomp_animation(actor, json_path);
+void saturn_read_mcomp_animation(MarioActor* actor, string anim_path) {
+    if (canims.find(anim_path) != canims.end()) {
+        load_cached_mcomp_animation(actor, anim_path);
         return;
     }
     // Load the json file
-    std::ifstream file(current_anim_dir_path + json_path);
+    std::ifstream file(current_anim_dir_path + anim_path);
     if (!file.good()) {
-        std::cout << "failed to load anim " << json_path << std::endl;
+        std::cout << "failed to load anim " << anim_path << std::endl;
         actor->animstate.id = MARIO_ANIM_A_POSE;
         actor->animstate.frame = 0;
         actor->animstate.custom = false;
@@ -208,27 +208,61 @@ void saturn_read_mcomp_animation(MarioActor* actor, string json_path) {
         }
     }*/
 
-    // Begin reading
-    Json::Value root;
-    root << file;
-
     CustomAnim anim;
-    anim.name = root["name"].asString();
-    anim.author = root["author"].asString();
-    if (root.isMember("extra_bone")) {
-        if (root["extra_bone"].asString() == "true") anim.extra = true;
-        if (root["extra_bone"].asString() == "false") anim.extra = false;
-    } else { anim.extra = false; }
-    // A mess
-    if (root["looping"].asString() == "true") current_canim_looping = true;
-    if (root["looping"].asString() == "false") current_canim_looping = false;
-    auto [ length, values, indices ] = read_bone_data(root);
-    anim.length = length;
-    anim.values = values;
-    anim.indices = indices;
-    canims.insert({ json_path, anim });
-    load_cached_mcomp_animation(actor, json_path);
-    return;
+    fs::path path = anim_path;
+    if (path.extension().string() == ".panim") {
+        printf("reading as panim\n");
+        int length = fs::file_size(path);
+        unsigned char* data = (unsigned char*)malloc(length);
+        file.read((char*)data, length);
+        char name[33], author[33];
+        memcpy(name, data + 0x00, 32);
+        memcpy(author, data + 0x20, 32);
+        name[32] = 0; // in case the string has 32 chars
+        author[32] = 0;
+        anim.name = name;
+        anim.author = author;
+        anim.length = (int)data[0x41] + (int)data[0x42] * 0x100;
+        int ptr = 0x43;
+        std::vector<s16>* curr_array;
+        while (ptr < length) {
+            if (strcmp((char*)data + ptr, "values")  == 0) {
+                curr_array = &anim.values;
+                ptr += 6;
+                continue;
+            }
+            if (strcmp((char*)data + ptr, "indices") == 0) {
+                curr_array = &anim.indices;
+                ptr += 7;
+                continue;
+            }
+            curr_array->push_back((int)data[ptr] * 256 + (int)data[ptr + 1]);
+            ptr += 2;
+        }
+        free(data);
+        file.close();
+    }
+    else {
+        printf("reading as json\n");
+        Json::Value root;
+        root << file;
+        anim.name = root["name"].asString();
+        anim.author = root["author"].asString();
+        if (root.isMember("extra_bone")) {
+            if (root["extra_bone"].asString() == "true") anim.extra = true;
+            if (root["extra_bone"].asString() == "false") anim.extra = false;
+        } else { anim.extra = false; }
+        // A mess
+        if (root["looping"].asString() == "true") current_canim_looping = true;
+        if (root["looping"].asString() == "false") current_canim_looping = false;
+        auto [ length, values, indices ] = read_bone_data(root);
+        anim.length = length;
+        anim.values = values;
+        anim.indices = indices;
+    }
+
+    canims.insert({ anim_path, anim });
+    load_cached_mcomp_animation(actor, anim_path);
 }
 
 void saturn_play_custom_animation() {
@@ -291,14 +325,13 @@ void load_animation(struct Animation* out, int index) {
 
 void saturn_sample_animation(MarioActor* actor, struct Animation* anim, int frame) {
     const u16* curindex = anim->index;
-    curindex += 6;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 21; i++) {
         for (int j = 0; j < 3; j++) {
             int valindex = 0;
             if (frame < curindex[0]) valindex = curindex[1] + frame;
             else valindex = curindex[1] + curindex[0] - 1;
             curindex += 2;
-            actor->bones[i][j] = (float)(anim->values[valindex]) * 360.f / 65536.f;
+            actor->bones[i][j] = (float)(anim->values[valindex]) * (i == 0 ? 1 : 360.f / 65536.f);
         }
     }
 }

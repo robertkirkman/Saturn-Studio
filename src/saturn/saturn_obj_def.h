@@ -60,7 +60,7 @@ inline std::pair<std::string, int> obj_models[] = {
     std::make_pair("MODEL_BITS_STAIRCASE_FRAME4", MODEL_BITS_STAIRCASE_FRAME4),
     std::make_pair("MODEL_BITS_TILTING_W_PLATFORM", MODEL_BITS_TILTING_W_PLATFORM),
     std::make_pair("MODEL_BITS_TWIN_SLIDING_PLATFORMS", MODEL_BITS_TWIN_SLIDING_PLATFORMS),
-    std::make_pair("MODEL_BITS_WARP_PIPE", MODEL_BITS_WARP_PIPE),
+    std::make_pair("MODEL_WARP_PIPE", MODEL_WARP_PIPE),
     std::make_pair("MODEL_BLACK_BOBOMB", MODEL_BLACK_BOBOMB),
     std::make_pair("MODEL_BLARGG", MODEL_BLARGG),
     std::make_pair("MODEL_BLUE_COIN", MODEL_BLUE_COIN),
